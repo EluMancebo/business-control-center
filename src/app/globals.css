@@ -24,3 +24,45 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+/* -----------------------------------------
+   FOOTER: pared (solo para la zona firma)
+   ----------------------------------------- */
+/* Panel de firma: fondo del footer + ladrillo en capa + DIFUMINADO sin "pegote" */
+.footer-panel { position: relative  ; 
+  background-color: #f1f5f9; /* bg-slate-100 */}
+/* LADRILLO en capa */
+.footer-panel::before {
+  content: ""; position: absolute;   inset: 0;
+  pointer-events: none;
+  background-image: url("/footer/wall.png");
+  background-repeat: no-repeat;
+  background-position: 48% 55%;
+  background-size: 400px auto;
+  opacity: 0.60; 
+  -webkit-mask-image: radial-gradient(ellipse at center,
+    rgba(0,0,0,1) 0%,   rgba(0,0,0,1) 58%,  rgba(0,0,0,0) 82%, rgba(0,0,0,0) 100%);  
+  mask-image: radial-gradient(ellipse at center,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 58%, rgba(0,0,0,0) 82%, rgba(0,0,0,0) 100%);}
+
+.footer-panel-content {   position: relative;
+  z-index: 1; }
+
+.footer-silueta-box { width: 72px; height: 96px;   position: relative; }
+/* -----------------------------------------
+   FIRMA: animación (paths)
+   ----------------------------------------- */
+.firma-path {
+  fill: none;
+  stroke: rgba(15, 23, 42, 0.92); /* slate-900 aprox */
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: none;
+}
+@keyframes firma-write {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
