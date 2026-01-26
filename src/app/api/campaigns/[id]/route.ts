@@ -1,23 +1,41 @@
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/src/lib/db";
 import { Campaign } from "@/src/models/Campaign";
+
 import { CampaignUpdateSchema } from "@/src/validators/campaign";
+
 
 const BUSINESS_ID_DEV = process.env.BUSINESS_ID_DEV;
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
-  await dbConnect();
-  if (!BUSINESS_ID_DEV) return NextResponse.json({ error: "Falta BUSINESS_ID_DEV" }, { status: 500 });
+type RouteContext = { params: Promise<{ id: string }> };
 
-  const campaign = await Campaign.findOne({ _id: params.id, businessId: BUSINESS_ID_DEV }).lean();
-  if (!campaign) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+export async function GET(_request: Request, { params }: RouteContext) {
+  await dbConnect();
+  if (!BUSINESS_ID_DEV) {
+    return NextResponse.json({ error: "Falta BUSINESS_ID_DEV" }, { status: 500 });
+  }
+
+  const { id } = await params;
+
+  const campaign = await Campaign.findOne({
+    _id: id,
+    businessId: BUSINESS_ID_DEV,
+  }).lean();
+
+  if (!campaign) {
+    return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+  }
 
   return NextResponse.json({ campaign });
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: RouteContext) {
   await dbConnect();
-  if (!BUSINESS_ID_DEV) return NextResponse.json({ error: "Falta BUSINESS_ID_DEV" }, { status: 500 });
+  if (!BUSINESS_ID_DEV) {
+    return NextResponse.json({ error: "Falta BUSINESS_ID_DEV" }, { status: 500 });
+  }
+
+  const { id } = await params;
 
   const json = await req.json();
   const parsed = CampaignUpdateSchema.safeParse(json);
@@ -35,22 +53,35 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (typeof update.endAt === "string") update.endAt = new Date(update.endAt);
 
   const campaign = await Campaign.findOneAndUpdate(
-    { _id: params.id, businessId: BUSINESS_ID_DEV },
+    { _id: id, businessId: BUSINESS_ID_DEV },
     update,
     { new: true }
   ).lean();
 
-  if (!campaign) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+  if (!campaign) {
+    return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+  }
 
   return NextResponse.json({ campaign });
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_request: Request, { params }: RouteContext) {
   await dbConnect();
-  if (!BUSINESS_ID_DEV) return NextResponse.json({ error: "Falta BUSINESS_ID_DEV" }, { status: 500 });
+  if (!BUSINESS_ID_DEV) {
+    return NextResponse.json({ error: "Falta BUSINESS_ID_DEV" }, { status: 500 });
+  }
 
-  const deleted = await Campaign.findOneAndDelete({ _id: params.id, businessId: BUSINESS_ID_DEV }).lean();
-  if (!deleted) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+  const { id } = await params;
+
+  const deleted = await Campaign.findOneAndDelete({
+    _id: id,
+    businessId: BUSINESS_ID_DEV,
+  }).lean();
+
+  if (!deleted) {
+    return NextResponse.json({ error: "No encontrada" }, { status: 404 });
+  }
 
   return NextResponse.json({ ok: true });
 }
+ 
