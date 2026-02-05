@@ -1,3 +1,5 @@
+import LogoutButton from "@/src/components/LogoutButton";
+
 export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-slate-100 p-6">
@@ -10,9 +12,13 @@ export default function DashboardPage() {
               Business Control Center · Vista general
             </p>
           </div>
-          <div className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
-            Sistema operativo
-          </div>
+       <div className="flex items-center gap-4">
+        <span className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
+         Sistema operativo
+        </span>
+
+         <LogoutButton />
+       </div>
         </header>
 
         {/* KPIs */}
@@ -74,6 +80,7 @@ export default function DashboardPage() {
             <p className="mt-4 text-xs text-slate-500">
               Modo: Monocromático · Editable por el cliente
             </p>
+            <LogoutButton />
           </div>
         </section>
       </div>
