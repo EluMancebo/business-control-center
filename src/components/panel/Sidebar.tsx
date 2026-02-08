@@ -3,6 +3,8 @@ import Link from "next/link";
 const nav = [
   { href: "/panel/dashboard", label: "Dashboard" },
   { href: "/panel/web", label: "Web pública" },
+  // próximos:
+  // { href: "/panel/marketing", label: "Marketing" },
 ];
 
 export default function Sidebar({
@@ -46,4 +48,3 @@ export default function Sidebar({
     </aside>
   );
 }
- 

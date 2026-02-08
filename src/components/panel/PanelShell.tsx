@@ -16,7 +16,6 @@ export default function PanelShell({
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") setMobileOpen(false);
     }
-
     if (mobileOpen) window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [mobileOpen]);
@@ -37,7 +36,7 @@ export default function PanelShell({
         >
           {/* Overlay */}
           <div
-            className={`fixed inset-0 z-40 bg-black/40 transition-opacity ${
+            className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ${
               mobileOpen ? "opacity-100" : "opacity-0"
             }`}
             onClick={() => setMobileOpen(false)}
@@ -45,7 +44,7 @@ export default function PanelShell({
 
           {/* Panel deslizante */}
           <div
-            className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl transition-transform duration-600 ease-in-out ${
+            className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl transition-transform duration-700 ease-in-out ${
               mobileOpen ? "translate-x-0" : "-translate-x-full"
             }`}
             role="dialog"
@@ -73,6 +72,7 @@ export default function PanelShell({
 
         {/* Contenido */}
         <div className="flex min-w-0 flex-1 flex-col">
+          {/* OJO: SOLO UNA Topbar, con props */}
           <Topbar onOpenMenu={() => setMobileOpen(true)} />
 
           <main className="flex-1 p-4 sm:p-6">
@@ -83,5 +83,3 @@ export default function PanelShell({
     </div>
   );
 }
-
-
