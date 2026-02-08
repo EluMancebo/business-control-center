@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-
+import PanelShell from "../../components/panel/PanelShell";
 export default async function PanelLayout({
   children,
 }: {
@@ -17,7 +17,7 @@ export default async function PanelLayout({
   }
 
   
-  return <>{children}</>;
+  return <PanelShell>{children}</PanelShell>;
 }
 
 

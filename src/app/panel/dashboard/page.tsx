@@ -1,4 +1,4 @@
-import LogoutButton from "@/src/components/LogoutButton";
+
 
 export default function DashboardPage() {
   return (
@@ -17,7 +17,7 @@ export default function DashboardPage() {
          Sistema operativo
         </span>
 
-         <LogoutButton />
+       
        </div>
         </header>
 
@@ -80,7 +80,7 @@ export default function DashboardPage() {
             <p className="mt-4 text-xs text-slate-500">
               Modo: Monocromático · Editable por el cliente
             </p>
-            <LogoutButton />
+          
           </div>
         </section>
       </div>
