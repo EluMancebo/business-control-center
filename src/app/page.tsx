@@ -1,16 +1,35 @@
+// src/app/page.tsx
+import Image from "next/image";
+
+
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-white text-slate-900">
       {/* Top bar */}
       <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-xl bg-slate-900" />
-            <div className="leading-tight">
-              <p className="text-sm font-semibold">Business Control Center</p>
-              <p className="text-xs text-slate-500">SalonPilot-ready • SaaS Control Hub</p>
-            </div>
-          </div>
+        
+       <div className="inline-flex items-center gap-.1 rounded-xl border border-slate-200 bg-white/70 px-3 py-1.5 shadow-sm backdrop-blur">
+  <Image
+    src="/brand/logo-mark.svg"
+    alt="BCC"
+    width={48}
+    height={48}
+    priority
+    className="h-12 w-12"
+  />
+
+  <div className="flex flex-col leading-tight">
+    <span className="text-lg font-extrabold tracking-tight text-slate-900">
+      BCC
+    </span>
+    <span className="text-[11px] font-medium text-slate-500">
+      Business Control Center
+    </span>
+  </div>
+</div>
+
+
 
           <nav className="flex items-center gap-2">
             <a
@@ -146,3 +165,4 @@ export default function HomePage() {
     </main>
   );
 }
+

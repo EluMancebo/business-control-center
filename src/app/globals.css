@@ -66,3 +66,28 @@ body {
     stroke-dashoffset: 0;
   }
 }
+
+/* -----------------------------------------
+   LOGO (Hero): animaciones preset
+   ----------------------------------------- */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes pulseSoft {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 0.92;
+  }
+}
