@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -29,10 +29,24 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <aside className="flex h-full w-64 flex-col border-r border-zinc-200 bg-white p-4">
       {/* Header */}
       <div className="mb-6">
-        <div className="text-sm font-semibold tracking-tight text-zinc-900">
-          Business Control Center
+        <div className="flex items-center gap-3">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-50 ring-1 ring-zinc-200">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/logo-mark.svg"
+              alt="Business Control Center"
+              className="h-10 w-10"
+              draggable={false}
+            />
+          </div>
+
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold tracking-tight text-zinc-900">
+              Business Control Center
+            </div>
+            <div className="text-xs text-zinc-500">Panel cliente</div>
+          </div>
         </div>
-        <div className="text-xs text-zinc-500">Panel cliente</div>
       </div>
 
       {/* Nav */}
@@ -187,4 +201,4 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     </aside>
   );
 }
-
+ 
