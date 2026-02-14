@@ -1,6 +1,6 @@
 // src/components/brand/DynamicLogo.tsx
 import type { HTMLAttributes } from "react";
-
+import Image from "next/image";
 type LogoSize = 28 | 32 | 36 | 40 | 48;
 
 type DynamicLogoProps = {
@@ -25,7 +25,6 @@ function sizeClass(size: LogoSize) {
       return "h-9 w-9";
   }
 }
-
 export default function DynamicLogo({
   size = 36,
   animated = true,
@@ -34,7 +33,6 @@ export default function DynamicLogo({
   ...rest
 }: DynamicLogoProps) {
   const box = sizeClass(size);
-
   return (
     <div
       {...rest}
@@ -43,14 +41,14 @@ export default function DynamicLogo({
       title={label}
     >
       {/* Logo mark real */}
-      <img
+      <Image
         src="/brand/logo-mark.svg"
         alt={label}
-        className={[
-          "relative h-full w-full",
-          animated ? "animate-[float_5s_ease-in-out_infinite]" : "",
-        ].join(" ")}
+        width={size}
+        height={size}
+        className={`relative ${animated ? "animate-[float_5s_ease-in-out_infinite]" : ""}`}
         draggable={false}
+        priority={false}
       />
     </div>
   );

@@ -1,10 +1,258 @@
 @import "tailwindcss";
 
+/* =========================================================
+   BRAND TOKENS (v0) - base + presets por data-attributes
+   Objetivo: sin inline styles, sin hacks, escalable
+   ========================================================= */
+
+/* Defaults (fallback) */
 :root {
+  /* Core (compatibilidad con tu base actual) */
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Extended tokens (para componentes futuros) */
+  --card: #ffffff;
+  --card-foreground: #171717;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+
+  --primary: #0f172a;
+  --primary-foreground: #ffffff;
+
+  --border: rgba(15, 23, 42, 0.14);
+  --ring: rgba(15, 23, 42, 0.35);
+
+  /* Pair tokens (light/dark) que activamos según mode */
+  --bg-light: #ffffff;
+  --fg-light: #171717;
+  --bg-dark: #0a0a0a;
+  --fg-dark: #ededed;
+
+  --card-light: #ffffff;
+  --card-fg-light: #171717;
+  --card-dark: #0f0f10;
+  --card-fg-dark: #ededed;
+
+  --muted-light: #f1f5f9;
+  --muted-fg-light: #475569;
+  --muted-dark: #111827;
+  --muted-fg-dark: #cbd5e1;
+
+  --primary-light: #0f172a;
+  --primary-fg-light: #ffffff;
+  --primary-dark: #e5e7eb;
+  --primary-fg-dark: #0a0a0a;
+
+  --border-light: rgba(15, 23, 42, 0.14);
+  --ring-light: rgba(15, 23, 42, 0.35);
+  --border-dark: rgba(237, 237, 237, 0.16);
+  --ring-dark: rgba(237, 237, 237, 0.28);
 }
 
+/* =========================
+   PALETTE PRESETS (v0)
+   ========================= */
+
+/* 1) BCC (por defecto) */
+html[data-brand-palette="bcc"] {
+  --bg-light: #ffffff;
+  --fg-light: #171717;
+
+  --card-light: #ffffff;
+  --card-fg-light: #171717;
+
+  --muted-light: #f1f5f9;
+  --muted-fg-light: #475569;
+
+  --primary-light: #0f172a;
+  --primary-fg-light: #ffffff;
+
+  --border-light: rgba(15, 23, 42, 0.14);
+  --ring-light: rgba(15, 23, 42, 0.35);
+
+  --bg-dark: #0a0a0a;
+  --fg-dark: #ededed;
+
+  --card-dark: #0f0f10;
+  --card-fg-dark: #ededed;
+
+  --muted-dark: #111827;
+  --muted-fg-dark: #cbd5e1;
+
+  --primary-dark: #e5e7eb;
+  --primary-fg-dark: #0a0a0a;
+
+  --border-dark: rgba(237, 237, 237, 0.16);
+  --ring-dark: rgba(237, 237, 237, 0.28);
+}
+
+/* 2) Ocean */
+html[data-brand-palette="ocean"] {
+  --bg-light: #f8fafc;
+  --fg-light: #0f172a;
+
+  --card-light: #ffffff;
+  --card-fg-light: #0f172a;
+
+  --muted-light: #e2e8f0;
+  --muted-fg-light: #334155;
+
+  --primary-light: #0369a1;
+  --primary-fg-light: #ffffff;
+
+  --border-light: rgba(2, 132, 199, 0.18);
+  --ring-light: rgba(2, 132, 199, 0.35);
+
+  --bg-dark: #071018;
+  --fg-dark: #e2e8f0;
+
+  --card-dark: #0b1621;
+  --card-fg-dark: #e2e8f0;
+
+  --muted-dark: #0f1d2b;
+  --muted-fg-dark: #cbd5e1;
+
+  --primary-dark: #38bdf8;
+  --primary-fg-dark: #071018;
+
+  --border-dark: rgba(56, 189, 248, 0.20);
+  --ring-dark: rgba(56, 189, 248, 0.28);
+}
+
+/* 3) Sunset */
+html[data-brand-palette="sunset"] {
+  --bg-light: #fff7ed;
+  --fg-light: #1f2937;
+
+  --card-light: #ffffff;
+  --card-fg-light: #1f2937;
+
+  --muted-light: #ffedd5;
+  --muted-fg-light: #7c2d12;
+
+  --primary-light: #ea580c;
+  --primary-fg-light: #ffffff;
+
+  --border-light: rgba(234, 88, 12, 0.20);
+  --ring-light: rgba(234, 88, 12, 0.35);
+
+  --bg-dark: #140a06;
+  --fg-dark: #ffedd5;
+
+  --card-dark: #1b0d07;
+  --card-fg-dark: #ffedd5;
+
+  --muted-dark: #2a120b;
+  --muted-fg-dark: #fed7aa;
+
+  --primary-dark: #fb923c;
+  --primary-fg-dark: #140a06;
+
+  --border-dark: rgba(251, 146, 60, 0.20);
+  --ring-dark: rgba(251, 146, 60, 0.28);
+}
+
+/* 4) Mono */
+html[data-brand-palette="mono"] {
+  --bg-light: #ffffff;
+  --fg-light: #111827;
+
+  --card-light: #ffffff;
+  --card-fg-light: #111827;
+
+  --muted-light: #f3f4f6;
+  --muted-fg-light: #374151;
+
+  --primary-light: #111827;
+  --primary-fg-light: #ffffff;
+
+  --border-light: rgba(17, 24, 39, 0.14);
+  --ring-light: rgba(17, 24, 39, 0.30);
+
+  --bg-dark: #0b0b0c;
+  --fg-dark: #f3f4f6;
+
+  --card-dark: #101012;
+  --card-fg-dark: #f3f4f6;
+
+  --muted-dark: #16161a;
+  --muted-fg-dark: #d1d5db;
+
+  --primary-dark: #f3f4f6;
+  --primary-fg-dark: #0b0b0c;
+
+  --border-dark: rgba(243, 244, 246, 0.14);
+  --ring-dark: rgba(243, 244, 246, 0.24);
+}
+
+/* =========================
+   MODE (light/dark/system)
+   ========================= */
+
+/* Light mode explícito */
+html[data-brand-mode="light"] {
+  --background: var(--bg-light);
+  --foreground: var(--fg-light);
+  --card: var(--card-light);
+  --card-foreground: var(--card-fg-light);
+  --muted: var(--muted-light);
+  --muted-foreground: var(--muted-fg-light);
+  --primary: var(--primary-light);
+  --primary-foreground: var(--primary-fg-light);
+  --border: var(--border-light);
+  --ring: var(--ring-light);
+}
+
+/* Dark mode explícito */
+html[data-brand-mode="dark"] {
+  --background: var(--bg-dark);
+  --foreground: var(--fg-dark);
+  --card: var(--card-dark);
+  --card-foreground: var(--card-fg-dark);
+  --muted: var(--muted-dark);
+  --muted-foreground: var(--muted-fg-dark);
+  --primary: var(--primary-dark);
+  --primary-foreground: var(--primary-fg-dark);
+  --border: var(--border-dark);
+  --ring: var(--ring-dark);
+}
+
+/* System (por defecto): arranca como light y responde al media query */
+html:not([data-brand-mode]),
+html[data-brand-mode="system"] {
+  --background: var(--bg-light);
+  --foreground: var(--fg-light);
+  --card: var(--card-light);
+  --card-foreground: var(--card-fg-light);
+  --muted: var(--muted-light);
+  --muted-foreground: var(--muted-fg-light);
+  --primary: var(--primary-light);
+  --primary-foreground: var(--primary-fg-light);
+  --border: var(--border-light);
+  --ring: var(--ring-light);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-brand-mode]),
+  html[data-brand-mode="system"] {
+    --background: var(--bg-dark);
+    --foreground: var(--fg-dark);
+    --card: var(--card-dark);
+    --card-foreground: var(--card-fg-dark);
+    --muted: var(--muted-dark);
+    --muted-foreground: var(--muted-fg-dark);
+    --primary: var(--primary-dark);
+    --primary-foreground: var(--primary-fg-dark);
+    --border: var(--border-dark);
+    --ring: var(--ring-dark);
+  }
+}
+
+/* =========================================================
+   Tailwind v4 theme mapping (mantengo tu @theme inline)
+   ========================================================= */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -12,44 +260,60 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Base */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto,
+    Helvetica, Arial, sans-serif;
 }
-
 
 /* -----------------------------------------
    FOOTER: pared (solo para la zona firma)
    ----------------------------------------- */
 /* Panel de firma: fondo del footer + ladrillo en capa + DIFUMINADO sin "pegote" */
-.footer-panel { position: relative  ; 
-  background-color: #f1f5f9; /* bg-slate-100 */}
+.footer-panel {
+  position: relative;
+  background-color: #f1f5f9; /* bg-slate-100 */
+}
 /* LADRILLO en capa */
 .footer-panel::before {
-  content: ""; position: absolute;   inset: 0;
+  content: "";
+  position: absolute;
+  inset: 0;
   pointer-events: none;
   background-image: url("/footer/wall.png");
   background-repeat: no-repeat;
   background-position: 48% 55%;
   background-size: 400px auto;
-  opacity: 0.60; 
-  -webkit-mask-image: radial-gradient(ellipse at center,
-    rgba(0,0,0,1) 0%,   rgba(0,0,0,1) 58%,  rgba(0,0,0,0) 82%, rgba(0,0,0,0) 100%);  
-  mask-image: radial-gradient(ellipse at center,
-    rgba(0,0,0,1) 0%, rgba(0,0,0,1) 58%, rgba(0,0,0,0) 82%, rgba(0,0,0,0) 100%);}
+  opacity: 0.60;
+  -webkit-mask-image: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 58%,
+    rgba(0, 0, 0, 0) 82%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  mask-image: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 58%,
+    rgba(0, 0, 0, 0) 82%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
 
-.footer-panel-content {   position: relative;
-  z-index: 1; }
+.footer-panel-content {
+  position: relative;
+  z-index: 1;
+}
 
-.footer-silueta-box { width: 72px; height: 96px;   position: relative; }
+.footer-silueta-box {
+  width: 72px;
+  height: 96px;
+  position: relative;
+}
+
 /* -----------------------------------------
    FIRMA: animación (paths)
    ----------------------------------------- */
