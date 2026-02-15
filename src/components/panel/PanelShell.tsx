@@ -20,6 +20,18 @@ export default function PanelShell({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [mobileOpen]);
 
+  // Bloquear scroll del body cuando el drawer está abierto (UX)
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [mobileOpen]);
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <div className="mx-auto flex min-h-screen max-w-7xl">
@@ -64,7 +76,8 @@ export default function PanelShell({
               </button>
             </div>
 
-            <div className="h-[calc(100vh-57px)]">
+            {/* Scroll limpio dentro del drawer */}
+            <div className="h-[calc(100vh-57px)] overflow-y-auto">
               <Sidebar onNavigate={() => setMobileOpen(false)} />
             </div>
           </div>
@@ -72,7 +85,6 @@ export default function PanelShell({
 
         {/* Contenido */}
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* OJO: SOLO UNA Topbar, con props */}
           <Topbar onOpenMenu={() => setMobileOpen(true)} />
 
           <main className="flex-1 p-4 sm:p-6">
