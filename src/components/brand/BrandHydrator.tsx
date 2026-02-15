@@ -1,9 +1,11 @@
- "use client";
+"use client";
 
 import { useEffect } from "react";
-import type { Brand } from "@/lib/brand/types";
 import { applyBrandToDocument } from "@/lib/brand/apply";
 import { loadBrandFromStorage, DEFAULT_BRAND } from "@/lib/brand/storage";
+
+const BRAND_STORAGE_KEY = "bcc:brand";
+const BRAND_CHANNEL = "bcc:brand";
 
 function computeTitle(brandName: string) {
   const name = brandName?.trim();
@@ -12,21 +14,32 @@ function computeTitle(brandName: string) {
 
 export default function BrandHydrator() {
   useEffect(() => {
-    const initial = loadBrandFromStorage();
-    applyBrandToDocument(initial);
-    document.title = computeTitle(initial.brandName);
-
-    function onBrand(e: Event) {
-      const ce = e as CustomEvent<Brand>;
-      if (!ce.detail) return;
-      applyBrandToDocument(ce.detail);
-      document.title = computeTitle(ce.detail.brandName);
+    function applyFromStorage() {
+      const next = loadBrandFromStorage();
+      applyBrandToDocument(next);
+      document.title = computeTitle(next.brandName);
     }
 
-    window.addEventListener("bcc:brand", onBrand);
-    return () => window.removeEventListener("bcc:brand", onBrand);
+    // Inicial
+    applyFromStorage();
+
+    function onStorage(e: StorageEvent) {
+      if (e.key === BRAND_STORAGE_KEY) applyFromStorage();
+    }
+    window.addEventListener("storage", onStorage);
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== "undefined") {
+      bc = new BroadcastChannel(BRAND_CHANNEL);
+      bc.onmessage = () => applyFromStorage();
+    }
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      if (bc) bc.close();
+    };
   }, []);
 
   return null;
 }
-   
+ 

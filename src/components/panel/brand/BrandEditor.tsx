@@ -36,6 +36,12 @@ export default function BrandEditor() {
     applyBrandToDocument(next);
     document.title = safeTitle(next.brandName);
     window.dispatchEvent(new CustomEvent("bcc:brand", { detail: next }));
+    if (typeof BroadcastChannel !== "undefined") {
+    const bc = new BroadcastChannel("bcc:brand");
+    bc.postMessage({ type: "brand:update" });
+    bc.close();
+}
+
   }
 
   return (
