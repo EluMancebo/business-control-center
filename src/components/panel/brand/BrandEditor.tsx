@@ -35,6 +35,7 @@ export default function BrandEditor() {
     saveBrandToStorage(next);
     applyBrandToDocument(next);
     document.title = safeTitle(next.brandName);
+    window.dispatchEvent(new CustomEvent("bcc:brand", { detail: next }));
   }
 
   return (
