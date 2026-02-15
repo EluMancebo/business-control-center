@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { dbConnect } from "@/src/lib/db";
-import { Campaign } from "@/src/models/Campaign";
+import { dbConnect } from "@/lib/db";
+import { Campaign } from "@/models/Campaign";
 
-import { CampaignUpdateSchema } from "@/src/validators/campaign";
+import { CampaignUpdateSchema } from "@/validators/campaign";
 
 
 const BUSINESS_ID_DEV = process.env.BUSINESS_ID_DEV;

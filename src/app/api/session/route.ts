@@ -1,5 +1,5 @@
  import { NextResponse, NextRequest } from "next/server";
-import { getSessionFromToken } from "@/src/lib/auth/session";
+import { getSessionFromToken } from "@/lib/auth/session";
 
 export async function GET(req: NextRequest) {
   const token =

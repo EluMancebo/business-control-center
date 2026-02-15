@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { dbConnect } from "@/src/lib/db";
-import { Campaign } from "@/src/models/Campaign";
-import { CampaignCreateSchema } from "@/src/validators/campaign";
+import { dbConnect } from "@/lib/db";
+import { Campaign } from "@/models/Campaign";
+import { CampaignCreateSchema } from "@/validators/campaign";
 
 // ⚠️ MVP: businessId fijo (luego lo sacamos del token)
 const BUSINESS_ID_DEV = process.env.BUSINESS_ID_DEV;

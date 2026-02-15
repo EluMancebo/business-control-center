@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { dbConnect } from "@/src/lib/db";
-import { Business } from "@/src/models/Business";
-import { User } from "@/src/models/User";
-import { RegisterSchema } from "@/src/validators/auth";
-import { hashPassword } from "@/src/lib/auth/password";
-import { signToken } from "@/src/lib/auth/jwt";
+import { dbConnect } from "@/lib/db";
+import { Business } from "@/models/Business";
+import { User } from "@/models/User";
+import { RegisterSchema } from "@/validators/auth";
+import { hashPassword } from "@/lib/auth/password";
+import { signToken } from "@/lib/auth/jwt";
 export async function POST(req: Request) {
   await dbConnect();
   const json = await req.json();
