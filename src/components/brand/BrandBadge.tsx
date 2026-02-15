@@ -1,6 +1,6 @@
-"use client";
+ "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Brand } from "@/lib/brand/types";
 import { DEFAULT_BRAND, loadBrandFromStorage } from "@/lib/brand/storage";
 
@@ -10,7 +10,17 @@ function safeBrandName(value: string) {
 }
 
 export default function BrandBadge() {
-  const [brand] = useState<Brand>(() => loadBrandFromStorage());
+  const [brand, setBrand] = useState<Brand>(() => loadBrandFromStorage());
+
+  useEffect(() => {
+    function onBrand(e: Event) {
+      const ce = e as CustomEvent<Brand>;
+      if (ce.detail) setBrand(ce.detail);
+    }
+
+    window.addEventListener("bcc:brand", onBrand);
+    return () => window.removeEventListener("bcc:brand", onBrand);
+  }, []);
 
   return (
     <div className="inline-flex items-center gap-2 rounded-full border border-(--border) bg-(--card) px-3 py-1 text-sm text-(--card-foreground) shadow-sm">
@@ -22,3 +32,4 @@ export default function BrandBadge() {
     </div>
   );
 }
+   
