@@ -4,13 +4,13 @@ import BrandBadge from "@/components/brand/BrandBadge";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-background text-foreground)">
-      {/* Top bar */}
+    <main className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b border-(--border) bg-(--background)/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            {/* Bloque de marca unificado */}
-            <div className="inline-flex items-center gap-1 rounded-xl border border-(--border) bg-(--card)/70 px-3 py-1.5 shadow-sm backdrop-blur">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* LEFT */}
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            {/* Marca */}
+            <div className="inline-flex max-w-full items-center gap-1 rounded-xl border border-(--border) bg-(--card)/70 px-3 py-1.5 shadow-sm backdrop-blur">
               <Image
                 src="/brand/logo-mark.svg"
                 alt="BCC"
@@ -19,22 +19,24 @@ export default function HomePage() {
                 priority
                 className="h-12 w-12"
               />
-
-              <div className="flex flex-col leading-tight">
-                <span className="text-lg font-extrabold tracking-tight text-foreground">
+              <div className="min-w-0 flex flex-col leading-tight">
+                <span className="truncate text-lg font-extrabold tracking-tight text-foreground">
                   BCC
                 </span>
-                <span className="text-[11px] font-medium text-(--muted-foreground)">
+                <span className="truncate text-[11px] font-medium text-(--muted-foreground)">
                   Business Control Center
                 </span>
               </div>
             </div>
 
-            {/* DEMO: Brand editable visible en web pública */}
-            <BrandBadge />
+            {/* Badge (en móvil debajo) */}
+            <div className="w-full sm:w-auto">
+              <BrandBadge />
+            </div>
           </div>
 
-          <nav className="flex items-center gap-2">
+          {/* RIGHT */}
+          <nav className="flex flex-wrap items-center gap-2 sm:justify-end">
             <a
               href="#features"
               className="rounded-lg px-3 py-2 text-sm text-(--muted-foreground) hover:bg-(--muted)"
@@ -97,7 +99,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Fake dashboard preview */}
           <div className="rounded-2xl border border-(--border) bg-(--card) p-4 text-(--card-foreground) shadow-sm">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold">Vista previa del panel</p>
@@ -135,7 +136,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features */}
       <section id="features" className="border-t border-(--border) bg-(--muted)">
         <div className="mx-auto max-w-6xl px-4 py-14">
           <h2 className="text-2xl font-bold">Funciones clave</h2>

@@ -1,14 +1,11 @@
- "use client";
+"use client";
+
 import { useMemo, useState } from "react";
 import type { Brand, BrandMode, BrandPaletteKey } from "@/lib/brand/types";
 import { BRAND_PALETTES } from "@/lib/brand/presets";
-import {
-  DEFAULT_BRAND,
-  loadBrandFromStorage,
-  saveBrandToStorage,
-} from "@/lib/brand/storage";
+import { DEFAULT_BRAND, loadBrandFromStorage } from "@/lib/brand/storage";
 import { applyBrandToDocument } from "@/lib/brand/apply";
-
+import { LocalBrandRepository } from "@/lib/brand/repository.local";
 
 const MODES: Array<{ key: BrandMode; label: string }> = [
   { key: "system", label: "System" },
@@ -22,7 +19,6 @@ function safeTitle(name: string) {
 }
 
 export default function BrandEditor() {
-  // Tipado explícito: evita "any" en p.key/p.label aunque el editor falle infiriendo
   const palettes = useMemo<Array<{ key: BrandPaletteKey; label: string }>>(
     () => BRAND_PALETTES,
     []
@@ -32,16 +28,25 @@ export default function BrandEditor() {
 
   function update(next: Brand) {
     setBrand(next);
-    saveBrandToStorage(next);
-    applyBrandToDocument(next);
-    document.title = safeTitle(next.brandName);
-    window.dispatchEvent(new CustomEvent("bcc:brand", { detail: next }));
-    if (typeof BroadcastChannel !== "undefined") {
-    const bc = new BroadcastChannel("bcc:brand");
-    bc.postMessage({ type: "brand:update" });
-    bc.close();
-}
 
+    // Persistencia (hoy: localStorage, mañana: API sin reescribir el editor)
+    LocalBrandRepository.set(next);
+
+    // Aplicación visual inmediata (tokens CSS)
+    applyBrandToDocument(next);
+
+    // Demo: title refleja brandName
+    document.title = safeTitle(next.brandName);
+
+    // Same-tab (opcional, no rompe)
+    window.dispatchEvent(new CustomEvent("bcc:brand", { detail: next }));
+
+    // Cross-tab
+    if (typeof BroadcastChannel !== "undefined") {
+      const bc = new BroadcastChannel("bcc:brand");
+      bc.postMessage({ type: "brand:update" });
+      bc.close();
+    }
   }
 
   return (
@@ -112,7 +117,7 @@ export default function BrandEditor() {
           <button
             type="button"
             onClick={() => update(DEFAULT_BRAND)}
-            className="h-10 rounded-xl border border-border bg-(--muted) px-4 text-sm font-medium text-foreground hover:opacity-90"
+            className="h-10 rounded-xl border border-(--border) bg-(--muted) px-4 text-sm font-medium text-foreground hover:opacity-90"
           >
             Reset (default)
           </button>
