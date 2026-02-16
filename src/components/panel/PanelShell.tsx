@@ -33,7 +33,7 @@ export default function PanelShell({
   }, [mobileOpen]);
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex min-h-screen max-w-7xl">
         {/* Sidebar desktop */}
         <div className="hidden sm:block">
@@ -56,19 +56,19 @@ export default function PanelShell({
 
           {/* Panel deslizante */}
           <div
-            className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl transition-transform duration-700 ease-in-out ${
+            className={`fixed inset-y-0 left-0 z-50 w-72 bg-background shadow-xl transition-transform duration-700 ease-in-out ${
               mobileOpen ? "translate-x-0" : "-translate-x-full"
             }`}
             role="dialog"
             aria-modal="true"
             aria-label="Menú de navegación"
           >
-            <div className="flex items-center justify-between border-b border-zinc-200 p-4">
+            <div className="flex items-center justify-between border-b border-border p-4">
               <div className="text-sm font-semibold">Menú</div>
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm hover:bg-zinc-50"
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm hover:bg-muted"
                 aria-label="Cerrar menú"
                 title="Cerrar menú"
               >
@@ -76,7 +76,6 @@ export default function PanelShell({
               </button>
             </div>
 
-            {/* Scroll limpio dentro del drawer */}
             <div className="h-[calc(100vh-57px)] overflow-y-auto">
               <Sidebar onNavigate={() => setMobileOpen(false)} />
             </div>

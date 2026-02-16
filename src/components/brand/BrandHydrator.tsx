@@ -1,40 +1,48 @@
+// src/components/brand/BrandHydrator.tsx
 "use client";
 
 import { useEffect } from "react";
+import {
+  BRAND_CHANNEL,
+  getBrand,
+  subscribeBrand,
+  syncBrandFromStorage,
+} from "@/lib/brand/service";
 import { applyBrandToDocument } from "@/lib/brand/apply";
-import { loadBrandFromStorage, DEFAULT_BRAND } from "@/lib/brand/storage";
-
-const BRAND_STORAGE_KEY = "bcc:brand";
-const BRAND_CHANNEL = "bcc:brand";
-
-function computeTitle(brandName: string) {
-  const name = brandName?.trim();
-  return name && name.length > 0 ? name : DEFAULT_BRAND.brandName;
-}
 
 export default function BrandHydrator() {
   useEffect(() => {
-    function applyFromStorage() {
-      const next = loadBrandFromStorage();
-      applyBrandToDocument(next);
-      document.title = computeTitle(next.brandName);
-    }
+    // 1) Al montar: leer storage + aplicar (asegura refresh correcto)
+    syncBrandFromStorage();
 
-    // Inicial
-    applyFromStorage();
+    // 2) Por si acaso: aplica el estado actual
+    applyBrandToDocument(getBrand());
 
-    function onStorage(e: StorageEvent) {
-      if (e.key === BRAND_STORAGE_KEY) applyFromStorage();
-    }
-    window.addEventListener("storage", onStorage);
+    // 3) Re-aplicar ante cambios internos del store
+    const unsubscribe = subscribeBrand(() => {
+      applyBrandToDocument(getBrand());
+    });
 
+    // 4) Re-aplicar ante evento local (misma pestaña)
+    const onLocal = () => syncBrandFromStorage();
+    window.addEventListener(BRAND_CHANNEL, onLocal);
+
+    // 5) Re-aplicar ante cambios cross-tab via BroadcastChannel
     let bc: BroadcastChannel | null = null;
     if (typeof BroadcastChannel !== "undefined") {
       bc = new BroadcastChannel(BRAND_CHANNEL);
-      bc.onmessage = () => applyFromStorage();
+      bc.onmessage = () => syncBrandFromStorage();
     }
 
+    // 6) Re-aplicar ante evento storage (solo otras pestañas, pero lo dejamos)
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "bcc:brand") syncBrandFromStorage();
+    };
+    window.addEventListener("storage", onStorage);
+
     return () => {
+      unsubscribe();
+      window.removeEventListener(BRAND_CHANNEL, onLocal);
       window.removeEventListener("storage", onStorage);
       if (bc) bc.close();
     };
@@ -42,4 +50,7 @@ export default function BrandHydrator() {
 
   return null;
 }
+
+
+
  

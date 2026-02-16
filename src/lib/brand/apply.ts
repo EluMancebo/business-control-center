@@ -1,9 +1,12 @@
+// src/lib/brand/apply.ts
 import type { Brand } from "./types";
 
-export function applyBrandToDocument(brand: Brand): void {
+export function applyBrandToDocument(brand: Brand) {
   if (typeof document === "undefined") return;
 
-  const root = document.documentElement;
-  root.dataset.brandPalette = brand.palette;
-  root.dataset.brandMode = brand.mode;
+  const el = document.documentElement;
+
+  el.dataset.brandPalette = brand.palette;
+  el.dataset.brandMode = brand.mode;
 }
+

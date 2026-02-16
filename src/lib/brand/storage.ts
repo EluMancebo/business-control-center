@@ -1,6 +1,8 @@
+// src/lib/brand/storage.ts
 import type { Brand } from "./types";
 
-const STORAGE_KEY = "bcc.brand.v0";
+export const STORAGE_KEY = "bcc.brand.v0";
+export const BRAND_CHANNEL = "bcc:brand";
 
 export const DEFAULT_BRAND: Brand = {
   brandName: "Business Control Center",
@@ -16,8 +18,12 @@ export function loadBrandFromStorage(): Brand {
     if (!raw) return DEFAULT_BRAND;
 
     const parsed = JSON.parse(raw) as Partial<Brand>;
+
     return {
-      brandName: typeof parsed.brandName === "string" ? parsed.brandName : DEFAULT_BRAND.brandName,
+      brandName:
+        typeof parsed.brandName === "string" && parsed.brandName.trim().length > 0
+          ? parsed.brandName
+          : DEFAULT_BRAND.brandName,
       palette: (parsed.palette ?? DEFAULT_BRAND.palette) as Brand["palette"],
       mode: (parsed.mode ?? DEFAULT_BRAND.mode) as Brand["mode"],
     };
@@ -35,3 +41,4 @@ export function saveBrandToStorage(brand: Brand): void {
     // Si falla, no rompemos UX
   }
 }
+

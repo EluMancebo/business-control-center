@@ -1,18 +1,8 @@
- import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+// src/app/layout.tsx
+import type { Metadata } from "next";
 import "./globals.css";
-
-import FooterSignature from "../components/footer/FooterSignature";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import BrandHydrator from "@/components/brand/BrandHydrator";
+import FooterSignature from "@/components/footer/FooterSignature";
 
 export const metadata: Metadata = {
   title: "Business Control Center",
@@ -25,18 +15,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="es"
-      data-brand-palette="bcc"
-      data-brand-mode="system"
-    >
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen flex flex-col antialiased`}
-      >
-        <main className="flex-1">{children}</main>
+    <html lang="es">
+      <body className="min-h-screen antialiased">
+        <BrandHydrator />
+        <main className="min-h-screen">{children}</main>
         <FooterSignature />
       </body>
     </html>
   );
 }
+
  

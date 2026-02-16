@@ -3,7 +3,7 @@ import type { BrandRepository } from "./repository";
 import type { Brand } from "./types";
 import { loadBrandFromStorage, saveBrandToStorage } from "./storage";
 
-export const LocalBrandRepository: BrandRepository = {
+export const localBrandRepository: BrandRepository = {
   source: "local",
   get(): Brand {
     return loadBrandFromStorage();
@@ -12,3 +12,4 @@ export const LocalBrandRepository: BrandRepository = {
     saveBrandToStorage(next);
   },
 };
+
