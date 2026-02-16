@@ -16,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className="min-h-screen antialiased">
+      <body className="min-h-screen bg-background text-foreground antialiased">
         <BrandHydrator />
         <main className="min-h-screen">{children}</main>
         <FooterSignature />

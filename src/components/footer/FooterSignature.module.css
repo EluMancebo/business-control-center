@@ -3,17 +3,22 @@
   display: inline-block;
 }
 
-/* Replica directa del CSS clásico */
 .createdBy {
   display: inline-block;
-  font-family:Satisfy,cursive;
+
+  /* ✅ fallback decente si Satisfy no carga */
+  font-family: "Satisfy", "Segoe Script", "Brush Script MT", "Apple Chancery",
+    "Snell Roundhand", cursive;
+
   position: absolute;
   transform: rotate(-12deg);
   font-weight: 200;
   line-height: 18px;
-  top: -1.5rem;     /* equivalente a margin-top:-1.5rem */
-  left: 6rem;      /* equivalente a margin-left:-8rem */
-  color: #0f172a;   /* slate-900 aproximado */
+  top: -1.5rem;
+  left: 6rem;
+  color: hsl(var(--foreground));
+  z-index: 5;
+  text-shadow: 0 1px 0 hsl(var(--background));
 }
 
 .createdBy span {

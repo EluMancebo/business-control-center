@@ -1,4 +1,5 @@
- "use client";
+// src/components/panel/Sidebar.tsx
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -26,12 +27,12 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const [openGroups, setOpenGroups] = useState<Set<string>>(defaultOpenGroups);
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-zinc-200 bg-white p-4">
+    <aside className="flex h-full w-64 flex-col border-r border-border bg-background p-4">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-50 ring-1 ring-zinc-200">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-muted ring-1 ring-border">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/brand/logo-mark.svg"
               alt="Business Control Center"
@@ -41,10 +42,10 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </div>
 
           <div className="min-w-0">
-            <div className="truncate text-sm font-semibold tracking-tight text-zinc-900">
+            <div className="truncate text-sm font-semibold tracking-tight text-foreground">
               Business Control Center
             </div>
-            <div className="text-xs text-zinc-500">Panel cliente</div>
+            <div className="text-xs text-muted-foreground">Panel cliente</div>
           </div>
         </div>
       </div>
@@ -60,7 +61,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               return (
                 <div
                   key={item.href}
-                  className="rounded-lg px-3 py-2 text-sm text-zinc-400"
+                  className="rounded-lg px-3 py-2 text-sm text-muted-foreground/70"
                   title="Próximamente"
                 >
                   {item.label}
@@ -77,8 +78,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 className={[
                   "rounded-lg px-3 py-2 text-sm transition-colors",
                   active
-                    ? "bg-zinc-100 text-zinc-900 font-medium"
-                    : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900",
+                    ? "bg-muted text-foreground font-medium"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 ].join(" ")}
               >
                 {item.label}
@@ -107,10 +108,10 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 className={[
                   "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
                   groupDisabled
-                    ? "text-zinc-400 cursor-not-allowed"
+                    ? "text-muted-foreground/70 cursor-not-allowed"
                     : groupHasActive
-                      ? "text-zinc-900 font-medium"
-                      : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900",
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 ].join(" ")}
                 data-open={isOpen ? "true" : "false"}
               >
@@ -127,7 +128,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 ].join(" ")}
               >
                 <div className="min-h-0">
-                  <div className="ml-3 mt-1 border-l border-zinc-200 pl-3">
+                  <div className="ml-3 mt-1 border-l border-border pl-3">
                     {item.items.map((child) => {
                       const active = isActivePath(pathname, child.href);
                       const disabled = child.disabled === true;
@@ -136,7 +137,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                         return (
                           <div
                             key={child.href}
-                            className="mt-1 rounded-lg px-3 py-2 text-sm text-zinc-400"
+                            className="mt-1 rounded-lg px-3 py-2 text-sm text-muted-foreground/70"
                             title="Próximamente"
                           >
                             {child.label}
@@ -153,8 +154,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                           className={[
                             "mt-1 block rounded-lg px-3 py-2 text-sm transition-colors",
                             active
-                              ? "bg-zinc-100 text-zinc-900 font-medium"
-                              : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900",
+                              ? "bg-muted text-foreground font-medium"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
                           ].join(" ")}
                         >
                           {child.label}
@@ -171,15 +172,15 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Footer / Accesos */}
       <div className="mt-auto pt-4">
-        <div className="border-t border-zinc-200 pt-4">
-          <div className="px-1 text-xs font-medium text-zinc-500">Accesos</div>
+        <div className="border-t border-border pt-4">
+          <div className="px-1 text-xs font-medium text-muted-foreground">Accesos</div>
 
           <div className="mt-2 grid gap-2">
             <a
               href="/"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex w-full items-center justify-center rounded-lg bg-zinc-900 px-3 py-2 text-xs font-medium text-white hover:bg-zinc-800"
+              className="inline-flex w-full items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90"
             >
               Ver web pública ↗
             </a>
@@ -187,13 +188,13 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <Link
               href="/panel/web"
               onClick={onNavigate}
-              className="inline-flex w-full items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-900 hover:bg-zinc-50"
+              className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
             >
               Editar web pública
             </Link>
           </div>
 
-          <p className="mt-3 px-1 text-xs text-zinc-500">
+          <p className="mt-3 px-1 text-xs text-muted-foreground">
             Acceso directo para editar y comprobar cambios en la web.
           </p>
         </div>
@@ -201,4 +202,4 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     </aside>
   );
 }
- 
+  

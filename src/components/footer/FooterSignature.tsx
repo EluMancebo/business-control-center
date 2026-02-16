@@ -1,3 +1,4 @@
+// src/components/footer/FooterSignature.tsx
 "use client";
 
 import Image from "next/image";
@@ -6,7 +7,7 @@ import styles from "./FooterSignature.module.css";
 
 export default function FooterSignature() {
   return (
-    <footer className="mt-auto w-full border-t border-slate-200 bg-slate-100 text-slate-900">
+    <footer className="mt-auto w-full border-t border-border bg-muted text-foreground">
       <div className="mx-auto w-full max-w-5xl px-4 py-1">
         <div className="mx-auto w-full max-w-130">
           <div className="footer-panel overflow-hidden rounded-2xl">
@@ -17,10 +18,8 @@ export default function FooterSignature() {
                   Created
                   <br />
                   <span>by</span>
-                </h5>    
+                </h5>
 
-            
-                  
                 <div className="flex items-end justify-center gap-4">
                   <div className="footer-silueta-box relative -translate-y-12 translate-x-6 shrink-0 h-18 w-18">
                     <Image
@@ -39,7 +38,7 @@ export default function FooterSignature() {
                 </div>
               </div>
 
-              <p className="mt-1 -translate-y-8 text-xs font-semibold text-slate-900">
+              <p className="mt-1 -translate-y-8 text-xs font-semibold text-foreground">
                 © {new Date().getFullYear()} Elu Mancebo. Todos los derechos reservados.
               </p>
             </div>
@@ -49,5 +48,3 @@ export default function FooterSignature() {
     </footer>
   );
 }
-
-

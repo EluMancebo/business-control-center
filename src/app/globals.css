@@ -280,22 +280,30 @@ body {
 /* -----------------------------------------
    FOOTER: pared (solo para la zona firma)
    ----------------------------------------- */
-/* Panel de firma: fondo del footer + ladrillo en capa + DIFUMINADO sin "pegote" */
 .footer-panel {
   position: relative;
-  background-color: #f1f5f9; /* bg-slate-100 */
+  background-color: var(--muted);
+  border: none; /* ✅ quitamos la línea de borde */
 }
+
 /* LADRILLO en capa */
 .footer-panel::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
+
   background-image: url("/footer/wall.png");
   background-repeat: no-repeat;
   background-position: 48% 55%;
   background-size: 400px auto;
-  opacity: 0.60;
+
+  /* ✅ Más suave en general */
+  opacity: 0.22;
+
+  /* ✅ Suaviza textura "basta" sin tocar la imagen */
+  filter: contrast(0.95) brightness(1.05);
+
   -webkit-mask-image: radial-gradient(
     ellipse at center,
     rgba(0, 0, 0, 1) 0%,
@@ -310,6 +318,21 @@ body {
     rgba(0, 0, 0, 0) 82%,
     rgba(0, 0, 0, 0) 100%
   );
+}
+
+/* Dark explícito: aún menos presencia */
+html[data-brand-mode="dark"] .footer-panel::before {
+  opacity: 0.12;
+  filter: contrast(0.90) brightness(1.10);
+}
+
+/* System-dark: también */
+@media (prefers-color-scheme: dark) {
+  html:not([data-brand-mode]) .footer-panel::before,
+  html[data-brand-mode="system"] .footer-panel::before {
+    opacity: 0.12;
+    filter: contrast(0.90) brightness(1.10);
+  }
 }
 
 .footer-panel-content {
@@ -328,12 +351,14 @@ body {
    ----------------------------------------- */
 .firma-path {
   fill: none;
-  stroke: rgba(15, 23, 42, 0.92); /* slate-900 aprox */
+  stroke: currentColor; /* ✅ now currentColor */
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
   transition: none;
+  opacity: 0.92;
 }
+
 @keyframes firma-write {
   to {
     stroke-dashoffset: 0;
