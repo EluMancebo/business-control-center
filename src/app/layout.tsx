@@ -3,6 +3,14 @@ import type { Metadata } from "next";
 import "./globals.css";
 import BrandHydrator from "@/components/brand/BrandHydrator";
 import FooterSignature from "@/components/footer/FooterSignature";
+import { Satisfy } from "next/font/google";
+
+const satisfy = Satisfy({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-satisfy",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Business Control Center",
@@ -16,7 +24,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className="min-h-screen bg-background text-foreground antialiased">
+      <body
+        className={[
+          "min-h-screen bg-background text-foreground antialiased",
+          satisfy.variable,
+        ].join(" ")}
+      >
         <BrandHydrator />
         <main className="min-h-screen">{children}</main>
         <FooterSignature />

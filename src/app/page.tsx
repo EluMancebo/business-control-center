@@ -7,8 +7,8 @@ export default function HomePage() {
     <main className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
       <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-6xl flex-col items-stretch gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
             {/* Bloque de marca unificado */}
             <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-card/70 px-3 py-1.5 shadow-sm backdrop-blur">
               <Image
@@ -20,11 +20,11 @@ export default function HomePage() {
                 className="h-12 w-12"
               />
 
-              <div className="flex flex-col leading-tight">
+              <div className="flex min-w-0 flex-col leading-tight">
                 <span className="text-lg font-extrabold tracking-tight text-foreground">
                   BCC
                 </span>
-                <span className="text-[11px] font-medium text-muted-foreground">
+                <span className="truncate text-[11px] font-medium text-muted-foreground">
                   Business Control Center
                 </span>
               </div>
@@ -34,7 +34,7 @@ export default function HomePage() {
             <BrandBadge />
           </div>
 
-          <nav className="flex items-center gap-2">
+          <nav className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
             <a
               href="#features"
               className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
@@ -43,7 +43,7 @@ export default function HomePage() {
             </a>
             <a
               href="/panel/dashboard"
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
               Entrar al panel
             </a>

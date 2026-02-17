@@ -7,8 +7,8 @@
   display: inline-block;
 
   /* ✅ fallback decente si Satisfy no carga */
-  font-family: "Satisfy", "Segoe Script", "Brush Script MT", "Apple Chancery",
-    "Snell Roundhand", cursive;
+ font-family: var(--font-satisfy), "Segoe Script", "Brush Script MT", "Apple Chancery", "Snell Roundhand", cursive;
+
 
   position: absolute;
   transform: rotate(-12deg);
