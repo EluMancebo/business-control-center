@@ -19,14 +19,18 @@ const HeroDataSchema = new Schema(
 
 const HeroConfigSchema = new Schema(
   {
-    // MVP single-tenant: si luego quieres multi-tenant, lo hacemos required + businessId
-    businessId: { type: Schema.Types.ObjectId, ref: "Business", required: false },
+    // Multi-tenant real (pro)
+    businessId: { type: Schema.Types.ObjectId, ref: "Business", required: true },
+
+    // Para resolver /{slug} sin buscar primero Business por slug
+    // (si prefieres, lo quitamos y resolvemos via Business, pero esto acelera y simplifica)
+    businessSlug: { type: String, required: true, trim: true, lowercase: true },
 
     // "draft" = lo que editas en panel
     // "published" = lo que lee la web pública
     status: { type: String, enum: ["draft", "published"], required: true },
 
-    // por si mañana tienes variantes (navidad, rebajas, etc.)
+    // variantes (navidad, rebajas, etc.)
     variantKey: { type: String, default: "default" },
 
     data: { type: HeroDataSchema, required: true },
@@ -34,11 +38,12 @@ const HeroConfigSchema = new Schema(
   { timestamps: true }
 );
 
-// 1 draft + 1 published por variant (y por negocio si luego activas businessId)
+// 1 draft + 1 published por variant y por negocio
 HeroConfigSchema.index(
-  { businessId: 1, status: 1, variantKey: 1 },
-  { unique: true, partialFilterExpression: { status: { $in: ["draft", "published"] } } }
+  { businessId: 1, businessSlug: 1, status: 1, variantKey: 1 },
+  { unique: true }
 );
 
 export const HeroConfig =
   models.HeroConfig || model("HeroConfig", HeroConfigSchema);
+
