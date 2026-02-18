@@ -1,15 +1,29 @@
 // src/app/page.tsx
 import Image from "next/image";
 import BrandBadge from "@/components/brand/BrandBadge";
+import { dbConnect } from "@/lib/db";
+import { HeroConfig } from "@/models/HeroConfig";
+import { DEFAULT_HERO } from "@/lib/web/hero/types";
 
-export default function HomePage() {
+async function getPublishedHero() {
+  await dbConnect();
+  const doc = await HeroConfig.findOne({
+    status: "published",
+    variantKey: "default",
+  }).lean();
+
+  return doc?.data ?? DEFAULT_HERO;
+}
+
+export default async function HomePage() {
+  const hero = await getPublishedHero();
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
       <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-col items-stretch gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-wrap items-center gap-3">
-            {/* Bloque de marca unificado */}
             <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-card/70 px-3 py-1.5 shadow-sm backdrop-blur">
               <Image
                 src="/brand/logo-mark.svg"
@@ -30,7 +44,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Brand editable visible en web pública */}
             <BrandBadge />
           </div>
 
@@ -56,46 +69,43 @@ export default function HomePage() {
         <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
           <div>
             <p className="inline-flex rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-              Control total sin romper el diseño
+             {hero.logoUrl ? (
+       <div className="mb-3 inline-flex items-center gap-3 rounded-xl border border-border bg-card/60 px-3 py-2 backdrop-blur">
+           <Image
+             src={hero.logoUrl}
+             alt="Logo"
+             width={40}
+             height={40}
+             className="h-10 w-10 object-contain"
+            />
+        <span className="text-sm font-semibold text-foreground">Logo</span>
+       </div>
+     ) : null}
+       
+              {hero.badge}
             </p>
 
             <h1 className="mt-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
-              El <span className="text-foreground">centro de mando</span> para tu negocio local
+              {hero.title}
             </h1>
 
             <p className="mt-4 text-muted-foreground">
-              Publica ofertas, popups, heros por eventos, campañas y recordatorios. Captura leads,
-              crea landings y automatiza citas y tareas. Todo con roles y seguridad.
+              {hero.description}
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
               <a
-                href="/panel/dashboard"
+                href={hero.primaryCtaHref}
                 className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
               >
-                Ver panel (demo)
+                {hero.primaryCtaLabel}
               </a>
               <a
-                href="#features"
+                href={hero.secondaryCtaHref}
                 className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-foreground hover:bg-muted"
               >
-                Ver funciones
+                {hero.secondaryCtaLabel}
               </a>
-            </div>
-
-            <div className="mt-6 grid grid-cols-3 gap-3 text-center text-xs text-muted-foreground">
-              <div className="rounded-xl bg-muted p-3">
-                <p className="text-lg font-bold text-foreground">+Leads</p>
-                <p>Captura & seguimiento</p>
-              </div>
-              <div className="rounded-xl bg-muted p-3">
-                <p className="text-lg font-bold text-foreground">+Ventas</p>
-                <p>Funnels & landings</p>
-              </div>
-              <div className="rounded-xl bg-muted p-3">
-                <p className="text-lg font-bold text-foreground">+Orden</p>
-                <p>Citas & tareas</p>
-              </div>
             </div>
           </div>
 
@@ -144,22 +154,6 @@ export default function HomePage() {
           <p className="mt-2 text-muted-foreground">
             Construido para que el cliente gestione contenido y marketing sin “romper” la web.
           </p>
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              { t: "Heros & Popups", d: "Eventos, fiestas locales, vacaciones, campañas. Plantillas seguras." },
-              { t: "Campañas & Landings", d: "Objetivo, canal, estado, programación y medición." },
-              { t: "Leads", d: "Captura, etiquetado, pipeline y seguimiento." },
-              { t: "Citas", d: "Reserva y automatización de tareas." },
-              { t: "Redes & WhatsApp", d: "Publicaciones y comunicaciones rápidas." },
-              { t: "Temas & Branding", d: "Paletas (mono/análoga/complementaria/triádica) y tipografías." },
-            ].map((f) => (
-              <div key={f.t} className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <p className="text-sm font-semibold text-card-foreground">{f.t}</p>
-                <p className="mt-2 text-sm text-muted-foreground">{f.d}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -172,4 +166,5 @@ export default function HomePage() {
     </main>
   );
 }
+
 

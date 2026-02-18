@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import BrandHydrator from "@/components/brand/BrandHydrator";
 import FooterSignature from "@/components/footer/FooterSignature";
+import HeroHydrator from "@/lib/web/hero/HeroHydrator";
 import { Satisfy } from "next/font/google";
 
 const satisfy = Satisfy({
@@ -19,18 +20,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="es">
       <body
-        className={[
-          "min-h-screen bg-background text-foreground antialiased",
-          satisfy.variable,
-        ].join(" ")}
+        className={`${satisfy.variable} min-h-screen bg-background text-foreground antialiased`}
       >
         <BrandHydrator />
+        <HeroHydrator />
         <main className="min-h-screen">{children}</main>
         <FooterSignature />
       </body>
@@ -38,4 +37,3 @@ export default function RootLayout({
   );
 }
 
- 
