@@ -1,4 +1,3 @@
-// src/models/HeroConfig.ts
 import { Schema, models, model } from "mongoose";
 
 const HeroDataSchema = new Schema(
@@ -6,31 +5,31 @@ const HeroDataSchema = new Schema(
     badge: { type: String, required: true },
     title: { type: String, required: true },
     description: { type: String, required: true },
+
     primaryCtaLabel: { type: String, required: true },
     primaryCtaHref: { type: String, required: true },
     secondaryCtaLabel: { type: String, required: true },
     secondaryCtaHref: { type: String, required: true },
 
-    // MVP: logo opcional (luego lo convertimos a Asset ID)
+    // Fondo del hero (imagen)
+    backgroundImageUrl: { type: String, default: "" },
+
+    // Logo como URL (fallback)
     logoUrl: { type: String, default: "" },
+
+    // Logo SVG inline (para poder animarlo en la web pública)
+    // Guardas aquí el markup SVG (string) desde el panel/presets.
+    logoSvg: { type: String, default: "" },
   },
   { _id: false }
 );
 
 const HeroConfigSchema = new Schema(
   {
-    // Multi-tenant real (pro)
     businessId: { type: Schema.Types.ObjectId, ref: "Business", required: true },
-
-    // Para resolver /{slug} sin buscar primero Business por slug
-    // (si prefieres, lo quitamos y resolvemos via Business, pero esto acelera y simplifica)
     businessSlug: { type: String, required: true, trim: true, lowercase: true },
 
-    // "draft" = lo que editas en panel
-    // "published" = lo que lee la web pública
     status: { type: String, enum: ["draft", "published"], required: true },
-
-    // variantes (navidad, rebajas, etc.)
     variantKey: { type: String, default: "default" },
 
     data: { type: HeroDataSchema, required: true },
@@ -38,7 +37,6 @@ const HeroConfigSchema = new Schema(
   { timestamps: true }
 );
 
-// 1 draft + 1 published por variant y por negocio
 HeroConfigSchema.index(
   { businessId: 1, businessSlug: 1, status: 1, variantKey: 1 },
   { unique: true }
@@ -46,4 +44,3 @@ HeroConfigSchema.index(
 
 export const HeroConfig =
   models.HeroConfig || model("HeroConfig", HeroConfigSchema);
-
