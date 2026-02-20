@@ -1,4 +1,5 @@
 // src/components/panel/Sidebar.tsx
+
 "use client";
 
 import Link from "next/link";
@@ -10,7 +11,13 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+export default function Sidebar({
+  onNavigate,
+  isAdmin = false,
+}: {
+  onNavigate?: () => void;
+  isAdmin?: boolean;
+}) {
   const pathname = usePathname();
 
   const defaultOpenGroups = useMemo(() => {
@@ -45,12 +52,67 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <div className="truncate text-sm font-semibold tracking-tight text-foreground">
               Business Control Center
             </div>
-            <div className="text-xs text-muted-foreground">Panel cliente</div>
+            <div className="text-xs text-muted-foreground">
+              {isAdmin ? "Taller (Admin)" : "Panel cliente"}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Nav */}
+      {/* Admin / Taller arriba */}
+      {isAdmin && (
+        <div className="mb-3">
+          <div className="px-1 text-xs font-medium text-muted-foreground">
+            Admin / Taller
+          </div>
+
+          <div className="mt-2 grid gap-1">
+            <Link
+              href="/panel/taller"
+              onClick={onNavigate}
+              className={[
+                "rounded-lg px-3 py-2 text-sm transition-colors",
+                isActivePath(pathname, "/panel/taller")
+                  ? "bg-muted text-foreground font-medium"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              ].join(" ")}
+            >
+              Vista general
+            </Link>
+
+            <Link
+              href="/panel/taller/presets/hero"
+              onClick={onNavigate}
+              className={[
+                "rounded-lg px-3 py-2 text-sm transition-colors",
+                isActivePath(pathname, "/panel/taller/presets/hero")
+                  ? "bg-muted text-foreground font-medium"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              ].join(" ")}
+            >
+              Presets · Hero
+            </Link>
+
+            <div
+              className="rounded-lg px-3 py-2 text-sm text-muted-foreground/70"
+              title="Próximamente"
+            >
+              Políticas cliente <span className="ml-2 text-xs">(pronto)</span>
+            </div>
+
+            <div
+              className="rounded-lg px-3 py-2 text-sm text-muted-foreground/70"
+              title="Próximamente"
+            >
+              Media Center <span className="ml-2 text-xs">(pronto)</span>
+            </div>
+          </div>
+
+          <div className="mt-3 border-b border-border" />
+        </div>
+      )}
+
+      {/* Nav original */}
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
         {NAV.map((item: NavItem) => {
           if (item.type === "link") {
@@ -202,4 +264,5 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     </aside>
   );
 }
-  
+ 
+ 

@@ -1,5 +1,6 @@
 // src/app/page.tsx
 import Image from "next/image";
+import Link from "next/link";
 import BrandBadge from "@/components/brand/BrandBadge";
 import { dbConnect } from "@/lib/db";
 import { HeroConfig } from "@/models/HeroConfig";
@@ -54,12 +55,13 @@ export default async function HomePage() {
             >
               Funciones
             </a>
-            <a
+
+            <Link
               href="/panel/dashboard"
               className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
               Entrar al panel
-            </a>
+            </Link>
           </nav>
         </div>
       </header>
@@ -68,30 +70,31 @@ export default async function HomePage() {
       <section className="mx-auto max-w-6xl px-4 py-14">
         <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
           <div>
-            <p className="inline-flex rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-             {hero.logoUrl ? (
-       <div className="mb-3 inline-flex items-center gap-3 rounded-xl border border-border bg-card/60 px-3 py-2 backdrop-blur">
-           <Image
-             src={hero.logoUrl}
-             alt="Logo"
-             width={40}
-             height={40}
-             className="h-10 w-10 object-contain"
-            />
-        <span className="text-sm font-semibold text-foreground">Logo</span>
-       </div>
-     ) : null}
-       
-              {hero.badge}
-            </p>
+            {/* Badge + mini logo (si existe) */}
+            <div className="flex flex-wrap items-center gap-3">
+              {hero.logoUrl ? (
+                <div className="inline-flex items-center gap-3 rounded-xl border border-border bg-card/60 px-3 py-2 backdrop-blur">
+                  <Image
+                    src={hero.logoUrl}
+                    alt="Logo"
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 object-contain"
+                  />
+                  <span className="text-sm font-semibold text-foreground">Logo</span>
+                </div>
+              ) : null}
+
+              <div className="inline-flex rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+                {hero.badge}
+              </div>
+            </div>
 
             <h1 className="mt-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
               {hero.title}
             </h1>
 
-            <p className="mt-4 text-muted-foreground">
-              {hero.description}
-            </p>
+            <p className="mt-4 text-muted-foreground">{hero.description}</p>
 
             <div className="mt-6 flex flex-wrap gap-3">
               <a

@@ -1,3 +1,4 @@
+ //src/components/panel/routeMeta.ts
  export type RouteMeta = {
   title: string;
   subtitle?: string;
@@ -15,6 +16,16 @@ export const ROUTE_META: RouteMetaMap = {
     subtitle: "Gestión de la web visible",
   },
 
+  // Taller (Admin)
+  "/panel/taller": {
+    title: "Taller",
+    subtitle: "Capa 1 · Diseño, presets y reglas del sistema",
+  },
+  "/panel/taller/presets/hero": {
+    title: "Taller · Presets · Hero",
+    subtitle: "Crear, editar y publicar presets A/B/C",
+  },
+
   // Marketing
   "/panel/marketing/web": {
     title: "Marketing · Web",
@@ -27,7 +38,6 @@ export const ROUTE_META: RouteMetaMap = {
 };
 
 export function getRouteMeta(pathname: string): RouteMeta {
-  // match exacto o prefijo (para futuras subrutas)
   if (ROUTE_META[pathname]) return ROUTE_META[pathname];
 
   const match = Object.keys(ROUTE_META)
@@ -45,10 +55,9 @@ export function getRouteMeta(pathname: string): RouteMeta {
 export type Crumb = { label: string; href: string };
 
 export function buildBreadcrumbs(pathname: string): Crumb[] {
-  // Solo dentro de /panel
   if (!pathname.startsWith("/panel")) return [];
 
-  const parts = pathname.split("/").filter(Boolean); // ["panel","marketing","campaigns"]
+  const parts = pathname.split("/").filter(Boolean);
   const crumbs: Crumb[] = [];
 
   let acc = "";
@@ -56,7 +65,6 @@ export function buildBreadcrumbs(pathname: string): Crumb[] {
     acc += "/" + parts[i];
     const href = acc;
 
-    // Etiqueta bonita: si existe meta, usa meta.title; si no, capitaliza segment.
     const meta = ROUTE_META[href];
     const label =
       meta?.title ??
@@ -69,4 +77,6 @@ export function buildBreadcrumbs(pathname: string): Crumb[] {
 
   return crumbs;
 }
+
+
    

@@ -1,24 +1,20 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import PanelShell from "../../components/panel/PanelShell";
+  import { redirect } from "next/navigation";
+import PanelShell from "@/components/panel/PanelShell";
+import { requireSession } from "@/lib/auth/serverSession";
+
 export default async function PanelLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
+  let role: string | undefined;
 
-  
-  const token = cookieStore.get(process.env.COOKIE_NAME ?? "token")?.value ?? null;
-
- 
-  if (!token) {
+  try {
+    const session = await requireSession();
+    role = session.role;
+  } catch {
     redirect("/login?next=/panel/dashboard");
   }
 
-  
-  return <PanelShell>{children}</PanelShell>;
+  return <PanelShell role={role}>{children}</PanelShell>;
 }
-
-
-
