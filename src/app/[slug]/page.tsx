@@ -1,5 +1,6 @@
-// src/app/[slug]/page.tsx
 
+
+// src/app/[slug]/page.tsx
 import { headers } from "next/headers";
 import { PublicHero } from "@/components/web/hero/PublicHero";
 
@@ -37,7 +38,9 @@ async function getBusinessPublic(slug: string) {
 async function getPublishedHero(slug: string, variantKey: string): Promise<HeroData | null> {
   const origin = await getOrigin();
   const res = await fetch(
-    `${origin}/api/web/hero?status=published&slug=${encodeURIComponent(slug)}&variantKey=${encodeURIComponent(variantKey)}`,
+    `${origin}/api/web/hero?status=published&slug=${encodeURIComponent(
+      slug
+    )}&variantKey=${encodeURIComponent(variantKey)}`,
     { cache: "no-store" }
   );
   if (!res.ok) return null;
@@ -48,10 +51,11 @@ async function getPublishedHero(slug: string, variantKey: string): Promise<HeroD
 export default async function PublicBusinessPage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ slug: string }> | { slug: string };
 }) {
-  const { slug } = await params;
-  const decodedSlug = decodeURIComponent(slug);
+  // Next 15: params puede venir como Promise
+  const resolved = await Promise.resolve(params);
+  const decodedSlug = decodeURIComponent(resolved.slug);
 
   const business = await getBusinessPublic(decodedSlug);
   const activeVariantKey = business?.activeHeroVariantKey || "default";
@@ -73,7 +77,8 @@ export default async function PublicBusinessPage({
               {decodedSlug}
             </h1>
             <p className="mt-2 text-muted-foreground">
-              No hay Hero publicado para el preset activo: <span className="font-semibold">{activeVariantKey}</span>
+              No hay Hero publicado para el preset activo:{" "}
+              <span className="font-semibold">{activeVariantKey}</span>
             </p>
           </div>
         </header>
@@ -81,11 +86,10 @@ export default async function PublicBusinessPage({
 
       <section className="mx-auto max-w-6xl px-4 py-12">
         <div className="rounded-2xl border border-border bg-background p-8 text-sm text-muted-foreground">
-          Secciones futuras: Servicios, Precios, Reserva, Galería, Testimonios, Localización…
+          Secciones futuras: Servicios, Precios, Reserva, Galería, Testimonios,
+          Localización…
         </div>
       </section>
     </main>
   );
 }
-
-
