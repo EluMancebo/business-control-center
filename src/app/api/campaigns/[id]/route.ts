@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Campaign } from "@/models/Campaign";
-
 import { CampaignUpdateSchema } from "@/validators/campaign";
-
 
 const BUSINESS_ID_DEV = process.env.BUSINESS_ID_DEV;
 
+// ✅ Ajuste a lo que el validador de Next está exigiendo en tu build:
+// context.params como Promise
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, { params }: RouteContext) {
+export async function GET(_request: NextRequest, { params }: RouteContext) {
   await dbConnect();
+
   if (!BUSINESS_ID_DEV) {
     return NextResponse.json({ error: "Falta BUSINESS_ID_DEV" }, { status: 500 });
   }
@@ -29,8 +31,9 @@ export async function GET(_request: Request, { params }: RouteContext) {
   return NextResponse.json({ campaign });
 }
 
-export async function PUT(req: Request, { params }: RouteContext) {
+export async function PUT(req: NextRequest, { params }: RouteContext) {
   await dbConnect();
+
   if (!BUSINESS_ID_DEV) {
     return NextResponse.json({ error: "Falta BUSINESS_ID_DEV" }, { status: 500 });
   }
@@ -65,8 +68,9 @@ export async function PUT(req: Request, { params }: RouteContext) {
   return NextResponse.json({ campaign });
 }
 
-export async function DELETE(_request: Request, { params }: RouteContext) {
+export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   await dbConnect();
+
   if (!BUSINESS_ID_DEV) {
     return NextResponse.json({ error: "Falta BUSINESS_ID_DEV" }, { status: 500 });
   }
@@ -83,5 +87,4 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
   }
 
   return NextResponse.json({ ok: true });
-}
- 
+} 
