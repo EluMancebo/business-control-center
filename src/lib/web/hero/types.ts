@@ -7,6 +7,7 @@ export type HeroData = {
   secondaryCtaLabel: string;
   secondaryCtaHref: string;
   logoUrl?: string;
+  backgroundImageUrl?: string;
 };
 
 export const DEFAULT_HERO: HeroData = {
@@ -19,4 +20,5 @@ export const DEFAULT_HERO: HeroData = {
   secondaryCtaLabel: "Ver funciones",
   secondaryCtaHref: "#features",
   logoUrl: "/brand/logo-mark.svg",
+  backgroundImageUrl: "",
 };

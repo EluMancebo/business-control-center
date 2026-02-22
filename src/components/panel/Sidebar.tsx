@@ -4,11 +4,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NAV, type NavItem } from "./nav";
 
 function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
+}
+
+function getPublicHrefFromSlug(slug: string | null | undefined) {
+  const clean = String(slug || "").trim();
+  return clean ? `/${encodeURIComponent(clean)}` : "/";
 }
 
 export default function Sidebar({
@@ -32,6 +37,29 @@ export default function Sidebar({
   }, [pathname]);
 
   const [openGroups, setOpenGroups] = useState<Set<string>>(defaultOpenGroups);
+
+  // ✅ slug activo sin tocar localStorage durante render
+  const [activeSlug, setActiveSlug] = useState<string>("");
+
+  useEffect(() => {
+    const fromEnv = (process.env.NEXT_PUBLIC_DEMO_BUSINESS_SLUG as string | undefined) || "";
+    const read = () => {
+      try {
+        const fromLS = window.localStorage.getItem("bcc:activeBusinessSlug") || "";
+        setActiveSlug(fromLS || fromEnv);
+      } catch {
+        setActiveSlug(fromEnv);
+      }
+    };
+
+    read();
+
+    const onStorage = () => read();
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  const publicHref = getPublicHrefFromSlug(activeSlug);
 
   return (
     <aside className="flex h-full w-64 flex-col border-r border-border bg-background p-4">
@@ -112,7 +140,7 @@ export default function Sidebar({
         </div>
       )}
 
-      {/* Nav original */}
+      {/* Nav */}
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
         {NAV.map((item: NavItem) => {
           if (item.type === "link") {
@@ -149,7 +177,6 @@ export default function Sidebar({
             );
           }
 
-          // group
           const isOpen = openGroups.has(item.label) === true;
           const groupHasActive = item.items.some((x) => isActivePath(pathname, x.href));
           const groupDisabled = item.disabled === true;
@@ -232,37 +259,32 @@ export default function Sidebar({
         })}
       </nav>
 
-      {/* Footer / Accesos */}
+      {/* Accesos */}
       <div className="mt-auto pt-4">
         <div className="border-t border-border pt-4">
           <div className="px-1 text-xs font-medium text-muted-foreground">Accesos</div>
 
           <div className="mt-2 grid gap-2">
             <a
-              href="/"
+              href={publicHref}
               target="_blank"
               rel="noreferrer"
               className="inline-flex w-full items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90"
+              title={activeSlug ? `Abrir /${activeSlug}` : "Abrir web pública (falta slug)"}
             >
               Ver web pública ↗
             </a>
 
             <Link
-              href="/panel/web"
+              href="/panel/web-control/hero"
               onClick={onNavigate}
               className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
             >
               Editar web pública
             </Link>
           </div>
-
-          <p className="mt-3 px-1 text-xs text-muted-foreground">
-            Acceso directo para editar y comprobar cambios en la web.
-          </p>
         </div>
       </div>
     </aside>
   );
 }
- 
- 

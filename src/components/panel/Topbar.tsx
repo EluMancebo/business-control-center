@@ -1,16 +1,44 @@
-// src/components/panel/Topbar.tsx
 "use client";
 
 import LogoutButton from "../LogoutButton";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { buildBreadcrumbs, getRouteMeta } from "./routeMeta";
+
+function getPublicHrefFromSlug(slug: string | null | undefined) {
+  const clean = String(slug || "").trim();
+  return clean ? `/${encodeURIComponent(clean)}` : "/";
+}
 
 export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const pathname = usePathname();
 
   const meta = getRouteMeta(pathname);
   const crumbs = buildBreadcrumbs(pathname);
+
+  const [activeSlug, setActiveSlug] = useState<string>("");
+
+  useEffect(() => {
+    const fromEnv = (process.env.NEXT_PUBLIC_DEMO_BUSINESS_SLUG as string | undefined) || "";
+
+    const read = () => {
+      try {
+        const fromLS = window.localStorage.getItem("bcc:activeBusinessSlug") || "";
+        setActiveSlug(fromLS || fromEnv);
+      } catch {
+        setActiveSlug(fromEnv);
+      }
+    };
+
+    read();
+
+    const onStorage = () => read();
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  const publicHref = getPublicHrefFromSlug(activeSlug);
 
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
@@ -49,15 +77,11 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
             ) : null}
 
             {/* Título */}
-            <div className="truncate text-sm font-semibold text-foreground">
-              {meta.title}
-            </div>
+            <div className="truncate text-sm font-semibold text-foreground">{meta.title}</div>
 
             {/* Subtítulo */}
             {meta.subtitle ? (
-              <div className="truncate text-xs text-muted-foreground">
-                {meta.subtitle}
-              </div>
+              <div className="truncate text-xs text-muted-foreground">{meta.subtitle}</div>
             ) : null}
           </div>
         </div>
@@ -65,21 +89,22 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
         {/* DERECHA */}
         <div className="flex items-center gap-2">
           <a
-            href="/"
+            href={publicHref}
             target="_blank"
             rel="noreferrer"
             className="hidden rounded-lg border border-border bg-background px-3 py-2 text-sm hover:bg-muted sm:inline-flex"
+            title={activeSlug ? `Abrir /${activeSlug}` : "Abrir web pública (falta slug)"}
           >
             Ver web
           </a>
 
           <a
-            href="/"
+            href={publicHref}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-sm hover:bg-muted sm:hidden"
             aria-label="Ver web"
-            title="Ver web"
+            title={activeSlug ? `Abrir /${activeSlug}` : "Ver web"}
           >
             ↗
           </a>
@@ -89,5 +114,4 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
       </div>
     </header>
   );
-}
-
+}  
