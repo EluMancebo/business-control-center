@@ -345,6 +345,48 @@ html[data-brand-mode="dark"] .footer-panel::before {
   height: 96px;
   position: relative;
 }
+/* -----------------------------------------
+   HERO footer strip: textura ladrillo integrada
+   ----------------------------------------- */
+.hero-footer-wall {
+  position: relative;
+}
+
+.hero-footer-wall::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  background-image: url("/footer/wall.png");
+  background-repeat: no-repeat;
+  background-position: 92% 60%;
+  background-size: 520px auto;
+
+  opacity: 0.10;
+  filter: contrast(0.95) brightness(1.05);
+
+  -webkit-mask-image: radial-gradient(
+    ellipse at 75% 60%,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 45%,
+    rgba(0, 0, 0, 0) 78%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  mask-image: radial-gradient(
+    ellipse at 75% 60%,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 45%,
+    rgba(0, 0, 0, 0) 78%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+
+
+
+
+
 
 /* -----------------------------------------
    FIRMA: animación (paths)
@@ -430,3 +472,61 @@ html[data-brand-mode="dark"] .footer-panel::before {
     stroke-dashoffset: 0;
   }
 }
+/* -----------------------------------------
+   PANEL (Studio Overlay): animación + scrollbars
+   ----------------------------------------- */
+
+/* ENTRADA (muy lenta y suave) */
+@keyframes bccStudioSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* SALIDA (igual de lenta) */
+@keyframes bccStudioSlideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Puedes subirla a 1200ms si aún la quieres más lenta */
+.bcc-studio-slide-in {
+  animation: bccStudioSlideIn 5000ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.bcc-studio-slide-out {
+  animation: bccStudioSlideOut 5000ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcc-studio-slide-in,
+  .bcc-studio-slide-out {
+    animation: none;
+  }
+}
+
+/* Scrollbar fino e integrado (WebKit: Chrome/Edge/Safari) */
+.bcc-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+.bcc-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.bcc-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+

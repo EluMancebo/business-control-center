@@ -1,6 +1,3 @@
-
-
-// src/app/[slug]/page.tsx
 import { headers } from "next/headers";
 import { PublicHero } from "@/components/web/hero/PublicHero";
 
@@ -17,6 +14,13 @@ type HeroData = {
   logoSvg?: string;
 };
 
+type BusinessPublic = {
+  name?: string;
+  slug: string;
+  activeHeroVariantKey: string;
+  // (futuro: address, phone, whatsapp, email…)
+};
+
 async function getOrigin() {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
@@ -24,7 +28,7 @@ async function getOrigin() {
   return host ? `${proto}://${host}` : "";
 }
 
-async function getBusinessPublic(slug: string) {
+async function getBusinessPublic(slug: string): Promise<BusinessPublic | null> {
   const origin = await getOrigin();
   const res = await fetch(
     `${origin}/api/web/public/business?slug=${encodeURIComponent(slug)}`,
@@ -32,7 +36,7 @@ async function getBusinessPublic(slug: string) {
   );
   if (!res.ok) return null;
   const json = await res.json();
-  return json?.business ?? null;
+  return (json?.business ?? null) as BusinessPublic | null;
 }
 
 async function getPublishedHero(slug: string, variantKey: string): Promise<HeroData | null> {
@@ -53,43 +57,32 @@ export default async function PublicBusinessPage({
 }: {
   params: Promise<{ slug: string }> | { slug: string };
 }) {
-  // Next 15: params puede venir como Promise
   const resolved = await Promise.resolve(params);
   const decodedSlug = decodeURIComponent(resolved.slug);
 
   const business = await getBusinessPublic(decodedSlug);
   const activeVariantKey = business?.activeHeroVariantKey || "default";
-
   const hero = await getPublishedHero(decodedSlug, activeVariantKey);
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="h-svh w-full overflow-hidden bg-background text-foreground">
       {hero ? (
-        <PublicHero data={hero} />
+        <PublicHero data={hero} business={business ?? undefined} />
       ) : (
-        <header className="border-b border-border bg-background/80 backdrop-blur">
-          <div className="mx-auto max-w-6xl px-4 py-10">
+        <div className="flex h-full items-center justify-center px-6">
+          <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 text-card-foreground">
             <p className="text-sm text-muted-foreground">
               Web pública (dinámica)
               {business?.name ? ` · ${business.name}` : ""}
             </p>
-            <h1 className="mt-1 text-3xl font-extrabold tracking-tight">
-              {decodedSlug}
-            </h1>
-            <p className="mt-2 text-muted-foreground">
-              No hay Hero publicado para el preset activo:{" "}
-              <span className="font-semibold">{activeVariantKey}</span>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight">{decodedSlug}</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              No hay Hero publicado para el preset activo:&nbsp;
+              <span className="font-semibold text-foreground">{activeVariantKey}</span>
             </p>
           </div>
-        </header>
-      )}
-
-      <section className="mx-auto max-w-6xl px-4 py-12">
-        <div className="rounded-2xl border border-border bg-background p-8 text-sm text-muted-foreground">
-          Secciones futuras: Servicios, Precios, Reserva, Galería, Testimonios,
-          Localización…
         </div>
-      </section>
+      )}
     </main>
   );
-}
+}  

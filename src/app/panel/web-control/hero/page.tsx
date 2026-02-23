@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import type { HeroData } from "@/lib/web/hero/types";
@@ -19,14 +19,19 @@ const PRESET_OPTIONS = [
 
 type PresetKey = (typeof PRESET_OPTIONS)[number]["key"];
 type ViewportMode = "desktop" | "mobile";
+type MobileTab = "edit" | "preview";
 
 /**
  * ✅ Catálogo MVP de assets permitidos.
- * (Más adelante vendrá de Capa 1 / Media Center)
+ * 
  */
 const ALLOWED_LOGOS = [
   { label: "Logo mark (BCC)", url: "/brand/logo-mark.svg" },
-  { label: "Caballeros (PNG)", url: "/brand/caballeros-logo.png" },
+  { label: "Caballeros (PNG) antiguo", url: "/brand/caballeros-logo.png" },
+
+  // ✅ nuevos
+  { label: "Caballeros · Logo HERO (PNG)", url: "/brand/LogoHeroCaballerosBarberia.png" },
+  { label: "Caballeros · Logo Header/Footer (PNG)", url: "/brand/LogoHeadCaballerosBarberia.png" },
 ] as const;
 
 const ALLOWED_HERO_BACKGROUNDS = [
@@ -41,10 +46,9 @@ function normalizeVariantKey(value: string) {
 }
 
 async function fetchBusinessPublic(slug: string): Promise<BusinessPublic | null> {
-  const res = await fetch(
-    `/api/web/public/business?slug=${encodeURIComponent(slug)}`,
-    { cache: "no-store" }
-  );
+  const res = await fetch(`/api/web/public/business?slug=${encodeURIComponent(slug)}`, {
+    cache: "no-store",
+  });
   if (!res.ok) return null;
   const json = (await res.json()) as { ok: boolean; business?: BusinessPublic };
   return json?.business ?? null;
@@ -56,9 +60,9 @@ async function fetchHero(args: {
   variantKey: string;
 }) {
   const res = await fetch(
-    `/api/web/hero?status=${args.status}&slug=${encodeURIComponent(
-      args.slug
-    )}&variantKey=${encodeURIComponent(args.variantKey)}`,
+    `/api/web/hero?status=${args.status}&slug=${encodeURIComponent(args.slug)}&variantKey=${encodeURIComponent(
+      args.variantKey
+    )}`,
     { cache: "no-store" }
   );
   if (!res.ok) throw new Error("No se pudo cargar el hero");
@@ -123,26 +127,15 @@ export default function HeroControlPage() {
   const [msg, setMsg] = useState<string>("");
 
   const [viewport, setViewport] = useState<ViewportMode>("desktop");
-  const [editorOpen, setEditorOpen] = useState<boolean>(false);
   const [previewNonce, setPreviewNonce] = useState<number>(0);
 
-  // ✅ Guardar slug activo para Sidebar/Topbar
+  // Mobile tabs (studio)
+  const [tab, setTab] = useState<MobileTab>("edit");
+
+  // ✅ Guardar slug activo para Sidebar/Topbar (y accesos)
   useEffect(() => {
     if (business?.slug) localStorage.setItem("bcc:activeBusinessSlug", business.slug);
   }, [business?.slug]);
-
-  // ✅ Auto-abrir editor SOLO 1ª vez
-  useEffect(() => {
-    try {
-      const seen = localStorage.getItem("bcc:seenHeroEditor");
-      if (!seen) {
-        setEditorOpen(true);
-        localStorage.setItem("bcc:seenHeroEditor", "1");
-      }
-    } catch {
-      // si falla localStorage, no pasa nada
-    }
-  }, []);
 
   // 1) Cargar negocio cuando haya slug
   useEffect(() => {
@@ -295,187 +288,119 @@ export default function HeroControlPage() {
   }
 
   const canPreview = Boolean(business?.slug);
-  const publishedUrl = business?.slug ? `/${encodeURIComponent(business.slug)}?t=${previewNonce}` : "/";
-  const iframeWrapperClass = viewport === "mobile" ? "mx-auto w-[390px] max-w-full" : "w-full";
+  const publishedUrl = business?.slug
+    ? `/${encodeURIComponent(business.slug)}?t=${previewNonce}`
+    : "/";
+
+  const iframeWrapperClass =
+    viewport === "mobile" ? "mx-auto w-[390px] max-w-full" : "w-full";
 
   if (loading) {
-    return <div className="text-sm text-muted-foreground">Cargando…</div>;
+    return <div className="p-4 text-sm text-muted-foreground">Cargando…</div>;
   }
 
   return (
-    <div className="space-y-4">
-      {/* Handle flotante (solo si editor está cerrado) */}
-      
-
-      {/* Contexto */}
-      <section className="rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-6">
-        <div className="grid gap-4 md:grid-cols-12 md:items-end">
-          <div className="md:col-span-6">
-            <label htmlFor="business-slug" className="text-sm font-medium">
-              Business slug (demo)
-            </label>
-            <input
-              id="business-slug"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              placeholder="caballeros-barberia"
-              className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring"
-            />
-            <p className="mt-2 text-xs text-muted-foreground">
-              Negocio:{" "}
-              <span className="font-semibold text-foreground">{business?.name || "—"}</span>{" "}
-              · mostrando:{" "}
-              <span className="font-semibold text-foreground">PUBLISHED/{activeVariantKey}</span>
-            </p>
-          </div>
-
-          <div className="md:col-span-3">
-            <label htmlFor="active-preset" className="text-sm font-medium">
-              Preset activo (web)
-            </label>
-            <select
-              id="active-preset"
-              value={activeVariantKey}
-              onChange={(e) => changeActivePreset(normalizeVariantKey(e.target.value) as PresetKey)}
-              className="mt-2 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              disabled={!business?.slug || saving}
-            >
-              {PRESET_OPTIONS.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-            <p className="mt-2 text-xs text-muted-foreground">
-              La web renderiza <b>PUBLISHED</b> del preset activo.
-            </p>
-          </div>
-
-          <div className="md:col-span-3 flex flex-col gap-2 md:items-end">
-            <button
-              type="button"
-              onClick={() => setEditorOpen(true)}
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium hover:bg-muted"
-              disabled={!business?.slug}
-              title="Editar Hero"
-            >
-              Editar Hero
-            </button>
-
-            <div className="flex w-full items-center justify-between gap-2 md:w-auto">
-              <button
-                type="button"
-                onClick={() => setViewport("desktop")}
-                className={`inline-flex h-9 flex-1 items-center justify-center rounded-lg border px-3 text-xs font-semibold md:flex-none ${
-                  viewport === "desktop"
-                    ? "border-border bg-muted"
-                    : "border-border bg-background hover:bg-muted"
-                }`}
-                disabled={!canPreview}
-              >
-                Desktop
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewport("mobile")}
-                className={`inline-flex h-9 flex-1 items-center justify-center rounded-lg border px-3 text-xs font-semibold md:flex-none ${
-                  viewport === "mobile"
-                    ? "border-border bg-muted"
-                    : "border-border bg-background hover:bg-muted"
-                }`}
-                disabled={!canPreview}
-              >
-                Mobile
-              </button>
-            </div>
-
-            <div className="text-xs text-muted-foreground">
-              {saving ? "Guardando…" : msg ? msg : ""}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Preview */}
-      <section className="rounded-xl border border-border bg-card p-3 text-card-foreground sm:p-4">
-        <div className="flex items-center justify-between gap-3 px-1 pb-3">
-          <div>
-            <h2 className="text-sm font-semibold">Preview real (web pública)</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Lo que ve el cliente: <b>PUBLISHED</b> del preset activo.
-            </p>
-          </div>
-
-          <a
-            href={business?.slug ? `/${encodeURIComponent(business.slug)}` : "/"}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-3 text-xs font-semibold hover:bg-muted"
-          >
-            Abrir ↗
-          </a>
-        </div>
-
-        <div className={iframeWrapperClass}>
-          <div className="rounded-xl border border-border bg-background overflow-hidden">
-            {canPreview ? (
-              <iframe title="Preview web pública" src={publishedUrl} className="h-[80vh] w-full" />
-            ) : (
-              <div className="p-6 text-sm text-muted-foreground">
-                Introduce un slug válido para ver el preview.
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ✅ EDITOR SLIDE-IN (izquierda) */}
-      <div
-        className={[
-          "fixed inset-0 z-50",
-          editorOpen ? "pointer-events-auto" : "pointer-events-none",
-        ].join(" ")}
-      >
-        {/* Backdrop sin blur */}
-        <div
+    <div className="h-full overflow-hidden">
+      {/* Mobile Tabs (solo visible en < lg) */}
+      <div className="flex items-center gap-2 border-b border-border bg-background px-4 py-3 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setTab("edit")}
           className={[
-            "absolute inset-0 bg-black/50 transition-opacity duration-200",
-            editorOpen ? "opacity-100" : "opacity-0",
-          ].join(" ")}
-          onClick={() => setEditorOpen(false)}
-        />
-
-        {/* Panel */}
-        <div
-          className={[
-            "absolute left-0 top-0 h-full w-130 max-w-[92vw] border-r border-border bg-background/95 backdrop-blur",
-            "transition-transform duration-200 ease-out",
-            editorOpen ? "translate-x-0" : "-translate-x-full",
+            "inline-flex h-9 flex-1 items-center justify-center rounded-lg border px-3 text-sm font-semibold",
+            tab === "edit"
+              ? "border-border bg-muted"
+              : "border-border bg-background hover:bg-muted",
           ].join(" ")}
         >
-          <div className="flex h-full flex-col">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-foreground">
-                  Editor Hero (Draft/{activeVariantKey})
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Compacto: selects + avanzado desplegable.
-                </div>
-              </div>
+          Editar
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("preview")}
+          className={[
+            "inline-flex h-9 flex-1 items-center justify-center rounded-lg border px-3 text-sm font-semibold",
+            tab === "preview"
+              ? "border-border bg-muted"
+              : "border-border bg-background hover:bg-muted",
+          ].join(" ")}
+          disabled={!canPreview}
+        >
+          Preview
+        </button>
+      </div>
 
-              <button
-                type="button"
-                onClick={() => setEditorOpen(false)}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-3 text-xs font-semibold hover:bg-muted"
-              >
-                Cerrar
-              </button>
-            </div>
+      {/* Desktop split + Mobile conditional */}
+      <div className="h-[calc(100vh-56px-0px)] lg:h-[calc(100vh-56px)]">
+        <div className="grid h-full grid-cols-1 lg:grid-cols-[420px_1fr]">
+          {/* ===== LEFT: EDITOR ===== */}
+          <aside
+            className={[
+              "h-full overflow-hidden border-r border-border bg-background",
+              "lg:block",
+              tab === "edit" ? "block" : "hidden lg:block",
+            ].join(" ")}
+          >
+            <div className="h-full overflow-y-auto bcc-scrollbar p-4 space-y-4">
+              {/* Contexto / preset / slug */}
+              <section className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+                <div className="space-y-3">
+                  <div>
+                    <label htmlFor="business-slug" className="text-sm font-semibold">
+                      Business slug (demo)
+                    </label>
+                    <input
+                      id="business-slug"
+                      value={slug}
+                      onChange={(e) => setSlug(e.target.value)}
+                      placeholder="caballeros-barberia"
+                      className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring"
+                    />
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Negocio:{" "}
+                      <span className="font-semibold text-foreground">
+                        {business?.name || "—"}
+                      </span>{" "}
+                      · web:{" "}
+                      <span className="font-semibold text-foreground">
+                        PUBLISHED/{activeVariantKey}
+                      </span>
+                    </p>
+                  </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-              {/* Logo (select compacto) */}
-              <div className="rounded-xl border border-border bg-card p-4">
+                  <div>
+                    <label htmlFor="active-preset" className="text-sm font-semibold">
+                      Preset activo (web)
+                    </label>
+                    <select
+                      id="active-preset"
+                      value={activeVariantKey}
+                      onChange={(e) =>
+                        changeActivePreset(normalizeVariantKey(e.target.value) as PresetKey)
+                      }
+                      className="mt-2 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      disabled={!business?.slug || saving}
+                    >
+                      {PRESET_OPTIONS.map((p) => (
+                        <option key={p.key} value={p.key}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      La web renderiza <b>PUBLISHED</b> del preset activo.
+                    </p>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground">
+                    {saving ? "Guardando…" : msg ? msg : ""}
+                  </div>
+                </div>
+              </section>
+
+              {/* Logo */}
+              <section className="rounded-xl border border-border bg-card p-4">
                 <label htmlFor="hero-logo-select" className="text-sm font-semibold text-foreground">
                   Logo (disponibles)
                 </label>
@@ -512,10 +437,10 @@ export default function HeroControlPage() {
                     />
                   </div>
                 </details>
-              </div>
+              </section>
 
-              {/* Fondo (select compacto) */}
-              <div className="rounded-xl border border-border bg-card p-4">
+              {/* Fondo */}
+              <section className="rounded-xl border border-border bg-card p-4">
                 <label htmlFor="hero-bg-select" className="text-sm font-semibold text-foreground">
                   Fondo Hero (disponibles)
                 </label>
@@ -552,10 +477,10 @@ export default function HeroControlPage() {
                     />
                   </div>
                 </details>
-              </div>
+              </section>
 
               {/* Textos */}
-              <div className="rounded-xl border border-border bg-card p-4">
+              <section className="rounded-xl border border-border bg-card p-4">
                 <div className="text-sm font-semibold text-foreground">Textos</div>
 
                 <div className="mt-3 space-y-3">
@@ -586,7 +511,10 @@ export default function HeroControlPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="hero-description" className="text-xs font-medium text-muted-foreground">
+                    <label
+                      htmlFor="hero-description"
+                      className="text-xs font-medium text-muted-foreground"
+                    >
                       Descripción
                     </label>
                     <textarea
@@ -598,37 +526,122 @@ export default function HeroControlPage() {
                     />
                   </div>
                 </div>
-              </div>
+              </section>
+
+              {/* Acciones */}
+              <section className="rounded-xl border border-border bg-card p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={reset}
+                    className="inline-flex h-10 flex-1 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-semibold hover:bg-muted"
+                    disabled={!business?.slug || saving}
+                  >
+                    Reset
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={publish}
+                    className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                    disabled={!business?.slug || saving}
+                  >
+                    Publish
+                  </button>
+                </div>
+
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {saving ? "Guardando…" : msg ? msg : "Listo."}
+                </p>
+              </section>
             </div>
+          </aside>
 
-            <div className="border-t border-border px-4 py-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={reset}
-                  className="inline-flex h-10 flex-1 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-semibold hover:bg-muted"
-                  disabled={!business?.slug || saving}
-                >
-                  Reset
-                </button>
+          {/* ===== RIGHT: PREVIEW ===== */}
+          <section
+            className={[
+              "h-full overflow-hidden bg-background",
+              "lg:block",
+              tab === "preview" ? "block" : "hidden lg:block",
+            ].join(" ")}
+          >
+            <div className="flex h-full flex-col">
+              <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold">Preview real (web pública)</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Lo que ve el cliente: <b>PUBLISHED</b> del preset activo.
+                  </div>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={publish}
-                  className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90"
-                  disabled={!business?.slug || saving}
-                >
-                  Publish
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setViewport("desktop")}
+                    className={[
+                      "inline-flex h-9 items-center justify-center rounded-lg border px-3 text-xs font-semibold",
+                      viewport === "desktop"
+                        ? "border-border bg-muted"
+                        : "border-border bg-background hover:bg-muted",
+                    ].join(" ")}
+                    disabled={!canPreview}
+                  >
+                    Desktop
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setViewport("mobile")}
+                    className={[
+                      "inline-flex h-9 items-center justify-center rounded-lg border px-3 text-xs font-semibold",
+                      viewport === "mobile"
+                        ? "border-border bg-muted"
+                        : "border-border bg-background hover:bg-muted",
+                    ].join(" ")}
+                    disabled={!canPreview}
+                  >
+                    Mobile
+                  </button>
+
+                  <a
+                    href={business?.slug ? `/${encodeURIComponent(business.slug)}` : "/"}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-3 text-xs font-semibold hover:bg-muted"
+                  >
+                    Abrir ↗
+                  </a>
+                </div>
               </div>
+                <div className="flex-1 overflow-hidden p-4">
+                  <div className={iframeWrapperClass + " h-full"}>
+                   <div className="h-full overflow-hidden rounded-xl border border-border bg-background">
+                     {canPreview ? (
+                      <iframe
+                      title="Preview web pública"
+                      src={publishedUrl}
+                      className="h-full w-full"
+                       />
+                      ) : (
+                  <div className="p-6 text-sm text-muted-foreground">
+                 Introduce un slug válido para ver el preview.
+                </div>
+                      )}
+              </div>
+             </div>
 
-              <p className="mt-2 text-xs text-muted-foreground">
-                {saving ? "Guardando…" : msg ? msg : "Listo."}
-              </p>
+  <div className="mt-3 text-xs text-muted-foreground">
+    Tip: si acabas de publicar, el iframe ya “cache-bustea” con <b>?t=nonce</b>.
+  </div>
+</div>
+              
+
+
+
             </div>
-          </div>
+          </section>
         </div>
       </div>
     </div>
   );
-}
+} 

@@ -1,4 +1,4 @@
-  import { redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import PanelShell from "@/components/panel/PanelShell";
 import { requireSession } from "@/lib/auth/serverSession";
 

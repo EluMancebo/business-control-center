@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type LoginResponse = { ok: true } | { error: string };
@@ -9,16 +9,15 @@ export default function LoginClient() {
   const router = useRouter();
   const params = useSearchParams();
 
+  const nextPath = useMemo(() => {
+    const n = params.get("next");
+    return n && n.trim().length ? n : "/panel/dashboard";
+  }, [params]);
+
   const [email, setEmail] = useState("emango0298@gmail.com");
   const [password, setPassword] = useState("");
-  const [nextPath, setNextPath] = useState("/panel/dashboard");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    const n = params.get("next");
-    if (n) setNextPath(n);
-  }, [params]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -106,4 +105,4 @@ export default function LoginClient() {
       </div>
     </main>
   );
-}
+}  

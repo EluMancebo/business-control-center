@@ -30,3 +30,8 @@
   left: 0;
   transform: skewX(-10deg);
 }
+/* Versión mini (para Capa 2/3 dentro del hero) */
+.createdByMini {
+  font-size: 12px;
+  line-height: 12px;
+}

@@ -2,7 +2,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import BrandHydrator from "@/components/brand/BrandHydrator";
-import FooterSignature from "@/components/footer/FooterSignature";
 import HeroHydrator from "@/lib/web/hero/HeroHydrator";
 import { Satisfy } from "next/font/google";
 
@@ -16,6 +15,10 @@ const satisfy = Satisfy({
 export const metadata: Metadata = {
   title: "Business Control Center",
   description: "El centro de mando para tu negocio local",
+  icons: {
+    icon: "/brand/LogoFaviconCaballerosBarberia.png",
+    apple: "/brand/LogoFaviconCaballerosBarberia.png",
+  },
 };
 
 export default function RootLayout({
@@ -25,15 +28,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body
-        className={`${satisfy.variable} min-h-screen bg-background text-foreground antialiased`}
-      >
+      <body className={`${satisfy.variable} min-h-screen bg-background text-foreground antialiased`}>
         <BrandHydrator />
         <HeroHydrator />
-        <main className="min-h-screen">{children}</main>
-        <FooterSignature />
+        {children}
       </body>
     </html>
   );
 }
-
