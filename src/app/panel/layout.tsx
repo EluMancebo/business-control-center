@@ -17,4 +17,4 @@ export default async function PanelLayout({
   }
 
   return <PanelShell role={role}>{children}</PanelShell>;
-}
+}  
