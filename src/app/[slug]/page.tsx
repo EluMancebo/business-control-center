@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { PublicHero } from "@/components/web/hero/PublicHero";
+import  PublicHero  from "@/components/web/hero/PublicHero";
 
 type HeroData = {
   badge: string;

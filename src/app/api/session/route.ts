@@ -1,12 +1,21 @@
- import { NextResponse, NextRequest } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { getSessionFromToken } from "@/lib/auth/session";
 
 export async function GET(req: NextRequest) {
-  const token =
-    req.cookies.get(process.env.COOKIE_NAME || "token")?.value || null;
+  const cookieName = process.env.COOKIE_NAME || "token";
+  const token = req.cookies.get(cookieName)?.value;
 
-  const session = getSessionFromToken(token);
+  // ✅ Si no hay token, NO llamamos a nada: respuesta inmediata
+  if (!token) {
+    return NextResponse.json({ user: null });
+  }
 
-  return NextResponse.json({ user: session ?? null });
+  try {
+    const session = getSessionFromToken(token);
+    return NextResponse.json({ user: session ?? null });
+  } catch {
+    // ✅ Si el token está mal / expirado / rompe verify, no bloqueamos la app
+    return NextResponse.json({ user: null });
+  }
 }
    

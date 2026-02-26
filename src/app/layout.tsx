@@ -1,7 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
-import BrandHydrator from "@/components/brand/BrandHydrator";
+import BrandHydrator from "@/components/brand/BrandHydrator"; 
 import HeroHydrator from "@/lib/web/hero/HeroHydrator";
 import { Satisfy } from "next/font/google";
 
@@ -29,8 +29,8 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${satisfy.variable} min-h-screen bg-background text-foreground antialiased`}>
-        <BrandHydrator />
-        <HeroHydrator />
+         <BrandHydrator />  
+        <HeroHydrator /> 
         {children}
       </body>
     </html>
