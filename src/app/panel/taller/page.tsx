@@ -8,12 +8,21 @@ export default function TallerPage() {
         title="Taller (Capa 1)"
         description="Diseño base, presets y reglas para que los clientes nunca rompan la web."
         actions={
-          <Link
-            href="/panel/taller/presets/hero"
-            className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-          >
-            Ir a Presets Hero
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/panel/taller/media"
+              className="shrink-0 rounded-lg border border-border bg-background px-4 py-2 text-sm font-semibold hover:bg-muted"
+            >
+              Media Center
+            </Link>
+
+            <Link
+              href="/panel/taller/presets/hero"
+              className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            >
+              Ir a Presets Hero
+            </Link>
+          </div>
         }
       />
 
@@ -48,8 +57,13 @@ export default function TallerPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Assets tipados (HERO/POPUP/...). En configs se guardan referencias, no URLs libres.
           </p>
-          <div className="mt-4 text-sm text-muted-foreground">
-            Próximamente (estructura SaaS).
+          <div className="mt-4">
+            <Link
+              href="/panel/taller/media"
+              className="inline-flex rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
+            >
+              Abrir Media Center →
+            </Link>
           </div>
         </section>
       </div>
@@ -66,5 +80,4 @@ export default function TallerPage() {
       </section>
     </>
   );
-}
-
+}  
