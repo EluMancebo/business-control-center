@@ -1,3 +1,5 @@
+/* src/components/footer/FooterSignature.module.css */
+
 .createdByWrap {
   position: relative;
   display: inline-block;
@@ -5,12 +7,10 @@
 
 .createdBy {
   display: inline-block;
+  font-family: var(--font-satisfy), "Segoe Script", "Brush Script MT",
+    "Apple Chancery", "Snell Roundhand", cursive;
 
-  /* ✅ fallback decente si Satisfy no carga */
- font-family: var(--font-satisfy), "Segoe Script", "Brush Script MT", "Apple Chancery", "Snell Roundhand", cursive;
-
-
-  position: absolute;
+  position: relative;
   transform: rotate(-12deg);
   font-weight: 200;
   line-height: 18px;
@@ -27,11 +27,156 @@
   font-size: x-large;
   font-weight: 200;
   position: absolute;
-  left: 0;
+  left: -9rem;
   transform: skewX(-10deg);
+  top:-5rem;
 }
-/* Versión mini (para Capa 2/3 dentro del hero) */
+
+/* Mini */
 .createdByMini {
   font-size: 12px;
   line-height: 12px;
 }
+
+/* ============================
+   Hero signature (mini)
+   ============================ */
+
+.heroSignature {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-end;
+
+  /* ✅ TOCA AQUÍ (separación general) */
+  gap: 1px;
+
+  /* ✅ TOCA AQUÍ (tamaño del bloque) */
+  padding: 4px 2px;
+
+  border-radius: 14px;
+}
+
+/* textura MUY sutil (si aún te molesta, baja opacity a 0.04) */
+.heroSignature::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  background-image: url("/footer/wall.png");
+  background-repeat: no-repeat;
+  background-position: 70% 55%;
+  background-size: 180px auto;
+  left:2,6rem;
+
+  /* ✅ TOCA AQUÍ (aureola) */
+  opacity: 0.30;
+
+  -webkit-mask-image: radial-gradient(
+    ellipse at 70% 55%,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 48%,
+    rgba(0, 0, 0, 0) 78%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  mask-image: radial-gradient(
+    ellipse at 70% 55%,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 48%,
+    rgba(0, 0, 0, 0) 78%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+.heroSignature > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Created by: pegado al bloque (no offsets raros) */
+.createdByHero {
+  position: absolute;
+
+  /* ✅ TOCA AQUÍ (posición del Created by) */
+  top: -6px;
+  right: 2px;
+
+  transform: rotate(-9deg);
+  font-family: var(--font-satisfy), "Segoe Script", "Brush Script MT",
+    "Apple Chancery", "Snell Roundhand", cursive;
+
+  font-weight: 200;
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: none;
+}
+
+.createdByHero span {
+  position: relative;
+  display: inline-block;
+  margin-left: 2px;
+  transform: skewX(-10deg);
+
+  /* ✅ TOCA AQUÍ (tamaño “by”) */
+  font-size: 15px;
+
+  color: rgba(255, 255, 255, 0.92);
+  top: 16px;
+  left:-12px;
+}
+
+/* silueta */
+.heroSilueta {
+  position: relative;
+
+  /* ✅ TOCA AQUÍ (tamaño silueta) */
+  width: 28px;
+  height: 38px;
+  right:-2rem;
+}
+
+/* firma: IMPORTANTE -> NO usar scale para encoger layout */
+.heroSigMini {
+  opacity: 0.95;
+
+  /* ✅ TOCA AQUÍ (tamaño real del bloque de firma) */
+  width: 80px;
+  height: 44px;
+  overflow: hidden;
+  display: block;
+  right:-1rem;
+}
+
+/* Intentamos controlar el SVG interno */
+.heroSigMini svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* móvil: aún más compacto */
+@media (max-width: 640px) {
+  .heroSignature {
+    gap: 5px;
+    padding: 4px 6px;
+  }
+
+  .heroSilueta {
+    width: 26px;
+    height: 36px;
+  }
+
+  .heroSigMini {
+    width: 70px;
+    height: 40px;
+  }
+
+  .createdByHero {
+    top: -6px;
+    right: 30px;
+  }
+
+  .createdByHero span {
+    font-size: 14px;
+    right:40px;
+  }
+}  

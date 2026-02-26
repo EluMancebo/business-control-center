@@ -1,3 +1,4 @@
+// src/components/footer/CreatedByMini.tsx
 "use client";
 
 import Image from "next/image";
@@ -6,29 +7,25 @@ import styles from "./FooterSignature.module.css";
 
 export default function CreatedByMini() {
   return (
-    <div className="flex items-center justify-end gap-3 text-white/70">
-      {/* Texto Created by (tu estilo) */}
-      <div className="text-right leading-none">
-        <div className={`${styles.createdBy} ${styles.createdByMini}`}>
-          Created <span>by</span>
-        </div>
+    <div className={styles.heroSignature}>
+      <div className={`${styles.createdByHero} ${styles.createdByMini}`}>
+        Created <span>by</span>
       </div>
 
-      {/* Silueta mini */}
-      <div className="relative h-10 w-10 shrink-0">
+      <div className={styles.heroSilueta}>
         <Image
           src="/footer/silueta.png"
           alt="Silueta Elu"
           fill
-          sizes="40px"
-          className="object-contain opacity-75 grayscale"
+          sizes="36px"
+          className="object-contain opacity-80 grayscale"
+          priority={false}
         />
       </div>
 
-      {/* Firma animada mini */}
-      <div className="origin-left scale-[0.38] opacity-85">
+      <div className={styles.heroSigMini}>
         <AnimatedSignature />
       </div>
     </div>
   );
-}  
+}
