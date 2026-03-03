@@ -23,7 +23,6 @@ type MobileTab = "edit" | "preview";
 
 /**
  * ✅ Catálogo MVP de assets permitidos.
- * 
  */
 const ALLOWED_LOGOS = [
   { label: "Logo mark (BCC)", url: "/brand/logo-mark.svg" },
@@ -132,6 +131,10 @@ export default function HeroControlPage() {
   // Mobile tabs (studio)
   const [tab, setTab] = useState<MobileTab>("edit");
 
+  // ✅ Debounce autosave flags
+  const [dirty, setDirty] = useState<boolean>(false);
+  const [saveTick, setSaveTick] = useState<number>(0);
+
   // ✅ Guardar slug activo para Sidebar/Topbar (y accesos)
   useEffect(() => {
     if (business?.slug) localStorage.setItem("bcc:activeBusinessSlug", business.slug);
@@ -194,10 +197,15 @@ export default function HeroControlPage() {
         });
 
         if (!alive) return;
+
         setForm(data ?? DEFAULT_HERO);
+
+        // ✅ importante: al cargar desde servidor, no está "dirty"
+        setDirty(false);
       } catch {
         if (!alive) return;
         setForm(DEFAULT_HERO);
+        setDirty(false);
         setMsg("No se pudo cargar el draft (usando default).");
       } finally {
         if (!alive) return;
@@ -210,22 +218,40 @@ export default function HeroControlPage() {
     };
   }, [business?.slug, activeVariantKey]);
 
-  async function update<K extends keyof HeroData>(key: K, value: HeroData[K]) {
+  // ✅ Debounce autosave: guarda 300ms después del último cambio
+  useEffect(() => {
+    if (!business?.slug) return;
+    if (!dirty) return;
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        setSaving(true);
+        setMsg("");
+        await saveDraft({ slug: business.slug, variantKey: activeVariantKey, next: form });
+        setMsg("Guardado ✓");
+      } catch {
+        setMsg("Error guardando draft");
+      } finally {
+        setSaving(false);
+        setDirty(false);
+      }
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveTick]);
+
+  function update<K extends keyof HeroData>(key: K, value: HeroData[K]) {
     if (!business?.slug) return;
 
     const next: HeroData = { ...form, [key]: value };
     setForm(next);
 
-    try {
-      setSaving(true);
-      setMsg("");
-      await saveDraft({ slug: business.slug, variantKey: activeVariantKey, next });
-      setMsg("Guardado ✓");
-    } catch {
-      setMsg("Error guardando draft");
-    } finally {
-      setSaving(false);
-    }
+    // marcamos sucio y disparamos tick para debounce
+    setDirty(true);
+    setSaveTick((n) => n + 1);
   }
 
   async function reset() {
@@ -238,6 +264,7 @@ export default function HeroControlPage() {
       setSaving(true);
       setMsg("");
       await saveDraft({ slug: business.slug, variantKey: activeVariantKey, next });
+      setDirty(false);
       setMsg("Reset guardado ✓");
       setPreviewNonce((n) => n + 1);
     } catch {
@@ -276,6 +303,9 @@ export default function HeroControlPage() {
 
       const b = await fetchBusinessPublic(businessSlug);
       setBusiness(b);
+
+      // al cambiar preset, no consideramos dirty el form actual (se recargará)
+      setDirty(false);
 
       setMsg(`Preset activo cambiado a "${nextKey}" ✓`);
       setPreviewNonce((n) => n + 1);
@@ -341,7 +371,7 @@ export default function HeroControlPage() {
               tab === "edit" ? "block" : "hidden lg:block",
             ].join(" ")}
           >
-            <div className="h-full overflow-y-auto bcc-scrollbar p-4 space-y-4">
+            <div className="h-full overflow-y-auto bcc-scrollbar p-4 pb-24 space-y-4">
               {/* Contexto / preset / slug */}
               <section className="rounded-xl border border-border bg-card p-4 text-card-foreground">
                 <div className="space-y-3">
@@ -613,31 +643,28 @@ export default function HeroControlPage() {
                   </a>
                 </div>
               </div>
-                <div className="flex-1 overflow-hidden p-4">
-                  <div className={iframeWrapperClass + " h-full"}>
-                   <div className="h-full overflow-hidden rounded-xl border border-border bg-background">
-                     {canPreview ? (
+
+              <div className="flex-1 overflow-hidden p-4">
+                <div className={iframeWrapperClass + " h-full min-h-[70vh]"}>
+                  <div className="h-full overflow-hidden rounded-xl border border-border bg-background">
+                    {canPreview ? (
                       <iframe
-                      title="Preview web pública"
-                      src={publishedUrl}
-                      className="h-full w-full"
-                       />
-                      ) : (
-                  <div className="p-6 text-sm text-muted-foreground">
-                 Introduce un slug válido para ver el preview.
+                        title="Preview web pública"
+                        src={publishedUrl}
+                        className="h-full w-full"
+                      />
+                    ) : (
+                      <div className="p-6 text-sm text-muted-foreground">
+                        Introduce un slug válido para ver el preview.
+                      </div>
+                    )}
+                  </div>
                 </div>
-                      )}
+
+                <div className="mt-3 text-xs text-muted-foreground">
+                  Tip: si acabas de publicar, el iframe ya “cache-bustea” con <b>?t=nonce</b>.
+                </div>
               </div>
-             </div>
-
-  <div className="mt-3 text-xs text-muted-foreground">
-    Tip: si acabas de publicar, el iframe ya “cache-bustea” con <b>?t=nonce</b>.
-  </div>
-</div>
-              
-
-
-
             </div>
           </section>
         </div>
