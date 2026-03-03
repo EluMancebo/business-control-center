@@ -303,7 +303,7 @@ export default function Sidebar({
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto bcc-scrollbar">
         {NAV.map((item: NavItem) => {
           if (item.type === "link") {
             const active = isActivePath(pathname, item.href);

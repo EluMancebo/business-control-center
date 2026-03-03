@@ -510,6 +510,10 @@ html[data-brand-mode="dark"] .footer-panel::before {
   border: 3px solid transparent;
   background-clip: content-box;
 }
+
+
+
+
 /* Scrollbar con más presencia en dark (sin propiedades Firefox) */
 html[data-brand-mode="dark"] .bcc-scrollbar::-webkit-scrollbar-thumb {
   background-color: var(--ring);

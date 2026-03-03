@@ -1,3 +1,4 @@
+// src/app/login/LoginClient.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -48,61 +49,93 @@ export default function LoginClient() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-md">
-        <h1 className="text-2xl font-bold mb-1">Entrar al panel</h1>
-        <p className="text-sm text-gray-500 mb-6">
-          Acceso a <span className="font-medium">{nextPath}</span>
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              title="Email"
-              placeholder="tu@email.com"
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-            />
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center px-6 py-10">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-card-foreground shadow-sm">
+          {/* Header / Branding */}
+          <div className="mb-6 flex items-center gap-3">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-muted ring-1 ring-border">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/logo-mark.svg"
+                alt="Business Control Center"
+                className="h-10 w-10"
+                draggable={false}
+              />
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold tracking-tight">
+                Business Control Center
+              </div>
+              <div className="text-xs text-muted-foreground">Acceso al panel</div>
+            </div>
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-1">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              title="Password"
-              placeholder="Tu contraseña"
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-            />
+          <h1 className="text-2xl font-bold mb-1">Entrar al panel</h1>
+          <p className="text-sm text-muted-foreground mb-6">
+            Acceso a <span className="font-medium text-foreground">{nextPath}</span>
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium mb-1">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                title="Email"
+                placeholder="tu@email.com"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium mb-1">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                title="Password"
+                placeholder="Tu contraseña"
+                type="password"
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-xl bg-primary py-2 font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 cursor-pointer transition"
+            >
+              {loading ? "Entrando..." : "Entrar"}
+            </button>
+
+            {error && (
+              <div className="rounded-lg border border-border bg-muted px-3 py-2 text-sm font-medium text-red-500">
+                {error}
+              </div>
+            )}
+          </form>
+
+          <div className="mt-6 text-xs text-muted-foreground">
+            Tip: si entras desde un enlace protegido, volverás automáticamente a{" "}
+            <span className="font-medium text-foreground">{nextPath}</span>.
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-black py-2 font-semibold text-white hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition"
-          >
-            {loading ? "Entrando..." : "Entrar"}
-          </button>
-
-          {error && <div className="text-sm font-medium text-red-600">{error}</div>}
-        </form>
+        </div>
       </div>
     </main>
   );
-}  
+}
+
+
