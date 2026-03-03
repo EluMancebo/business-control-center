@@ -1,54 +1,68 @@
-export type NavLink = {
+  // src/components/panel/nav.ts
+
+export type NavLinkItem = {
   type: "link";
   label: string;
   href: string;
   disabled?: boolean;
 };
 
-export type NavGroup = {
-  type: "group";
+export type NavChildItem = {
   label: string;
-  items: NavLink[];
+  href: string;
   disabled?: boolean;
 };
 
-export type NavItem = NavLink | NavGroup;
+export type NavGroupItem = {
+  type: "group";
+  label: string;
+  disabled?: boolean;
+  items: NavChildItem[];
+};
+
+export type NavItem = NavLinkItem | NavGroupItem;
 
 export const NAV: NavItem[] = [
   { type: "link", label: "Dashboard", href: "/panel/dashboard" },
   { type: "link", label: "Web pública", href: "/panel/web" },
 
-{
-  type: "group",
-  label: "Web Control",
-  items: [
-    { type: "link", label: "Home", href: "/panel/web-control/home", disabled: false },
-    { type: "link", label: "Hero", href: "/panel/web-control/hero", disabled: false },
-    { type: "link", label: "Servicios", href: "/panel/web-control/services", disabled: false },
-    { type: "link", label: "Ofertas", href: "/panel/web-control/offers", disabled: false },
-    { type: "link", label: "Testimonios", href: "/panel/web-control/testimonials", disabled: false },
-    { type: "link", label: "Horario", href: "/panel/web-control/hours", disabled: false },
-    { type: "link", label: "Ubicación", href: "/panel/web-control/location", disabled: false },
-  ],
-},
-  
+  {
+    type: "group",
+    label: "Web Control",
+    items: [
+      { label: "Panel", href: "/panel/web-control" },
+      { label: "Hero", href: "/panel/web-control/hero" },
+      { label: "Servicios", href: "/panel/web-control/services" },
+      { label: "Ofertas", href: "/panel/web-control/offers" },
+      { label: "Testimonios", href: "/panel/web-control/testimonials" },
+      { label: "Horario", href: "/panel/web-control/hours" },
+      { label: "Ubicación", href: "/panel/web-control/location" },
+      { label: "Apariencia", href: "/panel/web-control/brand" },
+    ],
+  },
 
   {
     type: "group",
     label: "Marketing",
-    items: [
-      { type: "link", label: "Campañas", href: "/panel/marketing/campaigns", disabled: true },
-      { type: "link", label: "Landings", href: "/panel/marketing/landings", disabled: true },
-      { type: "link", label: "RRSS", href: "/panel/marketing/social", disabled: true },
-    ],
+    items: [{ label: "Campañas", href: "/panel/marketing", disabled: true }],
   },
 
   { type: "link", label: "Leads", href: "/panel/leads", disabled: true },
-  { type: "link", label: "Citas", href: "/panel/citas", disabled: true },
-
-  { type: "link", label: "Brand", href: "/panel/brand", disabled: true },
+  { type: "link", label: "Citas", href: "/panel/appointments", disabled: true },
+  { type: "link", label: "Brand", href: "/panel/web-control/brand", disabled: true },
   { type: "link", label: "Media", href: "/panel/media", disabled: true },
 
-  { type: "link", label: "Ajustes", href: "/panel/settings", disabled: true },
-];
+  {
+    type: "group",
+    label: "Ajustes",
+    items: [
+      { label: "Panel (resumen)", href: "/panel/settings" },
 
+      // ✅ Ruta limpia “Ajustes/Apariencia” (redirige a lo que hoy funciona)
+      { label: "Apariencia (paleta del panel)", href: "/panel/settings/appearance" },
+
+      // ✅ Gestión de claves por rol (propietario)
+      { label: "Contraseñas y accesos", href: "/panel/settings/access" },
+    ],
+  },
+];

@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import { redirect } from "next/navigation";
 import PanelShell from "@/components/panel/PanelShell";
 import { requireSession } from "@/lib/auth/serverSession";

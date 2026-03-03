@@ -15,7 +15,7 @@ function getStudioTitle(pathname: string) {
       "/panel/web-control/testimonials": "Web Control · Testimonios",
       "/panel/web-control/hours": "Web Control · Horario",
       "/panel/web-control/location": "Web Control · Ubicación",
-      "/panel/web-control/brand": "Web Control · Brand",
+      "/panel/web-control/brand": "Ajustes · Apariencia (Panel)",
       "/panel/web-control/home": "Web Control · Home",
     };
     return map[pathname] ?? "Web Control";
@@ -63,6 +63,10 @@ export default function PanelShell({
   useEffect(() => {
     // cada vez que cambiamos de ruta (dentro del studio), reseteamos estado salida
     setStudioExiting(false);
+  }, [pathname]);
+
+  useEffect(() => {
+  setMobileOpen(false);
   }, [pathname]);
 
   function exitStudio() {
@@ -131,7 +135,7 @@ export default function PanelShell({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/brand/logo-mark.svg"
-                alt=""
+                alt="imagen logo "
                 className="h-5 w-5 opacity-80"
                 draggable={false}
               />
@@ -197,7 +201,7 @@ export default function PanelShell({
               </button>
             </div>
 
-            <div className="h-[calc(100vh-57px)] overflow-y-auto">
+            <div className="h-[calc(100vh-57px)] overflow-y-auto bcc-scrollbar">
               <Sidebar isAdmin={isAdmin} onNavigate={() => setMobileOpen(false)} />
             </div>
           </div>
