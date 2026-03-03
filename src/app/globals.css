@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 /* =========================================================
-   BRAND TOKENS (v0) - base + presets por data-attributes
+   1) BRAND TOKENS (v0) - base + presets por data-attributes
    Objetivo: sin inline styles, sin hacks, escalable
    ========================================================= */
 
 /* Defaults (fallback) */
 :root {
-  /* Core (compatibilidad con tu base actual) */
+  /* Core */
   --background: #ffffff;
   --foreground: #171717;
 
-  /* Extended tokens (para componentes futuros) */
+  /* Extended tokens */
   --card: #ffffff;
   --card-foreground: #171717;
 
@@ -24,7 +24,7 @@
   --border: rgba(15, 23, 42, 0.14);
   --ring: rgba(15, 23, 42, 0.35);
 
-  /* Pair tokens (light/dark) que activamos según mode */
+  /* Pair tokens (light/dark) */
   --bg-light: #ffffff;
   --fg-light: #171717;
   --bg-dark: #0a0a0a;
@@ -52,7 +52,7 @@
 }
 
 /* =========================
-   PALETTE PRESETS (v0)
+   2) PALETTE PRESETS (v0)
    ========================= */
 
 /* 1) BCC (por defecto) */
@@ -117,7 +117,7 @@ html[data-brand-palette="ocean"] {
   --primary-dark: #38bdf8;
   --primary-fg-dark: #071018;
 
-  --border-dark: rgba(56, 189, 248, 0.20);
+  --border-dark: rgba(56, 189, 248, 0.2);
   --ring-dark: rgba(56, 189, 248, 0.28);
 }
 
@@ -135,7 +135,7 @@ html[data-brand-palette="sunset"] {
   --primary-light: #ea580c;
   --primary-fg-light: #ffffff;
 
-  --border-light: rgba(234, 88, 12, 0.20);
+  --border-light: rgba(234, 88, 12, 0.2);
   --ring-light: rgba(234, 88, 12, 0.35);
 
   --bg-dark: #140a06;
@@ -150,7 +150,7 @@ html[data-brand-palette="sunset"] {
   --primary-dark: #fb923c;
   --primary-fg-dark: #140a06;
 
-  --border-dark: rgba(251, 146, 60, 0.20);
+  --border-dark: rgba(251, 146, 60, 0.2);
   --ring-dark: rgba(251, 146, 60, 0.28);
 }
 
@@ -169,7 +169,7 @@ html[data-brand-palette="mono"] {
   --primary-fg-light: #ffffff;
 
   --border-light: rgba(17, 24, 39, 0.14);
-  --ring-light: rgba(17, 24, 39, 0.30);
+  --ring-light: rgba(17, 24, 39, 0.3);
 
   --bg-dark: #0b0b0c;
   --fg-dark: #f3f4f6;
@@ -188,10 +188,9 @@ html[data-brand-palette="mono"] {
 }
 
 /* =========================
-   MODE (light/dark/system)
+   3) MODE (light/dark/system)
    ========================= */
 
-/* Light mode explícito */
 html[data-brand-mode="light"] {
   --background: var(--bg-light);
   --foreground: var(--fg-light);
@@ -205,7 +204,6 @@ html[data-brand-mode="light"] {
   --ring: var(--ring-light);
 }
 
-/* Dark mode explícito */
 html[data-brand-mode="dark"] {
   --background: var(--bg-dark);
   --foreground: var(--fg-dark);
@@ -251,7 +249,7 @@ html[data-brand-mode="system"] {
 }
 
 /* =========================================================
-   Tailwind v4 theme mapping (mantengo tu @theme inline)
+   4) Tailwind v4 theme mapping
    ========================================================= */
 @theme inline {
   --color-background: var(--background);
@@ -269,7 +267,9 @@ html[data-brand-mode="system"] {
   --font-mono: var(--font-geist-mono);
 }
 
-/* Base */
+/* =========================================================
+   5) Base
+   ========================================================= */
 body {
   background: var(--background);
   color: var(--foreground);
@@ -277,16 +277,15 @@ body {
     Helvetica, Arial, sans-serif;
 }
 
-/* -----------------------------------------
-   FOOTER: pared (solo para la zona firma)
-   ----------------------------------------- */
+/* =========================================================
+   6) Footer / Hero textures (wall)
+   ========================================================= */
 .footer-panel {
   position: relative;
   background-color: var(--muted);
-  border: none; /* ✅ quitamos la línea de borde */
+  border: none;
 }
 
-/* LADRILLO en capa */
 .footer-panel::before {
   content: "";
   position: absolute;
@@ -298,10 +297,7 @@ body {
   background-position: 48% 55%;
   background-size: 400px auto;
 
-  /* ✅ Más suave en general */
   opacity: 0.22;
-
-  /* ✅ Suaviza textura "basta" sin tocar la imagen */
   filter: contrast(0.95) brightness(1.05);
 
   -webkit-mask-image: radial-gradient(
@@ -320,18 +316,16 @@ body {
   );
 }
 
-/* Dark explícito: aún menos presencia */
 html[data-brand-mode="dark"] .footer-panel::before {
   opacity: 0.12;
-  filter: contrast(0.90) brightness(1.10);
+  filter: contrast(0.9) brightness(1.1);
 }
 
-/* System-dark: también */
 @media (prefers-color-scheme: dark) {
   html:not([data-brand-mode]) .footer-panel::before,
   html[data-brand-mode="system"] .footer-panel::before {
     opacity: 0.12;
-    filter: contrast(0.90) brightness(1.10);
+    filter: contrast(0.9) brightness(1.1);
   }
 }
 
@@ -345,9 +339,7 @@ html[data-brand-mode="dark"] .footer-panel::before {
   height: 96px;
   position: relative;
 }
-/* -----------------------------------------
-   HERO footer strip: textura ladrillo integrada
-   ----------------------------------------- */
+
 .hero-footer-wall {
   position: relative;
 }
@@ -363,7 +355,7 @@ html[data-brand-mode="dark"] .footer-panel::before {
   background-position: 92% 60%;
   background-size: 520px auto;
 
-  opacity: 0.10;
+  opacity: 0.1;
   filter: contrast(0.95) brightness(1.05);
 
   -webkit-mask-image: radial-gradient(
@@ -382,18 +374,12 @@ html[data-brand-mode="dark"] .footer-panel::before {
   );
 }
 
-
-
-
-
-
-
-/* -----------------------------------------
-   FIRMA: animación (paths)
-   ----------------------------------------- */
+/* =========================================================
+   7) Firma + logo SVG animations
+   ========================================================= */
 .firma-path {
   fill: none;
-  stroke: currentColor; /* ✅ now currentColor */
+  stroke: currentColor;
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -407,9 +393,6 @@ html[data-brand-mode="dark"] .footer-panel::before {
   }
 }
 
-/* -----------------------------------------
-   LOGO (Hero): animaciones preset
-   ----------------------------------------- */
 @keyframes float {
   0%,
   100% {
@@ -432,25 +415,6 @@ html[data-brand-mode="dark"] .footer-panel::before {
   }
 }
 
-@layer base {
-  *,
-  ::before,
-  ::after {
-    box-sizing: border-box;
-    /* QUITAMOS border: 0; porque rompe los bordes dinámicos del tema */
-  }
-
-  html,
-  body {
-    height: 100%;
-  }
-
-  body {
-    margin: 0; /* suficiente */
-  }
-}
-
-/* Hero SVG animation (server-safe, no styled-jsx) */
 .hero-logo-svg svg {
   width: 100%;
   height: 100%;
@@ -472,11 +436,30 @@ html[data-brand-mode="dark"] .footer-panel::before {
     stroke-dashoffset: 0;
   }
 }
-/* -----------------------------------------
-   PANEL (Studio Overlay): animación + scrollbars
-   ----------------------------------------- */
 
-/* ENTRADA (muy lenta y suave) */
+/* =========================================================
+   8) Base layer (box model)
+   ========================================================= */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+  }
+}
+
+/* =========================================================
+   9) Studio overlay animations + scrollbars
+   ========================================================= */
 @keyframes bccStudioSlideIn {
   from {
     transform: translateX(100%);
@@ -488,7 +471,6 @@ html[data-brand-mode="dark"] .footer-panel::before {
   }
 }
 
-/* SALIDA (igual de lenta) */
 @keyframes bccStudioSlideOut {
   from {
     transform: translateX(0);
@@ -500,7 +482,6 @@ html[data-brand-mode="dark"] .footer-panel::before {
   }
 }
 
-/* Puedes subirla a 1200ms si aún la quieres más lenta */
 .bcc-studio-slide-in {
   animation: bccStudioSlideIn 5000ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -516,7 +497,7 @@ html[data-brand-mode="dark"] .footer-panel::before {
   }
 }
 
-/* Scrollbar fino e integrado (WebKit: Chrome/Edge/Safari) */
+/* ✅ ÚNICA scrollbar del proyecto (WebKit: Chrome/Edge/Safari) */
 .bcc-scrollbar::-webkit-scrollbar {
   width: 10px;
 }
@@ -529,4 +510,14 @@ html[data-brand-mode="dark"] .footer-panel::before {
   border: 3px solid transparent;
   background-clip: content-box;
 }
+/* Scrollbar con más presencia en dark (sin propiedades Firefox) */
+html[data-brand-mode="dark"] .bcc-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--ring);
+}
 
+@media (prefers-color-scheme: dark) {
+  html:not([data-brand-mode]) .bcc-scrollbar::-webkit-scrollbar-thumb,
+  html[data-brand-mode="system"] .bcc-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--ring);
+  }
+}

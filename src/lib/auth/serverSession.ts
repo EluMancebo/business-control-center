@@ -19,7 +19,6 @@ function getJwtSecret() {
   if (!secret) throw new Error("Missing JWT_SECRET in .env.local");
   return secret;
 }
-
 export async function requireSession(): Promise<SessionPayload> {
   const cookieStore = await cookies();
   const token = cookieStore.get(getCookieName())?.value ?? null;
@@ -34,6 +33,7 @@ export async function requireSession(): Promise<SessionPayload> {
 
   return decoded;
 }
+
 
 export async function requireRole(allowed: Role | Role[]): Promise<SessionPayload> {
   const session = await requireSession();
