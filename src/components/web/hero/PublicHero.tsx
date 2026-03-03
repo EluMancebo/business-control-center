@@ -5,6 +5,7 @@ import CreatedByMini from "@/components/footer/CreatedByMini";
 export type HeroData = {
   title?: string;
   subtitle?: string;
+  description?: string; // ✅ para leer lo que editas en Studio
   ctaPrimaryLabel?: string;
   ctaSecondaryLabel?: string;
   ctaPrimaryHref?: string;
@@ -81,12 +82,23 @@ function Pill({
   );
 }
 
+function FooterInlineItem({ icon, text }: { icon: string; text: string }) {
+  return (
+    <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs text-white/85">
+      <span aria-hidden="true">{icon}</span>
+      <span>{text}</span>
+    </span>
+  );
+}
+
 export default function PublicHero({ data, business }: PublicHeroProps) {
   const titleRaw = (data.title as string) ?? "El centro de mando de tu negocio";
   const { lead: titleLead, accent: titleAccent } = splitTitleForAccent(titleRaw);
 
+  // ✅ FIX: Studio edita description, no subtitle
   const subtitle =
-    (data.subtitle as string) ??
+    (data.description as string) ||
+    (data.subtitle as string) ||
     "Publica ofertas, popups, heros por eventos, campañas y recordatorios.";
 
   const badge = (data.badge as string) ?? "Barbería Premium";
@@ -182,9 +194,7 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
 
             <div className="fixed inset-y-0 right-0 z-50 w-64 translate-x-full bg-black/80 p-4 text-white/90 shadow-2xl transition-transform duration-700 ease-out peer-checked:translate-x-0">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">
-                  {business?.name ?? "Menú"}
-                </div>
+                <div className="text-sm font-semibold">{business?.name ?? "Menú"}</div>
 
                 <label
                   htmlFor="bcc-mobile-menu"
@@ -210,9 +220,9 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
         </header>
 
         {/* MAIN */}
-        <main className="min-h-0 flex-1 pt-5">
+        <main className="min-h-0 flex-1 pt-5 pb-36 md:pb-0">
           <div className="grid grid-cols-1 items-center gap-5 md:grid-cols-2 md:gap-8">
-            {/* Texto */}
+            {/* TEXTO (izquierda en desktop) */}
             <div className="max-w-xl">
               <Pill className="mb-3">{badge}</Pill>
 
@@ -226,11 +236,52 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
                 ) : null}
               </h1>
 
-              <p className="mt-3 max-w-lg text-sm text-white/80 sm:text-base md:text-lg">
+              {/* ✅ MÓVIL: logo en el centro (entre título y subtítulo) */}
+              <div className="mt-1.6 md:hidden">
+                <div className="relative mx-auto flex aspect-16/7 w-full max-w-sm items-center justify-center rounded-3xl bg-black/15">
+                  {heroLogoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={heroLogoUrl}
+                      alt={business?.name ?? "Logo"}
+                      className="max-h-32 w-auto opacity-95"
+                    />
+                  ) : (
+                    <div className="text-center text-white/80">
+                      <div className="text-sm">Logo principal</div>
+                      <div className="mt-2 text-xs text-white/50">(pendiente de asset)</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ✅ MÓVIL: subtítulo más pequeño debajo del logo */}
+              <p className="mt-0.6 max-w-lg rounded-xl bg-black/15 px-3 py-2 text-[13px] leading-snug text-white/85 md:hidden">
                 {subtitle}
               </p>
 
-              {/* CTAs desktop */}
+              {/* ✅ CTAs debajo del texto (móvil) y más pequeños */}
+              <div className="mt-4  mb-6 grid grid-cols-2 gap-3 md:hidden">
+                <a
+                  href={href1}
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-semibold text-black hover:bg-white/90"
+                >
+                  {cta1}
+                </a>
+
+                <a
+                  href={href2}
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
+                >
+                  {cta2}
+                </a>
+              </div>
+
+              {/* DESKTOP: subtítulo y CTAs como estaban */}
+              <p className="mt-3 hidden max-w-lg text-sm text-white/80 sm:text-base md:block md:text-lg">
+                {subtitle}
+              </p>
+
               <div className="mt-5 hidden flex-wrap items-center gap-3 md:flex">
                 <a
                   href={href1}
@@ -241,85 +292,80 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
 
                 <a
                   href={href2}
-                  className="inline-flex items-center justify-center rounded-xl bg-black/20 px-5 py-2.5 text-sm font-semibold text-white hover:bg-black/30"
+                  className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
                 >
                   {cta2}
                 </a>
               </div>
             </div>
 
-            {/* Logo: en móvil centrado */}
-            <div className="mx-auto w-full max-w-md md:max-w-xl">
+            {/* LOGO (derecha en desktop, como estaba) */}
+            <div className="mx-auto hidden w-full max-w-md md:block md:max-w-xl">
               <div className="relative mx-auto flex aspect-16/7 w-full items-center justify-center rounded-[28px] bg-black/15 sm:aspect-video md:aspect-16/10">
                 {heroLogoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={heroLogoUrl}
                     alt={business?.name ?? "Logo"}
-                    className="max-h-24 w-auto opacity-95 sm:max-h-44 md:max-h-65"
+                    className="max-h-44 w-auto opacity-95 md:max-h-65"
                   />
                 ) : (
                   <div className="text-center text-white/80">
                     <div className="text-sm">Logo principal</div>
-                    <div className="mt-2 text-xs text-white/50">
-                      (pendiente de asset)
-                    </div>
+                    <div className="mt-2 text-xs text-white/50">(pendiente de asset)</div>
                   </div>
                 )}
-              </div>
-
-              {/* CTAs móvil: MÁS ARRIBA y más compactos */}
-              <div className="mt-3 grid grid-cols-2 gap-3 md:hidden">
-                <a
-                  href={href1}
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-white/90"
-                >
-                  {cta1}
-                </a>
-
-                <a
-                  href={href2}
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-black/20 px-4 py-2 text-sm font-semibold text-white hover:bg-black/30"
-                >
-                  {cta2}
-                </a>
               </div>
             </div>
           </div>
         </main>
 
-        {/* FOOTER abajo */}
-        <footer className="mt-auto pb-3">
-          <div className="rounded-2xl bg-black/15 px-4 py-2 text-white/85">
-            <div className="flex flex-col items-center justify-between gap-2 md:flex-row md:items-end">
-              <div className="text-center text-[11px] md:text-left md:text-xs">
-                © 2026{" "}
-                <span className="font-semibold text-white/95">
-                  {business?.name ?? "Caballeros Barbería"}
-                </span>
-              </div>
+        {/* FOOTER: desktop en una sola línea (© + datos + firma) */}
+       <footer className="mt-auto pb-3">
+  <div className="rounded-2xl bg-black/15 px-4 py-3 text-white/85">
+    {/* DATOS: bloque centrado en móvil / línea en desktop */}
+    <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 md:flex-row md:justify-center md:gap-6">
+      {/* En móvil: 2 columnas centradas para que quede compacto */}
+      <div className="grid w-full max-w-md grid-cols-2 gap-x-4 gap-y-2 md:hidden">
+        <div className="flex justify-center">
+          <FooterInlineItem icon="📍" text="Dirección (pendiente)" />
+        </div>
+        <div className="flex justify-center">
+          <FooterInlineItem icon="☎️" text="Teléfono" />
+        </div>
+        <div className="flex justify-center">
+          <FooterInlineItem icon="💬" text="WhatsApp" />
+        </div>
+        <div className="flex justify-center">
+          <FooterInlineItem icon="✉️" text="email@cliente.com" />
+        </div>
+      </div>
 
-              <div className="hidden flex-wrap items-center justify-center gap-5 text-xs sm:flex">
-                <span>📍 Dirección (pendiente)</span>
-                <span>☎️ Teléfono</span>
-                <span>💬 WhatsApp</span>
-                <span>✉️ email@cliente.com</span>
-              </div>
+      {/* Desktop: una sola línea */}
+      <div className="hidden flex-wrap items-center justify-center gap-6 md:flex">
+        <FooterInlineItem icon="📍" text="Dirección (pendiente)" />
+        <FooterInlineItem icon="☎️" text="Teléfono" />
+        <FooterInlineItem icon="💬" text="WhatsApp" />
+        <FooterInlineItem icon="✉️" text="email@cliente.com" />
+      </div>
+    </div>
 
-              <div className="flex items-center gap-3 text-[11px] sm:hidden">
-                <span>📍</span>
-                <span>☎️</span>
-                <span>💬</span>
-                <span>✉️</span>
-              </div>
+    {/* LÍNEA FINAL: © 2026 a la izquierda y firma a la derecha (también en móvil) */}
+    <div className="mt-3 flex items-center justify-between gap-3 text-[11px] md:text-xs">
+      <div className="min-w-0 truncate whitespace-nowrap">
+        © 2026{" "}
+        <span className="font-semibold text-white/95">
+          {business?.name ?? "Caballeros Barbería"}
+        </span>
+      </div>
 
-              <div className="shrink-0">
-                <CreatedByMini />
-              </div>
-            </div>
-          </div>
-        </footer>
+      <div className="shrink-0">
+        <CreatedByMini />
+      </div>
+    </div>
+  </div>
+</footer>
       </div>
     </section>
   );
-}  
+}

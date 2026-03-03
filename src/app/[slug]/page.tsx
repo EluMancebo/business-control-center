@@ -1,5 +1,7 @@
-import { headers } from "next/headers";
-import  PublicHero  from "@/components/web/hero/PublicHero";
+ import { headers } from "next/headers";
+import PublicHero from "@/components/web/hero/PublicHero";
+
+export const dynamic = "force-dynamic";
 
 type HeroData = {
   badge: string;
@@ -18,71 +20,197 @@ type BusinessPublic = {
   name?: string;
   slug: string;
   activeHeroVariantKey: string;
-  // (futuro: address, phone, whatsapp, email…)
 };
 
-async function getOrigin() {
+// ---------- Utils (sin any, sin casts) ----------
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function safeDecodeSlug(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function trimTrailingSlash(url: string): string {
+  return url.replace(/\/$/, "");
+}
+
+// ---------- Origin / Base URL ----------
+async function getBaseUrl(): Promise<string> {
+  // 1) Prioridad: variable explícita (local/prod)
+  const explicit =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.APP_URL ||
+    process.env.SITE_URL;
+
+  if (explicit && explicit.trim()) return trimTrailingSlash(explicit);
+
+  // 2) Request headers (Vercel/proxy/local)
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "http";
-  return host ? `${proto}://${host}` : "";
+  if (host && host.trim()) return `${proto}://${host}`;
+
+  // 3) Fallback Vercel system env (sin protocolo)
+  const vercelUrl = process.env.VERCEL_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (vercelUrl && vercelUrl.trim()) return `https://${trimTrailingSlash(vercelUrl)}`;
+
+  // 4) Último recurso local
+  return "http://localhost:3000";
 }
 
+// ---------- Parsers (validación fuerte) ----------
+function parseBusinessPublicResponse(json: unknown): BusinessPublic | null {
+  if (!isRecord(json)) return null;
+
+  const business = json["business"];
+  if (!isRecord(business)) return null;
+
+  const slug = business["slug"];
+  const activeHeroVariantKey = business["activeHeroVariantKey"];
+  const name = business["name"];
+
+  if (!isString(slug)) return null;
+  if (!isString(activeHeroVariantKey)) return null;
+
+  const parsed: BusinessPublic = {
+    slug,
+    activeHeroVariantKey,
+  };
+
+  if (isString(name)) parsed.name = name;
+
+  return parsed;
+}
+
+function parseHeroResponse(json: unknown): HeroData | null {
+  if (!isRecord(json)) return null;
+
+  const data = json["data"];
+  if (!isRecord(data)) return null;
+
+  const badge = data["badge"];
+  const title = data["title"];
+  const description = data["description"];
+  const primaryCtaLabel = data["primaryCtaLabel"];
+  const primaryCtaHref = data["primaryCtaHref"];
+  const secondaryCtaLabel = data["secondaryCtaLabel"];
+  const secondaryCtaHref = data["secondaryCtaHref"];
+
+  if (!isString(badge)) return null;
+  if (!isString(title)) return null;
+  if (!isString(description)) return null;
+  if (!isString(primaryCtaLabel)) return null;
+  if (!isString(primaryCtaHref)) return null;
+  if (!isString(secondaryCtaLabel)) return null;
+  if (!isString(secondaryCtaHref)) return null;
+
+  const hero: HeroData = {
+    badge,
+    title,
+    description,
+    primaryCtaLabel,
+    primaryCtaHref,
+    secondaryCtaLabel,
+    secondaryCtaHref,
+  };
+
+  const backgroundImageUrl = data["backgroundImageUrl"];
+  const logoUrl = data["logoUrl"];
+  const logoSvg = data["logoSvg"];
+
+  if (isString(backgroundImageUrl)) hero.backgroundImageUrl = backgroundImageUrl;
+  if (isString(logoUrl)) hero.logoUrl = logoUrl;
+  if (isString(logoSvg)) hero.logoSvg = logoSvg;
+
+  return hero;
+}
+
+// ---------- Data fetch ----------
 async function getBusinessPublic(slug: string): Promise<BusinessPublic | null> {
-  const origin = await getOrigin();
-  const res = await fetch(
-    `${origin}/api/web/public/business?slug=${encodeURIComponent(slug)}`,
-    { cache: "no-store" }
-  );
+  const baseUrl = await getBaseUrl();
+  const url = new URL("/api/web/public/business", baseUrl);
+  url.searchParams.set("slug", slug);
+
+  const res = await fetch(url.toString(), { cache: "no-store" });
   if (!res.ok) return null;
-  const json = await res.json();
-  return (json?.business ?? null) as BusinessPublic | null;
+
+  const json: unknown = await res.json();
+  return parseBusinessPublicResponse(json);
 }
 
 async function getPublishedHero(slug: string, variantKey: string): Promise<HeroData | null> {
-  const origin = await getOrigin();
-  const res = await fetch(
-    `${origin}/api/web/hero?status=published&slug=${encodeURIComponent(
-      slug
-    )}&variantKey=${encodeURIComponent(variantKey)}`,
-    { cache: "no-store" }
-  );
+  const baseUrl = await getBaseUrl();
+  const url = new URL("/api/web/hero", baseUrl);
+  url.searchParams.set("status", "published");
+  url.searchParams.set("slug", slug);
+  url.searchParams.set("variantKey", variantKey);
+
+  const res = await fetch(url.toString(), { cache: "no-store" });
   if (!res.ok) return null;
-  const json = await res.json();
-  return (json?.data ?? null) as HeroData | null;
+
+  const json: unknown = await res.json();
+  return parseHeroResponse(json);
 }
 
+// ---------- Page ----------
 export default async function PublicBusinessPage({
   params,
 }: {
   params: Promise<{ slug: string }> | { slug: string };
 }) {
   const resolved = await Promise.resolve(params);
-  const decodedSlug = decodeURIComponent(resolved.slug);
+  const decodedSlug = safeDecodeSlug(resolved.slug);
 
   const business = await getBusinessPublic(decodedSlug);
-  const activeVariantKey = business?.activeHeroVariantKey || "default";
+  const activeVariantKey = business?.activeHeroVariantKey ?? "default";
   const hero = await getPublishedHero(decodedSlug, activeVariantKey);
 
   return (
-    <main className="h-svh w-full overflow-hidden bg-background text-foreground">
+    <main
+      id="public-business-page"
+      className="h-svh w-full overflow-hidden bg-background text-foreground"
+    >
       {hero ? (
-        <PublicHero data={hero} business={business ?? undefined} />
+        <section id="public-business-hero">
+          <PublicHero data={hero} business={business ?? undefined} />
+        </section>
       ) : (
-        <div className="flex h-full items-center justify-center px-6">
-          <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 text-card-foreground">
-            <p className="text-sm text-muted-foreground">
+        <section id="public-business-fallback" className="flex h-full items-center justify-center px-6">
+          <div
+            id="public-business-fallback-card"
+            className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 text-card-foreground"
+          >
+            <p id="public-business-fallback-meta" className="text-sm text-muted-foreground">
               Web pública (dinámica)
               {business?.name ? ` · ${business.name}` : ""}
             </p>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-tight">{decodedSlug}</h1>
-            <p className="mt-3 text-sm text-muted-foreground">
+
+            <h1
+              id="public-business-fallback-title"
+              className="mt-1 text-2xl font-extrabold tracking-tight"
+            >
+              {decodedSlug}
+            </h1>
+
+            <p id="public-business-fallback-text" className="mt-3 text-sm text-muted-foreground">
               No hay Hero publicado para el preset activo:&nbsp;
-              <span className="font-semibold text-foreground">{activeVariantKey}</span>
+              <span id="public-business-fallback-variant" className="font-semibold text-foreground">
+                {activeVariantKey}
+              </span>
             </p>
           </div>
-        </div>
+        </section>
       )}
     </main>
   );
-}  
+} 
