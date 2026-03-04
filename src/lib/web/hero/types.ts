@@ -2,11 +2,17 @@ export type HeroData = {
   badge: string;
   title: string;
   description: string;
+
   primaryCtaLabel: string;
   primaryCtaHref: string;
   secondaryCtaLabel: string;
   secondaryCtaHref: string;
+
   logoUrl?: string;
+
+  // ✅ necesario: lo guardas en Mongo y lo parseas en la API
+  logoSvg?: string;
+
   backgroundImageUrl?: string;
 };
 
@@ -20,5 +26,6 @@ export const DEFAULT_HERO: HeroData = {
   secondaryCtaLabel: "Ver funciones",
   secondaryCtaHref: "#features",
   logoUrl: "/brand/logo-mark.svg",
+  logoSvg: "",
   backgroundImageUrl: "",
-};
+};  

@@ -3,18 +3,18 @@ import React from "react";
 import CreatedByMini from "@/components/footer/CreatedByMini";
 
 export type HeroData = {
-  title?: string;
-  subtitle?: string;
-  description?: string; // ✅ para leer lo que editas en Studio
-  ctaPrimaryLabel?: string;
-  ctaSecondaryLabel?: string;
-  ctaPrimaryHref?: string;
-  ctaSecondaryHref?: string;
   badge?: string;
+  title?: string;
+  description?: string;
+
+  primaryCtaLabel?: string;
+  primaryCtaHref?: string;
+  secondaryCtaLabel?: string;
+  secondaryCtaHref?: string;
+
   backgroundImageUrl?: string;
   logoUrl?: string;
   logoSvg?: string;
-  [key: string]: unknown;
 };
 
 export type BusinessPublic = {
@@ -22,7 +22,6 @@ export type BusinessPublic = {
   slug: string;
   activeHeroVariantKey?: string;
   logoUrl?: string;
-  [key: string]: unknown;
 };
 
 type PublicHeroProps = {
@@ -92,48 +91,39 @@ function FooterInlineItem({ icon, text }: { icon: string; text: string }) {
 }
 
 export default function PublicHero({ data, business }: PublicHeroProps) {
-  const titleRaw = (data.title as string) ?? "El centro de mando de tu negocio";
+  const titleRaw = data.title ?? "El centro de mando de tu negocio";
   const { lead: titleLead, accent: titleAccent } = splitTitleForAccent(titleRaw);
 
-  // ✅ FIX: Studio edita description, no subtitle
   const subtitle =
-    (data.description as string) ||
-    (data.subtitle as string) ||
+    data.description ??
     "Publica ofertas, popups, heros por eventos, campañas y recordatorios.";
 
-  const badge = (data.badge as string) ?? "Barbería Premium";
-  const cta1 = (data.ctaPrimaryLabel as string) ?? "Pedir cita";
-  const cta2 = (data.ctaSecondaryLabel as string) ?? "Servicios";
+  const badge = data.badge ?? "Barbería Premium";
 
-  const href1 = (data.ctaPrimaryHref as string) ?? "#";
-  const href2 = (data.ctaSecondaryHref as string) ?? "#";
+  // ✅ CLAVES REALES (coinciden con HeroConfig)
+  const cta1 = (data.primaryCtaLabel as string) ?? "Pedir cita";
+  const cta2 = (data.secondaryCtaLabel as string)?? "Servicios";
+  const href1 = (data.primaryCtaHref as string) ?? "#";
+  const href2 = (data.secondaryCtaHref as string) ?? "#";
 
   const bg = normalizeAssetUrl(data.backgroundImageUrl);
 
-  const headerLogoUrl =
-    normalizeAssetUrl(business?.logoUrl) ?? normalizeAssetUrl(data.logoUrl);
-
-  const heroLogoUrl =
-    normalizeAssetUrl(data.logoUrl) ?? normalizeAssetUrl(business?.logoUrl);
+  const headerLogoUrl = normalizeAssetUrl(business?.logoUrl) ?? normalizeAssetUrl(data.logoUrl);
+  const heroLogoUrl = normalizeAssetUrl(data.logoUrl) ?? normalizeAssetUrl(business?.logoUrl);
 
   return (
-    <section className="relative h-svh w-full overflow-hidden">
+    <section className="relative min-h-svh w-full overflow-hidden">
       {bg ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={bg}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+          <img src={bg} alt="" className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-black/60" />
         </>
       ) : (
         <div className="absolute inset-0 bg-linear-to-b from-black via-black/90 to-black" />
       )}
 
-      <div className="relative z-10 mx-auto flex h-svh w-full max-w-6xl flex-col px-6">
-        {/* HEADER */}
+      <div className="relative z-10 mx-auto flex min-h-svh w-full max-w-6xl flex-col px-6">
         <header className="flex items-center justify-between pt-5">
           <div className="flex items-center gap-3">
             {headerLogoUrl ? (
@@ -150,7 +140,6 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
             </div>
           </div>
 
-          {/* Desktop nav */}
           <nav className="hidden items-center gap-3 md:flex">
             <a
               href="#"
@@ -172,7 +161,6 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
             </a>
           </nav>
 
-          {/* ✅ Mobile menu (slide desde la derecha) */}
           <div className="md:hidden">
             <input id="bcc-mobile-menu" type="checkbox" className="peer sr-only" />
 
@@ -219,10 +207,8 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
           </div>
         </header>
 
-        {/* MAIN */}
         <main className="min-h-0 flex-1 pt-5 pb-36 md:pb-0">
           <div className="grid grid-cols-1 items-center gap-5 md:grid-cols-2 md:gap-8">
-            {/* TEXTO (izquierda en desktop) */}
             <div className="max-w-xl">
               <Pill className="mb-3">{badge}</Pill>
 
@@ -236,7 +222,6 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
                 ) : null}
               </h1>
 
-              {/* ✅ MÓVIL: logo en el centro (entre título y subtítulo) */}
               <div className="mt-1.6 md:hidden">
                 <div className="relative mx-auto flex aspect-16/7 w-full max-w-sm items-center justify-center rounded-3xl bg-black/15">
                   {heroLogoUrl ? (
@@ -255,12 +240,10 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
                 </div>
               </div>
 
-              {/* ✅ MÓVIL: subtítulo más pequeño debajo del logo */}
               <p className="mt-0.6 max-w-lg rounded-xl bg-black/15 px-3 py-2 text-[13px] leading-snug text-white/85 md:hidden">
                 {subtitle}
               </p>
 
-              {/* ✅ CTAs debajo del texto (móvil) y más pequeños */}
               <div className="mt-4  mb-6 grid grid-cols-2 gap-3 md:hidden">
                 <a
                   href={href1}
@@ -277,7 +260,6 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
                 </a>
               </div>
 
-              {/* DESKTOP: subtítulo y CTAs como estaban */}
               <p className="mt-3 hidden max-w-lg text-sm text-white/80 sm:text-base md:block md:text-lg">
                 {subtitle}
               </p>
@@ -299,7 +281,6 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
               </div>
             </div>
 
-            {/* LOGO (derecha en desktop, como estaba) */}
             <div className="mx-auto hidden w-full max-w-md md:block md:max-w-xl">
               <div className="relative mx-auto flex aspect-16/7 w-full items-center justify-center rounded-[28px] bg-black/15 sm:aspect-video md:aspect-16/10">
                 {heroLogoUrl ? (
@@ -320,51 +301,46 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
           </div>
         </main>
 
-        {/* FOOTER: desktop en una sola línea (© + datos + firma) */}
-       <footer className="mt-auto pb-3">
-  <div className="rounded-2xl bg-black/15 px-4 py-3 text-white/85">
-    {/* DATOS: bloque centrado en móvil / línea en desktop */}
-    <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 md:flex-row md:justify-center md:gap-6">
-      {/* En móvil: 2 columnas centradas para que quede compacto */}
-      <div className="grid w-full max-w-md grid-cols-2 gap-x-4 gap-y-2 md:hidden">
-        <div className="flex justify-center">
-          <FooterInlineItem icon="📍" text="Dirección (pendiente)" />
-        </div>
-        <div className="flex justify-center">
-          <FooterInlineItem icon="☎️" text="Teléfono" />
-        </div>
-        <div className="flex justify-center">
-          <FooterInlineItem icon="💬" text="WhatsApp" />
-        </div>
-        <div className="flex justify-center">
-          <FooterInlineItem icon="✉️" text="email@cliente.com" />
-        </div>
-      </div>
+        <footer className="mt-auto pb-3">
+          <div className="rounded-2xl bg-black/15 px-4 py-3 text-white/85">
+            <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 md:flex-row md:justify-center md:gap-6">
+              <div className="grid w-full max-w-md grid-cols-2 gap-x-4 gap-y-2 md:hidden">
+                <div className="flex justify-center">
+                  <FooterInlineItem icon="📍" text="Dirección (pendiente)" />
+                </div>
+                <div className="flex justify-center">
+                  <FooterInlineItem icon="☎️" text="Teléfono" />
+                </div>
+                <div className="flex justify-center">
+                  <FooterInlineItem icon="💬" text="WhatsApp" />
+                </div>
+                <div className="flex justify-center">
+                  <FooterInlineItem icon="✉️" text="email@cliente.com" />
+                </div>
+              </div>
 
-      {/* Desktop: una sola línea */}
-      <div className="hidden flex-wrap items-center justify-center gap-6 md:flex">
-        <FooterInlineItem icon="📍" text="Dirección (pendiente)" />
-        <FooterInlineItem icon="☎️" text="Teléfono" />
-        <FooterInlineItem icon="💬" text="WhatsApp" />
-        <FooterInlineItem icon="✉️" text="email@cliente.com" />
-      </div>
-    </div>
+              <div className="hidden flex-wrap items-center justify-center gap-6 md:flex">
+                <FooterInlineItem icon="📍" text="Dirección (pendiente)" />
+                <FooterInlineItem icon="☎️" text="Teléfono" />
+                <FooterInlineItem icon="💬" text="WhatsApp" />
+                <FooterInlineItem icon="✉️" text="email@cliente.com" />
+              </div>
+            </div>
 
-    {/* LÍNEA FINAL: © 2026 a la izquierda y firma a la derecha (también en móvil) */}
-    <div className="mt-3 flex items-center justify-between gap-3 text-[11px] md:text-xs">
-      <div className="min-w-0 truncate whitespace-nowrap">
-        © 2026{" "}
-        <span className="font-semibold text-white/95">
-          {business?.name ?? "Caballeros Barbería"}
-        </span>
-      </div>
+            <div className="mt-3 flex items-center justify-between gap-3 text-[11px] md:text-xs">
+              <div className="min-w-0 truncate whitespace-nowrap">
+                © 2026{" "}
+                <span className="font-semibold text-white/95">
+                  {business?.name ?? "Caballeros Barbería"}
+                </span>
+              </div>
 
-      <div className="shrink-0">
-        <CreatedByMini />
-      </div>
-    </div>
-  </div>
-</footer>
+              <div className="shrink-0">
+                <CreatedByMini />
+              </div>
+            </div>
+          </div>
+        </footer>
       </div>
     </section>
   );
