@@ -18,10 +18,9 @@ async function getSession(req: NextRequest) {
   return await Promise.resolve(getSessionFromToken(token));
 }
 
-async function requireStaffOrAdmin(req: NextRequest) {
+async function requireAdmin(req: NextRequest) {
   const session = await getSession(req);
-  const role = session?.role;
-  const ok = role === "admin" || role === "staff";
+  const ok = session?.role === "admin";
   return { ok, session };
 }
 
@@ -37,7 +36,7 @@ function splitList(value: unknown): string[] {
 }
 
 export async function GET(req: NextRequest) {
-  const auth = await requireStaffOrAdmin(req);
+  const auth = await requireAdmin(req);
   if (!auth.ok) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
@@ -46,17 +45,22 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const tag = (searchParams.get("tag") || "").trim();
-  const scopeParam = (searchParams.get("scope") || "system").trim();
   const statusParam = (searchParams.get("status") || "active").trim();
 
-  const scope = scopeParam === "tenant" ? "tenant" : "system";
-  const status = statusParam === "archived" ? "archived" : "active";
+  // ✅ Taller (Capa -1): SOLO system
+  const scope = "system";
+  const status: "active" | "archived" = statusParam === "archived" ? "archived" : "active";
 
   const query: {
-    scope: "system" | "tenant";
+    businessId: null;
+    scope: "system";
     status: "active" | "archived";
     tags?: string;
-  } = { scope, status };
+  } = {
+    businessId: null,
+    scope,
+    status,
+  };
 
   if (tag) query.tags = tag; // matches arrays containing tag
 
@@ -65,7 +69,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireStaffOrAdmin(req);
+  const auth = await requireAdmin(req);
   if (!auth.ok) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
