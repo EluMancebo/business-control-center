@@ -1,26 +1,24 @@
+// src/app/panel/taller/layout.tsx
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/serverSession";
-import BrandScopeOverride from "@/components/brand/BrandScopeOverride";
+import BrandHydrator from "@/components/brand/BrandHydrator";
+import PanelContextOverlay from "@/components/panel/PanelContextOverlay";
 
-export default async function TallerLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function TallerLayout({ children }: { children: React.ReactNode }) {
   try {
     await requireRole("admin");
   } catch {
     redirect("/panel/dashboard");
   }
 
-  // Capa 1: Taller NO hereda marca del cliente.
-  // Forzamos la marca del sistema (bcc) y modo estable.
   return (
     <>
-      <BrandScopeOverride palette="bcc" mode="light" />
+      <BrandHydrator scope="system" />
+      <PanelContextOverlay />
       {children}
     </>
   );
-}
+}  

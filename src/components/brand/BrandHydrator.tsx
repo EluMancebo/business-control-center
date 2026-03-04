@@ -2,51 +2,74 @@
 "use client";
 
 import { useEffect } from "react";
-import {
-  BRAND_CHANNEL,
-  getBrand,
-  subscribeBrand,
-  syncBrandFromStorage,
-} from "@/lib/brand/service";
 import { applyBrandToDocument } from "@/lib/brand/apply";
+import { getBrand, subscribeBrand, syncBrandFromStorage } from "@/lib/brand/service";
+import {
+  getBrandChannel,
+  getBrandStorageKey,
+  getDefaultBrandForScope,
+  type BrandScope,
+} from "@/lib/brand/storage";
 
-export default function BrandHydrator() {
+function readActiveBusinessSlug(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  const v = window.localStorage.getItem("bcc:activeBusinessSlug");
+  return v && v.trim() ? v.trim() : undefined;
+}
+
+export default function BrandHydrator({
+  scope = "panel",
+  businessSlug,
+}: {
+  scope?: BrandScope;
+  businessSlug?: string;
+}) {
   useEffect(() => {
-    // 1) Al montar: leer storage + aplicar (asegura refresh correcto)
-    syncBrandFromStorage();
+    const resolvedSlug =
+      scope === "system" ? undefined : businessSlug ?? readActiveBusinessSlug();
 
-    // 2) Por si acaso: aplica el estado actual
-    applyBrandToDocument(getBrand());
+    const storageKey = getBrandStorageKey(scope, resolvedSlug);
+    const channel = getBrandChannel(scope, resolvedSlug);
+    const fallback = getDefaultBrandForScope(scope);
 
-    // 3) Re-aplicar ante cambios internos del store
-    const unsubscribe = subscribeBrand(() => {
-      applyBrandToDocument(getBrand());
-    });
+    // 1) Rehidratación inicial
+    syncBrandFromStorage(storageKey, channel, fallback);
 
-    // 4) Re-aplicar ante evento local (misma pestaña)
-    const onLocal = () => syncBrandFromStorage();
-    window.addEventListener(BRAND_CHANNEL, onLocal);
+    // 2) Aplicar estado actual
+    applyBrandToDocument(getBrand(storageKey, channel, fallback));
 
-    // 5) Re-aplicar ante cambios cross-tab via BroadcastChannel
+    // 3) Suscripción a cambios del store
+    const unsubscribe = subscribeBrand(
+      () => applyBrandToDocument(getBrand(storageKey, channel, fallback)),
+      storageKey,
+      channel,
+      fallback
+    );
+
+    // 4) Evento local
+    const onLocal = () => syncBrandFromStorage(storageKey, channel, fallback);
+    window.addEventListener(channel, onLocal);
+
+    // 5) Cross-tab
     let bc: BroadcastChannel | null = null;
     if (typeof BroadcastChannel !== "undefined") {
-      bc = new BroadcastChannel(BRAND_CHANNEL);
-      bc.onmessage = () => syncBrandFromStorage();
+      bc = new BroadcastChannel(channel);
+      bc.onmessage = () => syncBrandFromStorage(storageKey, channel, fallback);
     }
 
-    // 6) Re-aplicar ante evento storage (solo otras pestañas, pero lo dejamos)
+    // 6) Storage (otras pestañas)
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "bcc:brand") syncBrandFromStorage();
+      if (e.key === storageKey) syncBrandFromStorage(storageKey, channel, fallback);
     };
     window.addEventListener("storage", onStorage);
 
     return () => {
       unsubscribe();
-      window.removeEventListener(BRAND_CHANNEL, onLocal);
+      window.removeEventListener(channel, onLocal);
       window.removeEventListener("storage", onStorage);
       if (bc) bc.close();
     };
-  }, []);
+  }, [scope, businessSlug]);
 
   return null;
 }

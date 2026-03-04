@@ -1,12 +1,16 @@
 // src/components/panel/brand/BrandEditor.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { Brand, BrandMode, BrandPaletteKey } from "@/lib/brand/types";
 import { BRAND_PALETTES } from "@/lib/brand/presets";
-import { DEFAULT_BRAND } from "@/lib/brand/storage";
-import { useBrand } from "@/lib/brand/hooks";
-import { setBrand as setBrandService } from "@/lib/brand/service";
+import {
+  getBrandChannel,
+  getBrandStorageKey,
+  getDefaultBrandForScope,
+  type BrandScope,
+} from "@/lib/brand/storage";
+import { getBrand, setBrand, subscribeBrand, syncBrandFromStorage } from "@/lib/brand/service";
 
 const MODES: Array<{ key: BrandMode; label: string }> = [
   { key: "system", label: "System" },
@@ -14,18 +18,68 @@ const MODES: Array<{ key: BrandMode; label: string }> = [
   { key: "dark", label: "Dark" },
 ];
 
-function safeTitle(name: string) {
-  const v = name?.trim();
-  return v && v.length > 0 ? v : DEFAULT_BRAND.brandName;
+function readActiveBusinessSlug(): string {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem("bcc:activeBusinessSlug")?.trim() || "";
 }
 
-export default function BrandEditor() {
-  const current = useBrand(); // fuente de verdad (service)
-  const [brand, setBrand] = useState<Brand>(DEFAULT_BRAND); // estable en render
+function defer(fn: () => void) {
+  const q =
+    typeof queueMicrotask === "function"
+      ? queueMicrotask
+      : (cb: () => void) => Promise.resolve().then(cb);
+  q(fn);
+}
 
-  // sincroniza el form con el brand real
+function useBrandScoped(storageKey: string, channel: string, fallback: Brand) {
+  return useSyncExternalStore(
+    (cb) => subscribeBrand(cb, storageKey, channel, fallback),
+    () => getBrand(storageKey, channel, fallback),
+    () => fallback
+  );
+}
+
+type BrandEditorProps = {
+  scope?: BrandScope;
+  businessSlug?: string; // ✅ para admin (seleccionar cliente)
+};
+
+export default function BrandEditor({ scope = "panel", businessSlug }: BrandEditorProps) {
+  const [resolvedSlug, setResolvedSlug] = useState<string>("");
+
+  // Para panel/web cliente: toma activeBusinessSlug (si NO viene businessSlug por prop)
   useEffect(() => {
-    setBrand(current);
+    if (scope === "system") return;
+    if (businessSlug && businessSlug.trim()) return;
+
+    defer(() => setResolvedSlug(readActiveBusinessSlug()));
+  }, [scope, businessSlug]);
+
+  const effectiveSlug =
+    scope === "system" ? "" : (businessSlug?.trim() || resolvedSlug);
+
+  const storageKey = useMemo(
+    () => getBrandStorageKey(scope, scope === "system" ? undefined : effectiveSlug || undefined),
+    [scope, effectiveSlug]
+  );
+
+  const channel = useMemo(
+    () => getBrandChannel(scope, scope === "system" ? undefined : effectiveSlug || undefined),
+    [scope, effectiveSlug]
+  );
+
+  const fallback = useMemo(() => getDefaultBrandForScope(scope), [scope]);
+
+  // Rehidratación: en scope web dentro del panel NO aplicamos al documento
+  useEffect(() => {
+    syncBrandFromStorage(storageKey, channel, fallback, { applyToDocument: scope !== "web" });
+  }, [storageKey, channel, fallback, scope]);
+
+  const current = useBrandScoped(storageKey, channel, fallback);
+  const [brand, setBrandLocal] = useState<Brand>(fallback);
+
+  useEffect(() => {
+    setBrandLocal(current);
   }, [current]);
 
   const palettes = useMemo<Array<{ key: BrandPaletteKey; label: string }>>(
@@ -34,25 +88,50 @@ export default function BrandEditor() {
   );
 
   function update(next: Brand) {
-    // estado local del form
-    setBrand(next);
+    setBrandLocal(next);
 
-    // fuente de verdad: persiste + notifica (y otras pestañas)
-    setBrandService(next);
-
-    // título (opcional pero útil)
-    document.title = safeTitle(next.brandName);
+    // ✅ clave: web no aplica al documento del panel
+    setBrand(next, storageKey, channel, fallback, { applyToDocument: scope !== "web" });
   }
+
+  const title =
+    scope === "system"
+      ? "Apariencia (Taller / Capa 1)"
+      : scope === "panel"
+      ? "Apariencia del panel (Capa 2)"
+      : "Apariencia web pública";
+
+  const subtitle =
+    scope === "system"
+      ? "Solo afecta al Taller (Admin)."
+      : scope === "panel"
+      ? "Solo afecta a la UI del panel del cliente."
+      : "Solo afecta a la web pública del negocio.";
 
   return (
     <section className="w-full max-w-3xl">
       <div className="rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm">
         <header className="mb-6">
-          <h1 className="text-xl font-semibold">Brand (v0)</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Edición simulada con <code className="px-1">localStorage</code> + tokens CSS.
-            Preview inmediato en el mismo instante.
+          <h1 className="text-xl font-semibold">{title}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+
+          {scope !== "system" ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Business slug activo:{" "}
+              <span className="font-semibold text-foreground">{effectiveSlug || "—"}</span>
+            </p>
+          ) : null}
+
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            storageKey: <span className="font-mono">{storageKey}</span> · channel:{" "}
+            <span className="font-mono">{channel}</span>
           </p>
+
+          {scope === "web" ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Nota: aquí guardas la apariencia de la web. El panel no cambia (por diseño).
+            </p>
+          ) : null}
         </header>
 
         <div className="grid gap-5 sm:grid-cols-2">
@@ -107,10 +186,10 @@ export default function BrandEditor() {
 
           <button
             type="button"
-            onClick={() => update(DEFAULT_BRAND)}
+            onClick={() => update(fallback)}
             className="h-10 rounded-xl border border-border bg-muted px-4 text-sm font-medium text-foreground hover:opacity-90"
           >
-            Reset (default)
+            Reset (scope default)
           </button>
         </div>
       </div>

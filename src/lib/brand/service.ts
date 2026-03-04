@@ -1,61 +1,120 @@
-// src/lib/brand/service.ts
-"use client";
+ //src/lib/brand/Service.ts
+ 
+ "use client";
 
 import type { Brand } from "./types";
-import { DEFAULT_BRAND, loadBrandFromStorage, saveBrandToStorage } from "./storage";
 import { applyBrandToDocument } from "./apply";
-
-export const BRAND_CHANNEL = "bcc:brand";
-export const BRAND_STORAGE_KEY = "bcc:brand";
+import { DEFAULT_BRAND, loadBrandFromStorage, saveBrandToStorage } from "./storage";
 
 type Listener = () => void;
 
-let currentBrand: Brand = DEFAULT_BRAND;
-const listeners = new Set<Listener>();
+type Store = {
+  storageKey: string;
+  channel: string;
+  brand: Brand;
+  listeners: Set<Listener>;
+};
 
-function notify() {
-  listeners.forEach((l) => l());
+export type SetBrandOptions = {
+  applyToDocument?: boolean; // default true
+};
+
+// ✅ key compuesta para evitar colisiones
+function makeKey(storageKey: string, channel: string) {
+  return `${storageKey}::${channel}`;
 }
 
-export function getBrand(): Brand {
-  return currentBrand;
+const stores = new Map<string, Store>();
+
+function notify(store: Store) {
+  store.listeners.forEach((l) => l());
 }
 
-export function setBrand(next: Brand) {
-  currentBrand = next;
+function getOrCreateStore(storageKey: string, channel: string, fallback?: Brand): Store {
+  const key = makeKey(storageKey, channel);
 
-  // 1) Persistencia (para que al refrescar funcione)
-  saveBrandToStorage(next);
+  const existing = stores.get(key);
+  if (existing) return existing;
 
-  // 2) Aplicar tokens al documento (misma pestaña, instantáneo)
-  applyBrandToDocument(next);
+  const initial = loadBrandFromStorage(storageKey, fallback ?? DEFAULT_BRAND);
 
-  // 3) Notificar store (React useSyncExternalStore)
-  notify();
+  const store: Store = {
+    storageKey,
+    channel,
+    brand: initial,
+    listeners: new Set<Listener>(),
+  };
 
-  // 4) Evento local (misma pestaña)
-  window.dispatchEvent(new Event(BRAND_CHANNEL));
+  stores.set(key, store);
+  return store;
+}
 
-  // 5) Cross-tab (otras pestañas)
+const DEFAULT_STORAGE_KEY = "bcc.brand.v0";
+const DEFAULT_CHANNEL = "bcc:brand";
+
+export function getBrand(
+  storageKey: string = DEFAULT_STORAGE_KEY,
+  channel: string = DEFAULT_CHANNEL,
+  fallback?: Brand
+): Brand {
+  return getOrCreateStore(storageKey, channel, fallback).brand;
+}
+
+export function setBrand(
+  next: Brand,
+  storageKey: string = DEFAULT_STORAGE_KEY,
+  channel: string = DEFAULT_CHANNEL,
+  fallback?: Brand,
+  options?: SetBrandOptions
+) {
+  const store = getOrCreateStore(storageKey, channel, fallback);
+  store.brand = next;
+
+  // Persistencia
+  saveBrandToStorage(storageKey, next);
+
+  // Aplicación al documento (solo si procede)
+  const apply = options?.applyToDocument !== false;
+  if (apply) applyBrandToDocument(next);
+
+  // Notificar
+  notify(store);
+
+  // Evento local
+  window.dispatchEvent(new Event(channel));
+
+  // Cross-tab
   if (typeof BroadcastChannel !== "undefined") {
-    const bc = new BroadcastChannel(BRAND_CHANNEL);
+    const bc = new BroadcastChannel(channel);
     bc.postMessage({ type: "brand:update" });
     bc.close();
   }
 }
 
-export function subscribeBrand(listener: Listener) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
+export function subscribeBrand(
+  listener: Listener,
+  storageKey: string = DEFAULT_STORAGE_KEY,
+  channel: string = DEFAULT_CHANNEL,
+  fallback?: Brand
+) {
+  const store = getOrCreateStore(storageKey, channel, fallback);
+  store.listeners.add(listener);
+  return () => store.listeners.delete(listener);
 }
 
-/**
- * Rehidrata desde localStorage (por si alguien lo cambia manualmente o tras refresh)
- * y vuelve a aplicar.
- */
-export function syncBrandFromStorage() {
-  const fromStorage = loadBrandFromStorage();
-  currentBrand = fromStorage;
-  applyBrandToDocument(fromStorage);
-  notify();
-}
+export function syncBrandFromStorage(
+  storageKey: string = DEFAULT_STORAGE_KEY,
+  channel: string = DEFAULT_CHANNEL,
+  fallback?: Brand,
+  options?: SetBrandOptions
+) {
+  const store = getOrCreateStore(storageKey, channel, fallback);
+  const fromStorage = loadBrandFromStorage(storageKey, fallback ?? DEFAULT_BRAND);
+  store.brand = fromStorage;
+
+  // ✅ IMPORTANTE: en modo "web" dentro del panel, NO aplicar al documento del panel
+  const apply = options?.applyToDocument !== false;
+  if (apply) applyBrandToDocument(fromStorage);
+
+  notify(store);
+} 

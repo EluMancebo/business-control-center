@@ -1,15 +1,14 @@
+// src/app/panel/layout.tsx
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 import { redirect } from "next/navigation";
 import PanelShell from "@/components/panel/PanelShell";
 import { requireSession } from "@/lib/auth/serverSession";
+import BrandHydrator from "@/components/brand/BrandHydrator";
+import PanelContextOverlay from "@/components/panel/PanelContextOverlay";
 
-export default async function PanelLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   let role: string | undefined;
 
   try {
@@ -19,5 +18,11 @@ export default async function PanelLayout({
     redirect("/login?next=/panel/dashboard");
   }
 
-  return <PanelShell role={role}>{children}</PanelShell>;
-}  
+  return (
+    <>
+      <BrandHydrator scope="panel" />
+      <PanelContextOverlay />
+      <PanelShell role={role}>{children}</PanelShell>
+    </>
+  );
+}

@@ -1,15 +1,30 @@
 // src/lib/brand/repository.local.ts
-import type { BrandRepository } from "./repository";
 import type { Brand } from "./types";
-import { loadBrandFromStorage, saveBrandToStorage } from "./storage";
+import {
+  getBrandStorageKey,
+  getDefaultBrandForScope,
+  type BrandScope,
+  loadBrandFromStorage,
+  saveBrandToStorage,
+} from "./storage";
 
-export const localBrandRepository: BrandRepository = {
-  source: "local",
-  get(): Brand {
-    return loadBrandFromStorage();
-  },
-  set(next: Brand) {
-    saveBrandToStorage(next);
-  },
+type BrandRepository = {
+  source: "local";
+  get(scope: BrandScope, businessSlug?: string): Brand;
+  set(scope: BrandScope, next: Brand, businessSlug?: string): void;
 };
 
+export const repositoryLocal: BrandRepository = {
+  source: "local",
+
+  get(scope: BrandScope, businessSlug?: string): Brand {
+    const storageKey = getBrandStorageKey(scope, businessSlug);
+    const fallback = getDefaultBrandForScope(scope);
+    return loadBrandFromStorage(storageKey, fallback);
+  },
+
+  set(scope: BrandScope, next: Brand, businessSlug?: string) {
+    const storageKey = getBrandStorageKey(scope, businessSlug);
+    saveBrandToStorage(storageKey, next);
+  },
+};  

@@ -1,5 +1,7 @@
- import { headers } from "next/headers";
+//src/app/[slug]/page.tsx
+import { headers } from "next/headers";
 import PublicHero from "@/components/web/hero/PublicHero";
+import BrandHydrator from "@/components/brand/BrandHydrator";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +47,6 @@ function trimTrailingSlash(url: string): string {
 
 // ---------- Origin / Base URL ----------
 async function getBaseUrl(): Promise<string> {
-  // 1) Prioridad: variable explícita (local/prod)
   const explicit =
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
@@ -54,21 +55,18 @@ async function getBaseUrl(): Promise<string> {
 
   if (explicit && explicit.trim()) return trimTrailingSlash(explicit);
 
-  // 2) Request headers (Vercel/proxy/local)
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "http";
   if (host && host.trim()) return `${proto}://${host}`;
 
-  // 3) Fallback Vercel system env (sin protocolo)
   const vercelUrl = process.env.VERCEL_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL;
   if (vercelUrl && vercelUrl.trim()) return `https://${trimTrailingSlash(vercelUrl)}`;
 
-  // 4) Último recurso local
   return "http://localhost:3000";
 }
 
-// ---------- Parsers (validación fuerte) ----------
+// ---------- Parsers ----------
 function parseBusinessPublicResponse(json: unknown): BusinessPublic | null {
   if (!isRecord(json)) return null;
 
@@ -176,41 +174,40 @@ export default async function PublicBusinessPage({
   const hero = await getPublishedHero(decodedSlug, activeVariantKey);
 
   return (
-    <main
-      id="public-business-page"
-      className="h-svh w-full overflow-hidden bg-background text-foreground"
-    >
-      {hero ? (
-        <section id="public-business-hero">
-          <PublicHero data={hero} business={business ?? undefined} />
-        </section>
-      ) : (
-        <section id="public-business-fallback" className="flex h-full items-center justify-center px-6">
-          <div
-            id="public-business-fallback-card"
-            className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 text-card-foreground"
-          >
-            <p id="public-business-fallback-meta" className="text-sm text-muted-foreground">
-              Web pública (dinámica)
-              {business?.name ? ` · ${business.name}` : ""}
-            </p>
+    <>
+      {/* ✅ La web pública aplica SU brand (scope web) */}
+      <BrandHydrator scope="web" businessSlug={decodedSlug} />
 
-            <h1
-              id="public-business-fallback-title"
-              className="mt-1 text-2xl font-extrabold tracking-tight"
+      <main id="public-business-page" className="min-h-svh w-full overflow-x-hidden overflow-y-auto bcc-scrollbar bg-background text-foreground">
+        {hero ? (
+          <section id="public-business-hero">
+            <PublicHero data={hero} business={business ?? undefined} />
+          </section>
+        ) : (
+          <section id="public-business-fallback" className="flex h-full items-center justify-center px-6">
+            <div
+              id="public-business-fallback-card"
+              className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 text-card-foreground"
             >
-              {decodedSlug}
-            </h1>
+              <p id="public-business-fallback-meta" className="text-sm text-muted-foreground">
+                Web pública (dinámica)
+                {business?.name ? ` · ${business.name}` : ""}
+              </p>
 
-            <p id="public-business-fallback-text" className="mt-3 text-sm text-muted-foreground">
-              No hay Hero publicado para el preset activo:&nbsp;
-              <span id="public-business-fallback-variant" className="font-semibold text-foreground">
-                {activeVariantKey}
-              </span>
-            </p>
-          </div>
-        </section>
-      )}
-    </main>
+              <h1 id="public-business-fallback-title" className="mt-1 text-2xl font-extrabold tracking-tight">
+                {decodedSlug}
+              </h1>
+
+              <p id="public-business-fallback-text" className="mt-3 text-sm text-muted-foreground">
+                No hay Hero publicado para el preset activo:&nbsp;
+                <span id="public-business-fallback-variant" className="font-semibold text-foreground">
+                  {activeVariantKey}
+                </span>
+              </p>
+            </div>
+          </section>
+        )}
+      </main>
+    </>
   );
-} 
+}  
