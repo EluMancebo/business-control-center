@@ -1,3 +1,5 @@
+//src/lib/auth/password.ts
+
 import * as  bcrypt from "bcryptjs";
 
 export async function hashPassword(password: string) {

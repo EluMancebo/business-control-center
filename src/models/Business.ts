@@ -1,3 +1,5 @@
+//src/models/Business.ts
+
 import { Schema, models, model } from "mongoose";
 
 const BusinessSchema = new Schema(
