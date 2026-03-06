@@ -1,3 +1,4 @@
+//src/app/panel/taller/page.tsx
 import PageHeader from "@/components/panel/PageHeader";
 import Link from "next/link";
 
