@@ -4,25 +4,31 @@ export const revalidate = 0;
 
 import { redirect } from "next/navigation";
 import PanelShell from "@/components/panel/PanelShell";
-import { requireSession } from "@/lib/auth/serverSession";
+import { requireSession, type SessionPayload } from "@/lib/auth/serverSession";
 import BrandHydrator from "@/components/brand/BrandHydrator";
 import PanelContextOverlay from "@/components/panel/PanelContextOverlay";
+import { getCapabilitiesForRole, type Capability } from "@/lib/auth/capabilities";
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
-  let role: string | undefined;
+  let session: SessionPayload;
 
   try {
-    const session = await requireSession();
-    role = session.role;
+    session = await requireSession();
   } catch {
     redirect("/login?next=/panel/dashboard");
   }
+
+  const role = session.role!;
+  const isAdmin = role === "admin";
+  const capabilities = Array.from(getCapabilitiesForRole(role)) as Capability[];
 
   return (
     <>
       <BrandHydrator scope="panel" />
       <PanelContextOverlay />
-      <PanelShell role={role}>{children}</PanelShell>
+      <PanelShell role={role} isAdmin={isAdmin} capabilities={capabilities} session={session}>
+        {children}
+      </PanelShell>
     </>
   );
 }

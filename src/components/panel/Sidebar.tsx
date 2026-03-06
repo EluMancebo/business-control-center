@@ -1,10 +1,12 @@
 // src/components/panel/Sidebar.tsx
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { NAV, type NavItem, type NavChildItem } from "@/components/panel/nav";
+import type { Capability } from "@/lib/auth/capabilities";
 
 function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
@@ -88,8 +90,6 @@ function Icon({
           />
         </svg>
       );
-
-    /* -------- Subitems (antes eran puntos). Ahora iconos consistentes -------- */
 
     case "panel":
       return (
@@ -233,27 +233,44 @@ function childIcon(group: string, label: string) {
 export default function Sidebar({
   onNavigate,
   isAdmin = false,
+  capabilities = [],
 }: {
   onNavigate?: () => void;
   isAdmin?: boolean;
+  capabilities?: Capability[];
 }) {
   const pathname = usePathname();
 
+  const capSet = useMemo(() => new Set<Capability>(capabilities), [capabilities]);
+
+  const canSee = (required?: Capability) => {
+    if (!required) return true;
+    if (isAdmin) return true;
+    return capSet.has(required);
+  };
+
   const defaultOpenGroups = useMemo(() => {
     const open = new Set<string>();
+
     for (const item of NAV) {
-      if (item.type === "group") {
-        const hasActiveChild = item.items.some((x: NavChildItem) =>
-          isActivePath(pathname, x.href)
-        );
-        if (hasActiveChild) open.add(item.label);
-      }
+      if (item.type !== "group") continue;
+
+      // Si el grupo no es visible, no lo abrimos
+      if (!canSee(item.capability)) continue;
+
+      const visibleChildren = item.items.filter((x: NavChildItem) => canSee(x.capability));
+      const hasActiveChild = visibleChildren.some((x: NavChildItem) =>
+        isActivePath(pathname, x.href)
+      );
+
+      if (hasActiveChild) open.add(item.label);
     }
+
     return open;
-  }, [pathname]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, isAdmin, capabilities]);
 
   const [openGroups, setOpenGroups] = useState<Set<string>>(defaultOpenGroups);
-
   const [activeSlug, setActiveSlug] = useState<string>("");
 
   useEffect(() => {
@@ -306,6 +323,8 @@ export default function Sidebar({
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto bcc-scrollbar">
         {NAV.map((item: NavItem) => {
           if (item.type === "link") {
+            if (!canSee(item.capability)) return null;
+
             const active = isActivePath(pathname, item.href);
             const disabled = item.disabled === true;
 
@@ -341,8 +360,14 @@ export default function Sidebar({
             );
           }
 
+          // group
+          if (!canSee(item.capability)) return null;
+
+          const visibleChildren = item.items.filter((child: NavChildItem) => canSee(child.capability));
+          if (visibleChildren.length === 0) return null;
+
           const isOpen = openGroups.has(item.label) === true;
-          const groupHasActive = item.items.some((x: NavChildItem) =>
+          const groupHasActive = visibleChildren.some((x: NavChildItem) =>
             isActivePath(pathname, x.href)
           );
           const groupDisabled = item.disabled === true;
@@ -374,11 +399,7 @@ export default function Sidebar({
                   <Icon name={groupIcon(item.label)} />
                   {item.label}
                 </span>
-                <span
-                  className={["transition-transform", isOpen ? "rotate-90" : ""].join(
-                    " "
-                  )}
-                >
+                <span className={["transition-transform", isOpen ? "rotate-90" : ""].join(" ")}>
                   <Icon name="chev" />
                 </span>
               </button>
@@ -391,7 +412,7 @@ export default function Sidebar({
               >
                 <div className="min-h-0">
                   <div className="ml-3 mt-1 border-l border-border pl-3">
-                    {item.items.map((child: NavChildItem) => {
+                    {visibleChildren.map((child: NavChildItem) => {
                       const active = isActivePath(pathname, child.href);
                       const disabled = child.disabled === true;
 
@@ -447,17 +468,19 @@ export default function Sidebar({
               Ver web pública ↗
             </a>
 
-            <Link
-              id="sidebar-access-edit-web"
-              href="/panel/web-control/hero"
-              onClick={onNavigate}
-              className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
-            >
-              Editar web pública
-            </Link>
+            {canSee("CAN_EDIT_WEB") ? (
+              <Link
+                id="sidebar-access-edit-web"
+                href="/panel/web-control/hero"
+                onClick={onNavigate}
+                className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+              >
+                Editar web pública
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>
     </aside>
   );
-}  
+}

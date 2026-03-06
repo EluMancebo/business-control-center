@@ -1,11 +1,15 @@
+// src/lib/auth/jwt.ts
 import jwt, { type Secret, type SignOptions } from "jsonwebtoken";
 
 const JWT_SECRET: Secret = process.env.JWT_SECRET ?? "dev_secret_change_me";
 const JWT_EXPIRES = (process.env.JWT_EXPIRES ?? "7d") as SignOptions["expiresIn"];
+
+export type Role = "owner" | "marketing" | "staff" | "admin";
+
 export type JwtPayload = {
-  id: string;
+  sub: string; // userId
   businessId: string;
-  role: "owner" | "marketing" | "staff" | "admin";
+  role: Role;
   email: string;
 };
 

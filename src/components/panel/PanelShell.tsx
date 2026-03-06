@@ -1,9 +1,13 @@
+// src/components/panel/PanelShell.tsx
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import type { Capability } from "@/lib/auth/capabilities";
+import type { SessionPayload } from "@/lib/auth/serverSession";
 
 function getStudioTitle(pathname: string) {
   if (pathname.startsWith("/panel/web-control/")) {
@@ -36,18 +40,35 @@ function getStudioHubHref(pathname: string) {
 
 const STUDIO_ANIM_MS = 1100; // igual que en globals.css
 
+function shortId(value: string | undefined, keep = 6) {
+  if (!value) return "—";
+  if (value.length <= keep * 2) return value;
+  return `${value.slice(0, keep)}…${value.slice(-keep)}`;
+}
+
 export default function PanelShell({
   children,
   role,
+  isAdmin,
+  capabilities,
+  session,
 }: {
   children: React.ReactNode;
   role?: string;
+  isAdmin?: boolean;
+  capabilities?: Capability[];
+  session?: SessionPayload;
 }) {
   const router = useRouter();
   const pathname = usePathname();
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isAdmin = role === "admin";
+  const computedIsAdmin = isAdmin ?? role === "admin";
+  const caps = capabilities ?? [];
+
+  // ✅ USO REAL DE session (y visible para debug)
+  const userId = session?.sub;
+  const businessId = session?.businessId;
 
   const isStudio = useMemo(() => {
     const p = pathname || "";
@@ -61,16 +82,14 @@ export default function PanelShell({
   const [studioExiting, setStudioExiting] = useState(false);
 
   useEffect(() => {
-    // cada vez que cambiamos de ruta (dentro del studio), reseteamos estado salida
     setStudioExiting(false);
   }, [pathname]);
 
   useEffect(() => {
-  setMobileOpen(false);
+    setMobileOpen(false);
   }, [pathname]);
 
   function exitStudio() {
-    // evita doble click
     if (studioExiting) return;
 
     setStudioExiting(true);
@@ -131,7 +150,6 @@ export default function PanelShell({
                 ← Menú
               </button>
 
-              {/* icono característico (integrado con paleta) */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/brand/logo-mark.svg"
@@ -166,10 +184,15 @@ export default function PanelShell({
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div
+      className="min-h-screen bg-background text-foreground"
+      data-role={role ?? ""}
+      data-business-id={businessId ?? ""}
+      data-user-id={userId ?? ""}
+    >
       <div className="mx-auto flex min-h-screen max-w-7xl">
         <div className="hidden sm:block">
-          <Sidebar isAdmin={isAdmin} />
+          <Sidebar isAdmin={computedIsAdmin} capabilities={caps} />
         </div>
 
         <div className={`sm:hidden ${mobileOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
@@ -202,12 +225,29 @@ export default function PanelShell({
             </div>
 
             <div className="h-[calc(100vh-57px)] overflow-y-auto bcc-scrollbar">
-              <Sidebar isAdmin={isAdmin} onNavigate={() => setMobileOpen(false)} />
+              <Sidebar
+                isAdmin={computedIsAdmin}
+                capabilities={caps}
+                onNavigate={() => setMobileOpen(false)}
+              />
             </div>
           </div>
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
+          {/* Banda de contexto (muy discreta) */}
+          <div className="border-b border-border bg-background px-4 py-2 text-xs text-muted-foreground sm:px-6">
+            <span className="font-medium text-foreground">Sesión:</span>{" "}
+            rol <span className="font-medium text-foreground">{role ?? "—"}</span>{" "}
+            · business <span className="font-medium text-foreground">{shortId(businessId)}</span>{" "}
+            · user <span className="font-medium text-foreground">{shortId(userId)}</span>
+            {computedIsAdmin ? (
+              <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-[11px] text-foreground">
+                ADMIN
+              </span>
+            ) : null}
+          </div>
+
           <Topbar onOpenMenu={() => setMobileOpen(true)} />
           <main className="flex-1 p-4 sm:p-6">
             <div className="mx-auto w-full">{children}</div>
@@ -216,4 +256,4 @@ export default function PanelShell({
       </div>
     </div>
   );
-} 
+}

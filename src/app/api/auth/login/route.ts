@@ -1,4 +1,5 @@
- import { NextResponse } from "next/server";
+// src/app/api/auth/login/route.ts
+import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
@@ -21,7 +22,6 @@ const EXPIRES_IN: ExpiresIn = JWT_EXPIRES as ExpiresIn;
 
 declare global {
   // Cache global para no abrir muchas conexiones en desarrollo
-  
   var _mongooseLoginConn: Promise<typeof mongoose> | null;
 }
 
@@ -57,6 +57,11 @@ type LeanUser = {
   businessId?: string;
 };
 
+function isLocalhostRequest(req: Request) {
+  const host = (req.headers.get("host") ?? "").toLowerCase();
+  return host.includes("localhost") || host.includes("127.0.0.1");
+}
+
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
 
@@ -90,13 +95,18 @@ export async function POST(req: Request) {
 
   const res = NextResponse.json({ ok: true }, { status: 200 });
 
+  // ✅ En localhost NO usamos Secure, o el navegador NO guardará la cookie.
+  const isLocal = isLocalhostRequest(req);
+
   res.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: !isLocal, // ✅ clave del fix
     path: "/",
+    // opcional: ayuda a que el navegador la trate como “cookie de sesión” con caducidad controlada
+    // maxAge: 60 * 60 * 24 * 7,
   });
 
   return res;
 }
- 
+
