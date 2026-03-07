@@ -1,3 +1,5 @@
+//src/lib/web/hero/service.ts
+
 "use client";
 
 import type { HeroData } from "./types";

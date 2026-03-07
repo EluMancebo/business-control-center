@@ -1,7 +1,10 @@
+
+// src/app/api/web/hero/publish/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Business } from "@/models/Business";
 import { HeroConfig } from "@/models/HeroConfig";
+import { PublishedPage } from "@/models/PublishedPage";
 import { getSessionFromToken } from "@/lib/auth/session";
 import type { HeroData } from "@/lib/web/hero/types";
 
@@ -37,6 +40,19 @@ async function requirePublishAccess(req: NextRequest, businessId: string) {
   return { ok: true as const };
 }
 
+type PublishedPageLean = {
+  _id: unknown;
+  latestVersion?: number;
+  versions?: Array<{
+    version: number;
+    createdAt?: Date;
+    hero: {
+      variantKey: string;
+      data: HeroData;
+    };
+  }>;
+};
+
 export async function POST(req: NextRequest) {
   await dbConnect();
 
@@ -51,7 +67,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "variantKey inválido" }, { status: 400 });
   }
 
-  const b = await Business.findOne({ slug }).lean();
+  const b = await Business.findOne({ slug }).lean<{ _id: unknown; slug: string } | null>();
   if (!b) {
     return NextResponse.json({ ok: false, error: "Business no encontrado" }, { status: 404 });
   }
@@ -66,21 +82,71 @@ export async function POST(req: NextRequest) {
     businessSlug: slug,
     status: "draft",
     variantKey: variantRaw,
-  }).lean();
+  }).lean<{ data: HeroData } | null>();
 
   if (!draft) {
     return NextResponse.json({ ok: false, error: "No hay draft para publicar" }, { status: 404 });
   }
 
-  const published = await HeroConfig.findOneAndUpdate(
-    { businessId: b._id, businessSlug: slug, status: "published", variantKey: variantRaw },
-    { $set: { data: draft.data as HeroData } },
-    { upsert: true, new: true }
-  ).lean();
+  const existing = await PublishedPage.findOne({
+    businessId: b._id,
+    businessSlug: slug,
+    pageKey: "home",
+  }).lean<PublishedPageLean | null>();
 
-  return NextResponse.json({
-    ok: true,
-    status: published?.status ?? "published",
-    data: (published?.data ?? draft.data) as HeroData,
-  });
+  const nextVersion = Number(existing?.latestVersion || 0) + 1;
+
+  const updated = await PublishedPage.findOneAndUpdate(
+    {
+      businessId: b._id,
+      businessSlug: slug,
+      pageKey: "home",
+    },
+    {
+      $setOnInsert: {
+        businessId: b._id,
+        businessSlug: slug,
+        pageKey: "home",
+      },
+      $set: {
+        latestVersion: nextVersion,
+      },
+      $push: {
+        versions: {
+          version: nextVersion,
+          createdAt: new Date(),
+          hero: {
+            variantKey: variantRaw,
+            data: draft.data,
+          },
+        },
+      },
+    },
+    { upsert: true, new: true }
+  ).lean<PublishedPageLean | null>();
+
+  const publishedVersion =
+    updated?.versions?.find((v) => v.version === nextVersion) ??
+    updated?.versions?.[updated.versions.length - 1];
+
+  return NextResponse.json(
+    {
+      ok: true,
+      pageKey: "home",
+      latestVersion: updated?.latestVersion ?? nextVersion,
+      published: publishedVersion
+        ? {
+            version: publishedVersion.version,
+            hero: publishedVersion.hero,
+          }
+        : {
+            version: nextVersion,
+            hero: {
+              variantKey: variantRaw,
+              data: draft.data,
+            },
+          },
+    },
+    { status: 200 }
+  );
 }  

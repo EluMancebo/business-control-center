@@ -1,3 +1,5 @@
+ //src/app/panel/taller/presets/hero/page.tsx
+ 
  import PageHeader from "@/components/panel/PageHeader";
 
 export default function TallerPresetsHeroPage() {

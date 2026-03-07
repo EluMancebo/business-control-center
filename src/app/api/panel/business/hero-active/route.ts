@@ -1,3 +1,5 @@
+//src/app/api/panel/business/hero-active/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Business } from "@/models/Business";

@@ -1,3 +1,5 @@
+//src/app/api/web/public/business/route.ts
+
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Business } from "@/models/Business";

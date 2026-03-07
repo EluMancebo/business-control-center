@@ -1,4 +1,4 @@
-//src/app/[slug]/page.tsx
+// src/app/[slug]/page.tsx
 import { headers } from "next/headers";
 import PublicHero from "@/components/web/hero/PublicHero";
 import BrandHydrator from "@/components/brand/BrandHydrator";
@@ -24,13 +24,28 @@ type BusinessPublic = {
   activeHeroVariantKey: string;
 };
 
-// ---------- Utils (sin any, sin casts) ----------
+type PublishedPagePublic = {
+  businessSlug: string;
+  pageKey: string;
+  latestVersion: number;
+  version: number;
+  hero: {
+    variantKey: string;
+    data: HeroData;
+  };
+};
+
+// ---------- Utils ----------
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
 function isString(value: unknown): value is string {
   return typeof value === "string";
+}
+
+function isNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
 }
 
 function safeDecodeSlug(value: string): string {
@@ -90,10 +105,28 @@ function parseBusinessPublicResponse(json: unknown): BusinessPublic | null {
   return parsed;
 }
 
-function parseHeroResponse(json: unknown): HeroData | null {
+function parsePublishedPageResponse(json: unknown): PublishedPagePublic | null {
   if (!isRecord(json)) return null;
 
-  const data = json["data"];
+  const page = json["page"];
+  if (!isRecord(page)) return null;
+
+  const businessSlug = page["businessSlug"];
+  const pageKey = page["pageKey"];
+  const latestVersion = page["latestVersion"];
+  const version = page["version"];
+  const hero = page["hero"];
+
+  if (!isString(businessSlug)) return null;
+  if (!isString(pageKey)) return null;
+  if (!isNumber(latestVersion)) return null;
+  if (!isNumber(version)) return null;
+  if (!isRecord(hero)) return null;
+
+  const variantKey = hero["variantKey"];
+  const data = hero["data"];
+
+  if (!isString(variantKey)) return null;
   if (!isRecord(data)) return null;
 
   const badge = data["badge"];
@@ -112,7 +145,7 @@ function parseHeroResponse(json: unknown): HeroData | null {
   if (!isString(secondaryCtaLabel)) return null;
   if (!isString(secondaryCtaHref)) return null;
 
-  const hero: HeroData = {
+  const heroData: HeroData = {
     badge,
     title,
     description,
@@ -126,11 +159,20 @@ function parseHeroResponse(json: unknown): HeroData | null {
   const logoUrl = data["logoUrl"];
   const logoSvg = data["logoSvg"];
 
-  if (isString(backgroundImageUrl)) hero.backgroundImageUrl = backgroundImageUrl;
-  if (isString(logoUrl)) hero.logoUrl = logoUrl;
-  if (isString(logoSvg)) hero.logoSvg = logoSvg;
+  if (isString(backgroundImageUrl)) heroData.backgroundImageUrl = backgroundImageUrl;
+  if (isString(logoUrl)) heroData.logoUrl = logoUrl;
+  if (isString(logoSvg)) heroData.logoSvg = logoSvg;
 
-  return hero;
+  return {
+    businessSlug,
+    pageKey,
+    latestVersion,
+    version,
+    hero: {
+      variantKey,
+      data: heroData,
+    },
+  };
 }
 
 // ---------- Data fetch ----------
@@ -146,18 +188,17 @@ async function getBusinessPublic(slug: string): Promise<BusinessPublic | null> {
   return parseBusinessPublicResponse(json);
 }
 
-async function getPublishedHero(slug: string, variantKey: string): Promise<HeroData | null> {
+async function getPublishedPage(slug: string): Promise<PublishedPagePublic | null> {
   const baseUrl = await getBaseUrl();
-  const url = new URL("/api/web/hero", baseUrl);
-  url.searchParams.set("status", "published");
+  const url = new URL("/api/web/public/page", baseUrl);
   url.searchParams.set("slug", slug);
-  url.searchParams.set("variantKey", variantKey);
+  url.searchParams.set("pageKey", "home");
 
   const res = await fetch(url.toString(), { cache: "no-store" });
   if (!res.ok) return null;
 
   const json: unknown = await res.json();
-  return parseHeroResponse(json);
+  return parsePublishedPageResponse(json);
 }
 
 // ---------- Page ----------
@@ -170,15 +211,18 @@ export default async function PublicBusinessPage({
   const decodedSlug = safeDecodeSlug(resolved.slug);
 
   const business = await getBusinessPublic(decodedSlug);
+  const publishedPage = await getPublishedPage(decodedSlug);
+  const hero = publishedPage?.hero?.data ?? null;
   const activeVariantKey = business?.activeHeroVariantKey ?? "default";
-  const hero = await getPublishedHero(decodedSlug, activeVariantKey);
 
   return (
     <>
-      {/* ✅ La web pública aplica SU brand (scope web) */}
       <BrandHydrator scope="web" businessSlug={decodedSlug} />
 
-      <main id="public-business-page" className="min-h-svh w-full overflow-x-hidden overflow-y-auto bcc-scrollbar bg-background text-foreground">
+      <main
+        id="public-business-page"
+        className="min-h-svh w-full overflow-x-hidden overflow-y-auto bcc-scrollbar bg-background text-foreground"
+      >
         {hero ? (
           <section id="public-business-hero">
             <PublicHero data={hero} business={business ?? undefined} />
@@ -199,7 +243,7 @@ export default async function PublicBusinessPage({
               </h1>
 
               <p id="public-business-fallback-text" className="mt-3 text-sm text-muted-foreground">
-                No hay Hero publicado para el preset activo:&nbsp;
+                No hay Home publicada para el preset activo:&nbsp;
                 <span id="public-business-fallback-variant" className="font-semibold text-foreground">
                   {activeVariantKey}
                 </span>

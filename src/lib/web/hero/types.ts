@@ -1,3 +1,5 @@
+//src/lib/web/hero/types.ts
+
 export type HeroData = {
   badge: string;
   title: string;

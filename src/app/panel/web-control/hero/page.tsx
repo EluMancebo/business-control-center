@@ -1,3 +1,5 @@
+//src/app/panel/web-control/hero/page.tsx 
+ 
  "use client";
 
 import { useEffect, useMemo, useState } from "react";

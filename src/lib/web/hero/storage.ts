@@ -1,3 +1,5 @@
+// src/lib/web/hero/storage.ts
+
 import type { HeroData } from "./types";
 import { DEFAULT_HERO } from "./types";
 

@@ -1,3 +1,5 @@
+//src/models/PublishedPage.ts
+
 import { Schema, models, model } from "mongoose";
 
 // Repetimos el schema del Hero "data" (evitamos dependencias cruzadas)
