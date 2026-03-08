@@ -1,6 +1,6 @@
 //src/app/panel/web-control/hero/page.tsx 
  
- "use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import type { HeroData } from "@/lib/web/hero/types";
@@ -12,25 +12,35 @@ type BusinessPublic = {
   activeHeroVariantKey: string;
 };
 
-const PRESET_OPTIONS = [
-  { key: "default", label: "default (base)" },
-  { key: "presetA", label: "presetA (barbería)" },
-  { key: "presetB", label: "presetB (evento)" },
-  { key: "presetC", label: "presetC (campaña)" },
-] as const;
+type HeroPresetOption = {
+  key: string;
+  label: string;
+  description: string;
+  tags: string[];
+  status: "active" | "archived";
+};
 
-type PresetKey = (typeof PRESET_OPTIONS)[number]["key"];
+type AccountContext = {
+  ok: boolean;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+  business?: {
+    id: string;
+    slug: string;
+    name: string;
+  } | null;
+};
+
 type ViewportMode = "desktop" | "mobile";
 type MobileTab = "edit" | "preview";
 
-/**
- * ✅ Catálogo MVP de assets permitidos.
- */
 const ALLOWED_LOGOS = [
   { label: "Logo mark (BCC)", url: "/brand/logo-mark.svg" },
   { label: "Caballeros (PNG) antiguo", url: "/brand/caballeros-logo.png" },
-
-  // ✅ nuevos
   { label: "Caballeros · Logo HERO (PNG)", url: "/brand/LogoHeroCaballerosBarberia.png" },
   { label: "Caballeros · Logo Header/Footer (PNG)", url: "/brand/LogoHeadCaballerosBarberia.png" },
 ] as const;
@@ -42,8 +52,14 @@ const ALLOWED_HERO_BACKGROUNDS = [
 ] as const;
 
 function normalizeVariantKey(value: string) {
-  const v = String(value || "").trim();
+  const v = String(value || "").trim().toLowerCase();
   return v.length ? v : "default";
+}
+
+async function fetchAccountContext(): Promise<AccountContext | null> {
+  const res = await fetch("/api/panel/account", { cache: "no-store" });
+  if (!res.ok) return null;
+  return (await res.json()) as AccountContext;
 }
 
 async function fetchBusinessPublic(slug: string): Promise<BusinessPublic | null> {
@@ -53,6 +69,14 @@ async function fetchBusinessPublic(slug: string): Promise<BusinessPublic | null>
   if (!res.ok) return null;
   const json = (await res.json()) as { ok: boolean; business?: BusinessPublic };
   return json?.business ?? null;
+}
+
+async function fetchHeroPresets(): Promise<HeroPresetOption[]> {
+  const res = await fetch("/api/web/presets/hero", { cache: "no-store" });
+  if (!res.ok) throw new Error("No se pudieron cargar los presets");
+
+  const json = (await res.json()) as { ok: boolean; presets?: HeroPresetOption[] };
+  return Array.isArray(json?.presets) ? json.presets : [];
 }
 
 async function fetchHero(args: {
@@ -90,11 +114,7 @@ async function publishDraft(args: { slug: string; variantKey: string }) {
   if (!res.ok) throw new Error("No se pudo publicar");
 }
 
-/**
- * Capa 2: cambia el preset activo del negocio (escritura protegida).
- * IMPORTANTE: enviamos también slug para actualizar el business correcto.
- */
-async function setActivePreset(args: { variantKey: PresetKey; slug: string }) {
+async function setActivePreset(args: { variantKey: string; slug: string }) {
   const res = await fetch("/api/panel/business/hero-active", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -115,12 +135,20 @@ export default function HeroControlPage() {
       (process.env.NEXT_PUBLIC_DEMO_BUSINESS_SLUG as string | undefined)) ||
     "";
 
+  const [account, setAccount] = useState<AccountContext | null>(null);
+  const [bootLoading, setBootLoading] = useState(true);
+
   const [slug, setSlug] = useState<string>(demoSlug || "");
   const [business, setBusiness] = useState<BusinessPublic | null>(null);
+  const [presetOptions, setPresetOptions] = useState<HeroPresetOption[]>([]);
+
+  const fallbackPresetKey = useMemo<string>(() => {
+    return presetOptions[0]?.key ?? "default";
+  }, [presetOptions]);
 
   const activeVariantKey = useMemo<string>(() => {
-    return normalizeVariantKey(business?.activeHeroVariantKey || "default");
-  }, [business?.activeHeroVariantKey]);
+    return normalizeVariantKey(business?.activeHeroVariantKey || fallbackPresetKey);
+  }, [business?.activeHeroVariantKey, fallbackPresetKey]);
 
   const [form, setForm] = useState<HeroData>(DEFAULT_HERO);
   const [loading, setLoading] = useState(true);
@@ -130,19 +158,53 @@ export default function HeroControlPage() {
   const [viewport, setViewport] = useState<ViewportMode>("desktop");
   const [previewNonce, setPreviewNonce] = useState<number>(0);
 
-  // Mobile tabs (studio)
   const [tab, setTab] = useState<MobileTab>("edit");
 
-  // ✅ Debounce autosave flags
   const [dirty, setDirty] = useState<boolean>(false);
   const [saveTick, setSaveTick] = useState<number>(0);
 
-  // ✅ Guardar slug activo para Sidebar/Topbar (y accesos)
+  const role = account?.user?.role ?? "";
+  const isAdmin = role === "admin";
+  const lockedSlug = !isAdmin;
+
   useEffect(() => {
-    if (business?.slug) localStorage.setItem("bcc:activeBusinessSlug", business.slug);
+    let alive = true;
+
+    (async () => {
+      setBootLoading(true);
+
+      try {
+        const [presets, ctx] = await Promise.all([fetchHeroPresets(), fetchAccountContext()]);
+        if (!alive) return;
+
+        setPresetOptions(presets);
+        setAccount(ctx);
+
+        if (ctx?.user?.role && ctx.user.role !== "admin") {
+          const ownerSlug = ctx.business?.slug?.trim() || "";
+          setSlug(ownerSlug);
+        }
+      } catch {
+        if (!alive) return;
+        setPresetOptions([]);
+        setMsg("No se pudieron cargar los datos iniciales.");
+      } finally {
+        if (!alive) return;
+        setBootLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (business?.slug) {
+      localStorage.setItem("bcc:activeBusinessSlug", business.slug);
+    }
   }, [business?.slug]);
 
-  // 1) Cargar negocio cuando haya slug
   useEffect(() => {
     let alive = true;
 
@@ -162,6 +224,7 @@ export default function HeroControlPage() {
         if (!alive) return;
 
         setBusiness(b);
+
         if (!b) {
           setForm(DEFAULT_HERO);
           setMsg("Negocio no encontrado (revisa slug).");
@@ -181,12 +244,12 @@ export default function HeroControlPage() {
     };
   }, [slug]);
 
-  // 2) Cargar draft del preset activo
   useEffect(() => {
     let alive = true;
 
     (async () => {
       if (!business?.slug) return;
+      if (!activeVariantKey) return;
 
       setLoading(true);
       setMsg("");
@@ -201,8 +264,6 @@ export default function HeroControlPage() {
         if (!alive) return;
 
         setForm(data ?? DEFAULT_HERO);
-
-        // ✅ importante: al cargar desde servidor, no está "dirty"
         setDirty(false);
       } catch {
         if (!alive) return;
@@ -220,7 +281,6 @@ export default function HeroControlPage() {
     };
   }, [business?.slug, activeVariantKey]);
 
-  // ✅ Debounce autosave: guarda 300ms después del último cambio
   useEffect(() => {
     if (!business?.slug) return;
     if (!dirty) return;
@@ -242,16 +302,13 @@ export default function HeroControlPage() {
     return () => {
       window.clearTimeout(timeoutId);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [saveTick]);
+  }, [saveTick, business?.slug, dirty, activeVariantKey, form]);
 
   function update<K extends keyof HeroData>(key: K, value: HeroData[K]) {
     if (!business?.slug) return;
 
     const next: HeroData = { ...form, [key]: value };
     setForm(next);
-
-    // marcamos sucio y disparamos tick para debounce
     setDirty(true);
     setSaveTick((n) => n + 1);
   }
@@ -292,24 +349,23 @@ export default function HeroControlPage() {
     }
   }
 
-  async function changeActivePreset(nextKey: PresetKey) {
+  async function changeActivePreset(nextKey: string) {
     if (!business?.slug) return;
 
+    const normalizedKey = normalizeVariantKey(nextKey);
     const businessSlug = business.slug;
 
     try {
       setSaving(true);
       setMsg("");
 
-      await setActivePreset({ variantKey: nextKey, slug: businessSlug });
+      await setActivePreset({ variantKey: normalizedKey, slug: businessSlug });
 
       const b = await fetchBusinessPublic(businessSlug);
       setBusiness(b);
 
-      // al cambiar preset, no consideramos dirty el form actual (se recargará)
       setDirty(false);
-
-      setMsg(`Preset activo cambiado a "${nextKey}" ✓`);
+      setMsg(`Preset activo cambiado a "${normalizedKey}" ✓`);
       setPreviewNonce((n) => n + 1);
     } catch (e) {
       console.error(e);
@@ -327,13 +383,12 @@ export default function HeroControlPage() {
   const iframeWrapperClass =
     viewport === "mobile" ? "mx-auto w-[390px] max-w-full" : "w-full";
 
-  if (loading) {
+  if (bootLoading || loading) {
     return <div className="p-4 text-sm text-muted-foreground">Cargando…</div>;
   }
 
   return (
     <div className="h-full overflow-hidden">
-      {/* Mobile Tabs (solo visible en < lg) */}
       <div className="flex items-center gap-2 border-b border-border bg-background px-4 py-3 lg:hidden">
         <button
           type="button"
@@ -362,10 +417,8 @@ export default function HeroControlPage() {
         </button>
       </div>
 
-      {/* Desktop split + Mobile conditional */}
-      <div className="h-[calc(100vh-56px-0px)] lg:h-[calc(100vh-56px)]">
+      <div className="h-[calc(100vh-56px)]">
         <div className="grid h-full grid-cols-1 lg:grid-cols-[420px_1fr]">
-          {/* ===== LEFT: EDITOR ===== */}
           <aside
             className={[
               "h-full overflow-hidden border-r border-border bg-background",
@@ -373,31 +426,36 @@ export default function HeroControlPage() {
               tab === "edit" ? "block" : "hidden lg:block",
             ].join(" ")}
           >
-            <div className="h-full overflow-y-auto bcc-scrollbar p-4 pb-24 space-y-4">
-              {/* Contexto / preset / slug */}
+            <div className="h-full overflow-y-auto bcc-scrollbar space-y-4 p-4 pb-24">
               <section className="rounded-xl border border-border bg-card p-4 text-card-foreground">
                 <div className="space-y-3">
                   <div>
                     <label htmlFor="business-slug" className="text-sm font-semibold">
-                      Business slug (demo)
+                      {isAdmin ? "Business slug (admin)" : "Business slug"}
                     </label>
                     <input
                       id="business-slug"
                       value={slug}
                       onChange={(e) => setSlug(e.target.value)}
                       placeholder="caballeros-barberia"
-                      className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring"
+                      disabled={lockedSlug}
+                      className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-70"
                     />
                     <p className="mt-2 text-xs text-muted-foreground">
                       Negocio:{" "}
                       <span className="font-semibold text-foreground">
-                        {business?.name || "—"}
+                        {business?.name || account?.business?.name || "—"}
                       </span>{" "}
                       · web:{" "}
                       <span className="font-semibold text-foreground">
                         PUBLISHED/{activeVariantKey}
                       </span>
                     </p>
+                    {!isAdmin ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Tu panel está bloqueado al negocio asignado en sesión.
+                      </p>
+                    ) : null}
                   </div>
 
                   <div>
@@ -407,15 +465,13 @@ export default function HeroControlPage() {
                     <select
                       id="active-preset"
                       value={activeVariantKey}
-                      onChange={(e) =>
-                        changeActivePreset(normalizeVariantKey(e.target.value) as PresetKey)
-                      }
+                      onChange={(e) => changeActivePreset(e.target.value)}
                       className="mt-2 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                      disabled={!business?.slug || saving}
+                      disabled={!business?.slug || saving || presetOptions.length === 0}
                     >
-                      {PRESET_OPTIONS.map((p) => (
-                        <option key={p.key} value={p.key}>
-                          {p.label}
+                      {presetOptions.map((preset) => (
+                        <option key={preset.key} value={preset.key}>
+                          {preset.label}
                         </option>
                       ))}
                     </select>
@@ -431,7 +487,6 @@ export default function HeroControlPage() {
                 </div>
               </section>
 
-              {/* Logo */}
               <section className="rounded-xl border border-border bg-card p-4">
                 <label htmlFor="hero-logo-select" className="text-sm font-semibold text-foreground">
                   Logo (disponibles)
@@ -471,7 +526,6 @@ export default function HeroControlPage() {
                 </details>
               </section>
 
-              {/* Fondo */}
               <section className="rounded-xl border border-border bg-card p-4">
                 <label htmlFor="hero-bg-select" className="text-sm font-semibold text-foreground">
                   Fondo Hero (disponibles)
@@ -511,7 +565,6 @@ export default function HeroControlPage() {
                 </details>
               </section>
 
-              {/* Textos */}
               <section className="rounded-xl border border-border bg-card p-4">
                 <div className="text-sm font-semibold text-foreground">Textos</div>
 
@@ -553,14 +606,13 @@ export default function HeroControlPage() {
                       id="hero-description"
                       value={form.description}
                       onChange={(e) => update("description", e.target.value)}
-                      className="mt-1 min-h-24 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      className="bcc-scrollbar mt-1 min-h-24 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                       disabled={!business?.slug}
                     />
                   </div>
                 </div>
               </section>
 
-              {/* Acciones */}
               <section className="rounded-xl border border-border bg-card p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <button
@@ -589,7 +641,6 @@ export default function HeroControlPage() {
             </div>
           </aside>
 
-          {/* ===== RIGHT: PREVIEW ===== */}
           <section
             className={[
               "h-full overflow-hidden bg-background",
@@ -673,4 +724,5 @@ export default function HeroControlPage() {
       </div>
     </div>
   );
-} 
+}
+ 

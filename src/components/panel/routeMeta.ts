@@ -1,5 +1,6 @@
  //src/components/panel/routeMeta.ts
- export type RouteMeta = {
+
+export type RouteMeta = {
   title: string;
   subtitle?: string;
 };
@@ -11,29 +12,50 @@ export const ROUTE_META: RouteMetaMap = {
     title: "Dashboard",
     subtitle: "Resumen general del negocio",
   },
+
   "/panel/web": {
     title: "Web pública",
     subtitle: "Gestión de la web visible",
   },
 
-  // Taller (Admin)
   "/panel/taller": {
     title: "Taller",
     subtitle: "Capa 1 · Diseño, presets y reglas del sistema",
   },
-  "/panel/taller/presets/hero": {
-    title: "Taller · Presets · Hero",
-    subtitle: "Crear, editar y publicar presets A/B/C",
+
+  "/panel/taller/brand": {
+    title: "Taller · Brand",
+    subtitle: "Identidad visual y elementos del sistema",
   },
 
-  // Marketing
-  "/panel/marketing/web": {
-    title: "Marketing · Web",
-    subtitle: "Optimización y contenido web",
+  "/panel/taller/media": {
+    title: "Taller · Media",
+    subtitle: "Recursos visuales maestros del sistema",
   },
-  "/panel/marketing/campaigns": {
-    title: "Marketing · Campañas",
-    subtitle: "Gestión y seguimiento de campañas",
+
+  "/panel/taller/web-brand": {
+    title: "Taller · Web Brand",
+    subtitle: "Marca base para webs, campañas y landings",
+  },
+
+  "/panel/taller/presets/hero": {
+    title: "Taller · Presets · Hero",
+    subtitle: "Crear, editar y mantener presets reales de Hero",
+  },
+
+  "/panel/taller/presets/header": {
+    title: "Taller · Presets · Header",
+    subtitle: "Base estructural de cabeceras reutilizables",
+  },
+
+  "/panel/taller/presets/footer": {
+    title: "Taller · Presets · Footer",
+    subtitle: "Base estructural de footers reutilizables",
+  },
+
+  "/panel/taller/presets/layouts": {
+    title: "Taller · Presets · Layouts",
+    subtitle: "Estructuras y composiciones base de página",
   },
 };
 
@@ -54,6 +76,12 @@ export function getRouteMeta(pathname: string): RouteMeta {
 
 export type Crumb = { label: string; href: string };
 
+function prettifySegment(segment: string) {
+  return segment
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function buildBreadcrumbs(pathname: string): Crumb[] {
   if (!pathname.startsWith("/panel")) return [];
 
@@ -66,17 +94,12 @@ export function buildBreadcrumbs(pathname: string): Crumb[] {
     const href = acc;
 
     const meta = ROUTE_META[href];
-    const label =
-      meta?.title ??
-      parts[i]
-        .replace(/-/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
+    const label = meta?.title ?? prettifySegment(parts[i]);
 
     crumbs.push({ label, href });
   }
 
   return crumbs;
-}
-
+} 
 
    

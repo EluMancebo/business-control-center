@@ -3,21 +3,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Business } from "@/models/Business";
 import { HeroConfig } from "@/models/HeroConfig";
+import { HeroPreset } from "@/models/HeroPreset";
 import { getSessionFromToken } from "@/lib/auth/session";
 import type { HeroData } from "@/lib/web/hero/types";
 
 const ALLOWED_STATUS = ["draft", "published"] as const;
 type HeroStatus = (typeof ALLOWED_STATUS)[number];
 
-const ALLOWED_VARIANTS = ["default", "presetA", "presetB", "presetC"] as const;
-type VariantKey = (typeof ALLOWED_VARIANTS)[number];
-
 function isHeroStatus(value: string): value is HeroStatus {
   return (ALLOWED_STATUS as readonly string[]).includes(value);
-}
-
-function isVariantKey(value: string): value is VariantKey {
-  return (ALLOWED_VARIANTS as readonly string[]).includes(value);
 }
 
 function getToken(req: NextRequest) {
@@ -34,6 +28,7 @@ async function getSession(req: NextRequest) {
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
 function getString(obj: Record<string, unknown>, key: string): string {
   const v = obj[key];
   return typeof v === "string" ? v : "";
@@ -106,13 +101,20 @@ function fallbackHeroTemplate(): HeroData {
   };
 }
 
+async function getActivePresetByKey(variantKey: string) {
+  return HeroPreset.findOne({
+    key: String(variantKey || "").trim().toLowerCase(),
+    status: "active",
+  }).lean<{ key: string; data: HeroData } | null>();
+}
+
 export async function GET(req: NextRequest) {
   await dbConnect();
 
   const { searchParams } = new URL(req.url);
   const statusRaw = String(searchParams.get("status") || "").trim();
   const slug = String(searchParams.get("slug") || "").trim().toLowerCase();
-  const variantRaw = String(searchParams.get("variantKey") || "").trim();
+  const variantRaw = String(searchParams.get("variantKey") || "").trim().toLowerCase();
 
   if (!slug) {
     return NextResponse.json({ ok: false, error: "Falta slug" }, { status: 400 });
@@ -120,7 +122,9 @@ export async function GET(req: NextRequest) {
   if (!isHeroStatus(statusRaw)) {
     return NextResponse.json({ ok: false, error: "status inválido" }, { status: 400 });
   }
-  if (!isVariantKey(variantRaw)) {
+
+  const preset = await getActivePresetByKey(variantRaw);
+  if (!preset) {
     return NextResponse.json({ ok: false, error: "variantKey inválido" }, { status: 400 });
   }
 
@@ -129,7 +133,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Business no encontrado" }, { status: 404 });
   }
 
-  // ✅ Published es público (web pública)
   if (statusRaw === "published") {
     const doc = await HeroConfig.findOne({
       businessId: b._id,
@@ -145,7 +148,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, status: doc.status, data: doc.data as HeroData });
   }
 
-  // ✅ Draft: requiere sesión + multi-tenant
   const access = await requireDraftAccess(req, String(b._id));
   if (!access.ok) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: access.status });
@@ -158,8 +160,12 @@ export async function GET(req: NextRequest) {
     variantKey: variantRaw,
   }).lean();
 
-  // ✅ BOOTSTRAP: si no existe draft del preset, lo creamos clonando default (o template)
   if (!doc) {
+    const defaultPreset = await HeroPreset.findOne({
+      key: "default",
+      status: "active",
+    }).lean<{ key: string; data: HeroData } | null>();
+
     const fromDraftDefault = await HeroConfig.findOne({
       businessId: b._id,
       businessSlug: slug,
@@ -175,6 +181,8 @@ export async function GET(req: NextRequest) {
     }).lean();
 
     const seedData =
+      preset.data ??
+      defaultPreset?.data ??
       (fromDraftDefault?.data as HeroData | undefined) ??
       (fromPublishedDefault?.data as HeroData | undefined) ??
       fallbackHeroTemplate();
@@ -198,12 +206,14 @@ export async function PUT(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const slug = String(searchParams.get("slug") || "").trim().toLowerCase();
-  const variantRaw = String(searchParams.get("variantKey") || "").trim();
+  const variantRaw = String(searchParams.get("variantKey") || "").trim().toLowerCase();
 
   if (!slug) {
     return NextResponse.json({ ok: false, error: "Falta slug" }, { status: 400 });
   }
-  if (!isVariantKey(variantRaw)) {
+
+  const preset = await getActivePresetByKey(variantRaw);
+  if (!preset) {
     return NextResponse.json({ ok: false, error: "variantKey inválido" }, { status: 400 });
   }
 
@@ -229,5 +239,9 @@ export async function PUT(req: NextRequest) {
     { upsert: true, new: true }
   ).lean();
 
-  return NextResponse.json({ ok: true, status: doc?.status ?? "draft", data: (doc?.data ?? body) as HeroData });
-}  
+  return NextResponse.json({
+    ok: true,
+    status: doc?.status ?? "draft",
+    data: (doc?.data ?? body) as HeroData,
+  });
+}

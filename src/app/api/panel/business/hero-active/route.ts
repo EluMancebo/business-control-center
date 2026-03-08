@@ -1,16 +1,9 @@
 //src/app/api/panel/business/hero-active/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Business } from "@/models/Business";
+import { HeroPreset } from "@/models/HeroPreset";
 import { requireSession } from "@/lib/auth/serverSession";
-
-const ALLOWED = ["default", "presetA", "presetB", "presetC"] as const;
-type VariantKey = (typeof ALLOWED)[number];
-
-function isVariantKey(v: string): v is VariantKey {
-  return (ALLOWED as readonly string[]).includes(v);
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -19,6 +12,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function getString(obj: Record<string, unknown>, key: string): string {
   const v = obj[key];
   return typeof v === "string" ? v : "";
+}
+
+async function getActivePresetByKey(variantKey: string) {
+  return HeroPreset.findOne({
+    key: String(variantKey || "").trim().toLowerCase(),
+    status: "active",
+  }).lean<{ key: string; label: string } | null>();
 }
 
 export async function PUT(req: NextRequest) {
@@ -37,16 +37,24 @@ export async function PUT(req: NextRequest) {
   }
 
   const slugRaw = getString(raw, "slug").trim().toLowerCase();
-  const variantKeyRaw = getString(raw, "variantKey").trim();
+  const variantKeyRaw = getString(raw, "variantKey").trim().toLowerCase();
 
   if (!slugRaw) {
     return NextResponse.json({ ok: false, error: "Falta slug" }, { status: 400 });
   }
-  if (!isVariantKey(variantKeyRaw)) {
+
+  const preset = await getActivePresetByKey(variantKeyRaw);
+  if (!preset) {
     return NextResponse.json({ ok: false, error: "variantKey inválido" }, { status: 400 });
   }
 
-  const business = await Business.findOne({ slug: slugRaw }).lean<{ _id: unknown; name?: string; slug: string; activeHeroVariantKey?: string }>();
+  const business = await Business.findOne({ slug: slugRaw }).lean<{
+    _id: unknown;
+    name?: string;
+    slug: string;
+    activeHeroVariantKey?: string;
+  } | null>();
+
   if (!business) {
     return NextResponse.json({ ok: false, error: "Business no encontrado" }, { status: 404 });
   }
@@ -68,7 +76,11 @@ export async function PUT(req: NextRequest) {
     { slug: slugRaw },
     { $set: { activeHeroVariantKey: variantKeyRaw } },
     { new: true }
-  ).lean<{ name?: string; slug: string; activeHeroVariantKey?: string }>();
+  ).lean<{
+    name?: string;
+    slug: string;
+    activeHeroVariantKey?: string;
+  } | null>();
 
   if (!updated) {
     return NextResponse.json({ ok: false, error: "Business no encontrado" }, { status: 404 });
@@ -82,4 +94,4 @@ export async function PUT(req: NextRequest) {
       activeHeroVariantKey: updated.activeHeroVariantKey || "default",
     },
   });
-}  
+} 

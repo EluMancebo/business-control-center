@@ -1,3 +1,5 @@
+//src/components/panel/Topbar.tsx
+
 "use client";
 
 import LogoutButton from "../LogoutButton";
@@ -9,6 +11,36 @@ import { buildBreadcrumbs, getRouteMeta } from "./routeMeta";
 function getPublicHrefFromSlug(slug: string | null | undefined) {
   const clean = String(slug || "").trim();
   return clean ? `/${encodeURIComponent(clean)}` : "/";
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
+      <path
+        d="M14 5h5v5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 14L19 5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M19 14v4a1 1 0 01-1 1h-12a1 1 0 01-1-1v-12a1 1 0 011-1h4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
@@ -41,14 +73,13 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const publicHref = getPublicHrefFromSlug(activeSlug);
 
   return (
-    <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
+    <header className="sticky top-0 z-10 border-b border-border bg-card/92 shadow-[0_10px_28px_rgba(15,23,42,0.08)] backdrop-blur">
       <div className="flex items-center justify-between px-4 py-3 sm:px-6">
-        {/* IZQUIERDA */}
         <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
             onClick={() => onOpenMenu?.()}
-            className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-sm sm:hidden"
+            className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm sm:hidden"
             aria-label="Abrir menú"
             title="Abrir menú"
           >
@@ -56,7 +87,6 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
           </button>
 
           <div className="min-w-0">
-            {/* Breadcrumbs */}
             {crumbs.length > 0 ? (
               <nav className="mb-0.5 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
                 {crumbs.map((c, idx) => (
@@ -76,23 +106,20 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
               </nav>
             ) : null}
 
-            {/* Título */}
             <div className="truncate text-sm font-semibold text-foreground">{meta.title}</div>
 
-            {/* Subtítulo */}
             {meta.subtitle ? (
               <div className="truncate text-xs text-muted-foreground">{meta.subtitle}</div>
             ) : null}
           </div>
         </div>
 
-        {/* DERECHA */}
         <div className="flex items-center gap-2">
           <a
             href={publicHref}
             target="_blank"
             rel="noreferrer"
-            className="hidden rounded-lg border border-border bg-background px-3 py-2 text-sm hover:bg-muted sm:inline-flex"
+            className="hidden items-center rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm hover:bg-muted sm:inline-flex"
             title={activeSlug ? `Abrir /${activeSlug}` : "Abrir web pública (falta slug)"}
           >
             Ver web
@@ -102,11 +129,11 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
             href={publicHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-sm hover:bg-muted sm:hidden"
+            className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm hover:bg-muted sm:hidden"
             aria-label="Ver web"
             title={activeSlug ? `Abrir /${activeSlug}` : "Ver web"}
           >
-            ↗
+            <ExternalLinkIcon />
           </a>
 
           <LogoutButton />
@@ -114,4 +141,4 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
       </div>
     </header>
   );
-}  
+}

@@ -5,7 +5,6 @@ export const revalidate = 0;
 import { redirect } from "next/navigation";
 import PanelShell from "@/components/panel/PanelShell";
 import { requireSession, type SessionPayload } from "@/lib/auth/serverSession";
-import BrandHydrator from "@/components/brand/BrandHydrator";
 import PanelContextOverlay from "@/components/panel/PanelContextOverlay";
 import { getCapabilitiesForRole, type Capability } from "@/lib/auth/capabilities";
 
@@ -24,7 +23,6 @@ export default async function PanelLayout({ children }: { children: React.ReactN
 
   return (
     <>
-      <BrandHydrator scope="panel" />
       <PanelContextOverlay />
       <PanelShell role={role} isAdmin={isAdmin} capabilities={capabilities} session={session}>
         {children}

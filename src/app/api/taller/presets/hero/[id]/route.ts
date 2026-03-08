@@ -1,3 +1,5 @@
+//src/app/api/taller/presets/hero/[id]/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { HeroPreset } from "@/models/HeroPreset";

@@ -1,4 +1,5 @@
 // src/components/panel/nav.ts
+
 import type { Capability } from "@/lib/auth/capabilities";
 
 export type NavLinkItem = {
@@ -47,7 +48,21 @@ export const NAV: NavItem[] = [
     ],
   },
 
-  // Marketing (lo dejamos “pronto”, pero ya controlado por cap)
+  {
+    type: "group",
+    label: "Taller",
+    items: [
+      { label: "Panel", href: "/panel/taller" },
+      { label: "Brand", href: "/panel/taller/brand" },
+      { label: "Media", href: "/panel/taller/media" },
+      { label: "Web Brand", href: "/panel/taller/web-brand" },
+      { label: "Presets · Hero", href: "/panel/taller/presets/hero" },
+      { label: "Presets · Header", href: "/panel/taller/presets/header", disabled: true },
+      { label: "Presets · Footer", href: "/panel/taller/presets/footer", disabled: true },
+      { label: "Presets · Layouts", href: "/panel/taller/presets/layouts", disabled: true },
+    ],
+  },
+
   {
     type: "group",
     label: "Marketing",
@@ -55,12 +70,8 @@ export const NAV: NavItem[] = [
     items: [{ label: "Campañas", href: "/panel/marketing", disabled: true }],
   },
 
-  // ✅ Activamos Leads y Citas para poder probar permisos ya
   { type: "link", label: "Leads", href: "/panel/leads", capability: "CAN_VIEW_ASSIGNED_LEADS" },
   { type: "link", label: "Citas", href: "/panel/appointments", capability: "CAN_MANAGE_APPOINTMENTS" },
-
-  { type: "link", label: "Brand", href: "/panel/web-control/brand", disabled: true },
-  { type: "link", label: "Media", href: "/panel/media", disabled: true },
 
   {
     type: "group",
@@ -72,3 +83,4 @@ export const NAV: NavItem[] = [
     ],
   },
 ];
+

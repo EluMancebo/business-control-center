@@ -483,11 +483,11 @@ html[data-brand-mode="dark"] .footer-panel::before {
 }
 
 .bcc-studio-slide-in {
-  animation: bccStudioSlideIn 5000ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: bccStudioSlideIn 3000ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .bcc-studio-slide-out {
-  animation: bccStudioSlideOut 5000ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: bccStudioSlideOut 3000ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -504,19 +504,32 @@ html[data-brand-mode="dark"] .footer-panel::before {
 .bcc-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+.bcc-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.bcc-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .bcc-scrollbar::-webkit-scrollbar-thumb {
   background-color: var(--border);
   border-radius: 999px;
-  border: 3px solid transparent;
+  border: 2px solid transparent;
   background-clip: content-box;
 }
 
+.bcc-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ring);
+}
 
-
-
-/* Scrollbar con más presencia en dark (sin propiedades Firefox) */
 html[data-brand-mode="dark"] .bcc-scrollbar::-webkit-scrollbar-thumb {
   background-color: var(--ring);
+}
+
+html[data-brand-mode="dark"] .bcc-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--primary);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -524,4 +537,19 @@ html[data-brand-mode="dark"] .bcc-scrollbar::-webkit-scrollbar-thumb {
   html[data-brand-mode="system"] .bcc-scrollbar::-webkit-scrollbar-thumb {
     background-color: var(--ring);
   }
+
+  html:not([data-brand-mode]) .bcc-scrollbar::-webkit-scrollbar-thumb:hover,
+  html[data-brand-mode="system"] .bcc-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: var(--primary);
+  }
+}
+
+.bcc-studio-slide-in {
+  animation: bccStudioSlideIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+.bcc-studio-slide-out {
+  animation: bccStudioSlideOut 3000ms cubic-bezier(0.4, 0, 1, 1) both;
+  will-change: transform, opacity;
 }

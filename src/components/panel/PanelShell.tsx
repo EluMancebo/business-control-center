@@ -2,12 +2,13 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import type { Capability } from "@/lib/auth/capabilities";
 import type { SessionPayload } from "@/lib/auth/serverSession";
+import BrandHydrator from "@/components/brand/BrandHydrator";
 
 function getStudioTitle(pathname: string) {
   if (pathname.startsWith("/panel/web-control/")) {
@@ -19,14 +20,24 @@ function getStudioTitle(pathname: string) {
       "/panel/web-control/testimonials": "Web Control · Testimonios",
       "/panel/web-control/hours": "Web Control · Horario",
       "/panel/web-control/location": "Web Control · Ubicación",
-      "/panel/web-control/brand": "Ajustes · Apariencia (Panel)",
+      "/panel/web-control/brand": "Web Control · Apariencia",
       "/panel/web-control/home": "Web Control · Home",
     };
     return map[pathname] ?? "Web Control";
   }
 
   if (pathname.startsWith("/panel/taller/")) {
-    return "Taller · Studio";
+    const map: Record<string, string> = {
+      "/panel/taller": "Taller",
+      "/panel/taller/brand": "Taller · Brand",
+      "/panel/taller/media": "Taller · Media",
+      "/panel/taller/web-brand": "Taller · Web Brand",
+      "/panel/taller/presets/hero": "Taller · Presets · Hero",
+      "/panel/taller/presets/header": "Taller · Presets · Header",
+      "/panel/taller/presets/footer": "Taller · Presets · Footer",
+      "/panel/taller/presets/layouts": "Taller · Presets · Layouts",
+    };
+    return map[pathname] ?? "Taller";
   }
 
   return "Studio";
@@ -38,12 +49,50 @@ function getStudioHubHref(pathname: string) {
   return "/panel/dashboard";
 }
 
-const STUDIO_ANIM_MS = 1100; // igual que en globals.css
+const STUDIO_ANIM_MS = 380;
 
 function shortId(value: string | undefined, keep = 6) {
   if (!value) return "—";
   if (value.length <= keep * 2) return value;
   return `${value.slice(0, keep)}…${value.slice(-keep)}`;
+}
+
+function ArrowLeftIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
+      <path
+        d="M15 6l-6 6 6 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function HomeIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
+      <path
+        d="M4 11.5L12 5l8 6.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7 10.5V19h10v-8.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 export default function PanelShell({
@@ -63,10 +112,12 @@ export default function PanelShell({
   const pathname = usePathname();
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [studioExiting, setStudioExiting] = useState(false);
+  const [exitFromPath, setExitFromPath] = useState("");
+
   const computedIsAdmin = isAdmin ?? role === "admin";
   const caps = capabilities ?? [];
 
-  // ✅ USO REAL DE session (y visible para debug)
   const userId = session?.sub;
   const businessId = session?.businessId;
 
@@ -78,25 +129,35 @@ export default function PanelShell({
   const studioTitle = useMemo(() => getStudioTitle(pathname || ""), [pathname]);
   const studioHubHref = useMemo(() => getStudioHubHref(pathname || ""), [pathname]);
 
-  // ✅ salida animada
-  const [studioExiting, setStudioExiting] = useState(false);
-
-  useEffect(() => {
-    setStudioExiting(false);
+  const brandScope = useMemo(() => {
+    const p = pathname || "";
+    if (p.startsWith("/panel/taller")) return "system" as const;
+    return "panel" as const;
   }, [pathname]);
 
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
+  const isExitingCurrentStudio =
+    studioExiting && exitFromPath === (pathname || "");
 
-  function exitStudio() {
-    if (studioExiting) return;
+  const leaveStudio = useCallback(
+    (nextHref: string) => {
+      const currentPath = pathname || "";
 
-    setStudioExiting(true);
-    window.setTimeout(() => {
-      router.push(studioHubHref);
-    }, STUDIO_ANIM_MS);
-  }
+      if (studioExiting && exitFromPath === currentPath) return;
+
+      setExitFromPath(currentPath);
+      setStudioExiting(true);
+
+      window.setTimeout(() => {
+        router.push(nextHref);
+
+        window.setTimeout(() => {
+          setStudioExiting(false);
+          setExitFromPath("");
+        }, 0);
+      }, STUDIO_ANIM_MS);
+    },
+    [pathname, router, studioExiting, exitFromPath]
+  );
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -104,7 +165,7 @@ export default function PanelShell({
 
       if (isStudio) {
         e.preventDefault();
-        exitStudio();
+        leaveStudio(studioHubHref);
         return;
       }
 
@@ -113,8 +174,7 @@ export default function PanelShell({
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStudio, studioHubHref, studioExiting]);
+  }, [isStudio, leaveStudio, studioHubHref]);
 
   useEffect(() => {
     const shouldLock = mobileOpen || isStudio;
@@ -131,53 +191,63 @@ export default function PanelShell({
   if (isStudio) {
     return (
       <div className="fixed inset-0 z-100 bg-background text-foreground">
+        <BrandHydrator scope={brandScope} />
+
         <div
           key={pathname}
           className={[
             "absolute inset-0",
-            studioExiting ? "bcc-studio-slide-out" : "bcc-studio-slide-in",
+            isExitingCurrentStudio ? "bcc-studio-slide-out" : "bcc-studio-slide-in",
           ].join(" ")}
         >
-          <div className="flex h-14 items-center justify-between border-b border-border bg-background px-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <button
-                type="button"
-                onClick={exitStudio}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-3 text-sm font-semibold hover:bg-muted"
-                aria-label="Volver al menú"
-                title="Volver al menú"
-              >
-                ← Menú
-              </button>
+          <div className="border-b border-border bg-card/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur">
+            <div className="mx-auto flex h-14 max-w-400 items-center justify-between px-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => leaveStudio(studioHubHref)}
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground hover:bg-muted"
+                  aria-label="Volver al hub"
+                  title="Volver al hub"
+                >
+                  <ArrowLeftIcon />
+                  <span>Volver</span>
+                </button>
 
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/brand/logo-mark.svg"
-                alt="imagen logo "
-                className="h-5 w-5 opacity-80"
-                draggable={false}
-              />
+                <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background shadow-sm">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/brand/logo-mark.svg"
+                    alt="Logo Business Control Center"
+                    className="h-5 w-5 opacity-90"
+                    draggable={false}
+                  />
+                </div>
 
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold">{studioTitle}</div>
-                <div className="truncate text-xs text-muted-foreground">
-                  Estás editando esta sección (Studio)
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold">{studioTitle}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    Estás editando esta sección del sistema
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <button
-              type="button"
-              onClick={exitStudio}
-              className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
-              aria-label="Salir de Studio"
-              title="Salir de Studio"
-            >
-              Salir <span className="ml-2">✕</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => leaveStudio("/panel/dashboard")}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground hover:bg-muted"
+                aria-label="Ir al menú principal"
+                title="Ir al menú principal"
+              >
+                <HomeIcon />
+                <span>Inicio</span>
+              </button>
+            </div>
           </div>
 
-          <div className="h-[calc(100vh-56px)] overflow-hidden">{children}</div>
+          <div className="h-[calc(100vh-56px)] overflow-y-auto overflow-x-hidden bcc-scrollbar">
+            {children}
+          </div>
         </div>
       </div>
     );
@@ -190,6 +260,8 @@ export default function PanelShell({
       data-business-id={businessId ?? ""}
       data-user-id={userId ?? ""}
     >
+      <BrandHydrator scope={brandScope} />
+
       <div className="mx-auto flex min-h-screen max-w-7xl">
         <div className="hidden sm:block">
           <Sidebar isAdmin={computedIsAdmin} capabilities={caps} />
@@ -204,7 +276,7 @@ export default function PanelShell({
           />
 
           <div
-            className={`fixed inset-y-0 left-0 z-50 w-72 bg-background shadow-xl transition-transform duration-700 ease-in-out ${
+            className={`fixed inset-y-0 left-0 z-50 w-72 bg-card shadow-2xl transition-transform duration-300 ease-out ${
               mobileOpen ? "translate-x-0" : "-translate-x-full"
             }`}
             role="dialog"
@@ -235,8 +307,7 @@ export default function PanelShell({
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* Banda de contexto (muy discreta) */}
-          <div className="border-b border-border bg-background px-4 py-2 text-xs text-muted-foreground sm:px-6">
+          <div className="border-b border-border bg-card/70 px-4 py-2 text-xs text-muted-foreground shadow-[0_2px_10px_rgba(15,23,42,0.04)] sm:px-6">
             <span className="font-medium text-foreground">Sesión:</span>{" "}
             rol <span className="font-medium text-foreground">{role ?? "—"}</span>{" "}
             · business <span className="font-medium text-foreground">{shortId(businessId)}</span>{" "}
@@ -249,6 +320,7 @@ export default function PanelShell({
           </div>
 
           <Topbar onOpenMenu={() => setMobileOpen(true)} />
+
           <main className="flex-1 p-4 sm:p-6">
             <div className="mx-auto w-full">{children}</div>
           </main>

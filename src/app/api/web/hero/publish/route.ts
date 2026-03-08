@@ -4,16 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Business } from "@/models/Business";
 import { HeroConfig } from "@/models/HeroConfig";
+import { HeroPreset } from "@/models/HeroPreset";
 import { PublishedPage } from "@/models/PublishedPage";
 import { getSessionFromToken } from "@/lib/auth/session";
 import type { HeroData } from "@/lib/web/hero/types";
-
-const ALLOWED_VARIANTS = ["default", "presetA", "presetB", "presetC"] as const;
-type VariantKey = (typeof ALLOWED_VARIANTS)[number];
-
-function isVariantKey(value: string): value is VariantKey {
-  return (ALLOWED_VARIANTS as readonly string[]).includes(value);
-}
 
 function getToken(req: NextRequest) {
   const cookieName = process.env.COOKIE_NAME || "token";
@@ -53,17 +47,26 @@ type PublishedPageLean = {
   }>;
 };
 
+async function getActivePresetByKey(variantKey: string) {
+  return HeroPreset.findOne({
+    key: String(variantKey || "").trim().toLowerCase(),
+    status: "active",
+  }).lean<{ key: string } | null>();
+}
+
 export async function POST(req: NextRequest) {
   await dbConnect();
 
   const { searchParams } = new URL(req.url);
   const slug = String(searchParams.get("slug") || "").trim().toLowerCase();
-  const variantRaw = String(searchParams.get("variantKey") || "").trim();
+  const variantRaw = String(searchParams.get("variantKey") || "").trim().toLowerCase();
 
   if (!slug) {
     return NextResponse.json({ ok: false, error: "Falta slug" }, { status: 400 });
   }
-  if (!isVariantKey(variantRaw)) {
+
+  const preset = await getActivePresetByKey(variantRaw);
+  if (!preset) {
     return NextResponse.json({ ok: false, error: "variantKey inválido" }, { status: 400 });
   }
 
@@ -149,4 +152,4 @@ export async function POST(req: NextRequest) {
     },
     { status: 200 }
   );
-}  
+}

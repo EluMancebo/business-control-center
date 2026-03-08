@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { NAV, type NavItem, type NavChildItem } from "@/components/panel/nav";
 import type { Capability } from "@/lib/auth/capabilities";
 
@@ -24,16 +24,22 @@ function Icon({
     | "dashboard"
     | "web"
     | "webControl"
+    | "taller"
     | "marketing"
     | "settings"
     | "panel"
     | "hero"
+    | "header"
+    | "footer"
+    | "layouts"
     | "services"
     | "offers"
     | "testimonials"
     | "hours"
     | "location"
     | "brand"
+    | "media"
+    | "palette"
     | "key"
     | "chev";
 }) {
@@ -44,10 +50,7 @@ function Icon({
     case "dashboard":
       return (
         <svg aria-hidden="true" viewBox="0 0 24 24" className={cls}>
-          <path
-            fill="currentColor"
-            d="M3 13h8V3H3v10zm10 8h8V11h-8v10zM3 21h8v-6H3v6zm10-18v6h8V3h-8z"
-          />
+          <path fill="currentColor" d="M3 13h8V3H3v10zm10 8h8V11h-8v10zM3 21h8v-6H3v6zm10-18v6h8V3h-8z" />
         </svg>
       );
 
@@ -64,9 +67,20 @@ function Icon({
     case "webControl":
       return (
         <svg aria-hidden="true" viewBox="0 0 24 24" className={cls}>
+          <path fill="currentColor" d="M4 5h16v2H4V5zm0 6h10v2H4v-2zm0 6h16v2H4v-2zm12-5l4-4 1.4 1.4-4 4L16 12z" />
+        </svg>
+      );
+
+    case "taller":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24" className={cls}>
           <path
-            fill="currentColor"
-            d="M4 5h16v2H4V5zm0 6h10v2H4v-2zm0 6h16v2H4v-2zm12-5l4-4 1.4 1.4-4 4L16 12z"
+            d="M4 19h16M7 16l4-11 2.2 6 2.8-2 1 7"
+            fill="none"
+            stroke={stroke}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
         </svg>
       );
@@ -74,10 +88,7 @@ function Icon({
     case "marketing":
       return (
         <svg aria-hidden="true" viewBox="0 0 24 24" className={cls}>
-          <path
-            fill="currentColor"
-            d="M3 11v2h2l9 4V7L5 11H3zm15.5 1a2.5 2.5 0 01-1.5 2.29V9.71A2.5 2.5 0 0118.5 12zM7 18a2 2 0 002 2h1v-2H9l-2-4H5l2 4z"
-          />
+          <path fill="currentColor" d="M3 11v2h2l9 4V7L5 11H3zm15.5 1a2.5 2.5 0 01-1.5 2.29V9.71A2.5 2.5 0 0118.5 12zM7 18a2 2 0 002 2h1v-2H9l-2-4H5l2 4z" />
         </svg>
       );
 
@@ -106,6 +117,30 @@ function Icon({
           <path d="M4 7h16v10H4z" fill="none" stroke={stroke} strokeWidth="2" />
           <path d="M7 14l3-3 3 3 2-2 2 2" fill="none" stroke={stroke} strokeWidth="2" strokeLinejoin="round" />
           <circle cx="9" cy="10" r="1.2" fill={stroke} />
+        </svg>
+      );
+
+    case "header":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24" className={cls}>
+          <rect x="4" y="5" width="16" height="5" rx="1.5" fill="none" stroke={stroke} strokeWidth="2" />
+          <path d="M7 8h4M14 8h3" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+
+    case "footer":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24" className={cls}>
+          <rect x="4" y="14" width="16" height="5" rx="1.5" fill="none" stroke={stroke} strokeWidth="2" />
+          <path d="M7 17h4M14 17h3" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+
+    case "layouts":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24" className={cls}>
+          <rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke={stroke} strokeWidth="2" />
+          <path d="M10 5v14M10 10h10" fill="none" stroke={stroke} strokeWidth="2" />
         </svg>
       );
 
@@ -183,13 +218,35 @@ function Icon({
         </svg>
       );
 
-    case "key":
+    case "media":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24" className={cls}>
+          <rect x="4" y="6" width="16" height="12" rx="2" fill="none" stroke={stroke} strokeWidth="2" />
+          <circle cx="9" cy="10" r="1.5" fill={stroke} />
+          <path d="M6.5 16l4.5-4 3 2 3-3 1.5 1.5" fill="none" stroke={stroke} strokeWidth="2" strokeLinejoin="round" />
+        </svg>
+      );
+
+    case "palette":
       return (
         <svg aria-hidden="true" viewBox="0 0 24 24" className={cls}>
           <path
-            fill="currentColor"
-            d="M7 14a5 5 0 115-5 5 5 0 01-5 5zm0-8a3 3 0 103 3 3 3 0 00-3-3zm6 3h9v3h-2v2h-3v-2h-4z"
+            d="M12 3a9 9 0 100 18h1a2 2 0 000-4h-1a2 2 0 010-4h3a4 4 0 000-8h-3z"
+            fill="none"
+            stroke={stroke}
+            strokeWidth="2"
           />
+          <circle cx="8" cy="9" r="1" fill={stroke} />
+          <circle cx="7" cy="13" r="1" fill={stroke} />
+          <circle cx="10" cy="16" r="1" fill={stroke} />
+          <circle cx="13" cy="8" r="1" fill={stroke} />
+        </svg>
+      );
+
+    case "key":
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24" className={cls}>
+          <path fill="currentColor" d="M7 14a5 5 0 115-5 5 5 0 01-5 5zm0-8a3 3 0 103 3 3 3 0 00-3-3zm6 3h9v3h-2v2h-3v-2h-4z" />
         </svg>
       );
 
@@ -204,6 +261,7 @@ function Icon({
 
 function groupIcon(label: string) {
   if (label === "Web Control") return "webControl";
+  if (label === "Taller") return "taller";
   if (label === "Marketing") return "marketing";
   if (label === "Ajustes") return "settings";
   return "settings";
@@ -219,6 +277,18 @@ function childIcon(group: string, label: string) {
     if (label === "Horario") return "hours";
     if (label === "Ubicación") return "location";
     return "brand";
+  }
+
+  if (group === "Taller") {
+    if (label === "Panel") return "panel";
+    if (label === "Brand") return "brand";
+    if (label === "Media") return "media";
+    if (label === "Web Brand") return "palette";
+    if (label === "Presets · Hero") return "hero";
+    if (label === "Presets · Header") return "header";
+    if (label === "Presets · Footer") return "footer";
+    if (label === "Presets · Layouts") return "layouts";
+    return "panel";
   }
 
   if (group === "Ajustes") {
@@ -243,19 +313,21 @@ export default function Sidebar({
 
   const capSet = useMemo(() => new Set<Capability>(capabilities), [capabilities]);
 
-  const canSee = (required?: Capability) => {
-    if (!required) return true;
-    if (isAdmin) return true;
-    return capSet.has(required);
-  };
+  const canSee = useCallback(
+    (required?: Capability) => {
+      if (!required) return true;
+      if (isAdmin) return true;
+      return capSet.has(required);
+    },
+    [isAdmin, capSet]
+  );
 
   const defaultOpenGroups = useMemo(() => {
     const open = new Set<string>();
 
     for (const item of NAV) {
       if (item.type !== "group") continue;
-
-      // Si el grupo no es visible, no lo abrimos
+      if (item.label === "Taller" && !isAdmin) continue;
       if (!canSee(item.capability)) continue;
 
       const visibleChildren = item.items.filter((x: NavChildItem) => canSee(x.capability));
@@ -267,11 +339,14 @@ export default function Sidebar({
     }
 
     return open;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, isAdmin, capabilities]);
+  }, [pathname, isAdmin, canSee]);
 
   const [openGroups, setOpenGroups] = useState<Set<string>>(defaultOpenGroups);
   const [activeSlug, setActiveSlug] = useState<string>("");
+
+  useEffect(() => {
+    setOpenGroups(defaultOpenGroups);
+  }, [defaultOpenGroups]);
 
   useEffect(() => {
     const fromEnv =
@@ -297,187 +372,190 @@ export default function Sidebar({
   const publicHref = getPublicHrefFromSlug(activeSlug);
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-border bg-background p-4">
-      <div className="mb-6">
-        <div className="flex items-center gap-3">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-muted ring-1 ring-border">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/brand/logo-mark.svg"
-              alt="Business Control Center"
-              className="h-10 w-10"
-              draggable={false}
-            />
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold tracking-tight text-foreground">
-              Business Control Center
+    <aside className="flex h-full w-64 flex-col border-r border-border bg-card/90 p-4 shadow-[10px_0_30px_rgba(15,23,42,0.08)] backdrop-blur">
+      <div className="mx-auto flex h-full w-full max-w-57 flex-col">
+        <div className="mb-6">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-background ring-1 ring-border shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/logo-mark.svg"
+                alt="Business Control Center"
+                className="h-10 w-10"
+                draggable={false}
+              />
             </div>
-            <div className="text-xs text-muted-foreground">
-              {isAdmin ? "Taller (Admin)" : "Panel cliente"}
+
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold tracking-tight text-foreground">
+                Business Control Center
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {isAdmin ? "Taller (Admin)" : "Panel cliente"}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto bcc-scrollbar">
-        {NAV.map((item: NavItem) => {
-          if (item.type === "link") {
-            if (!canSee(item.capability)) return null;
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto bcc-scrollbar">
+          {NAV.map((item: NavItem) => {
+            if (item.type === "link") {
+              if (!canSee(item.capability)) return null;
 
-            const active = isActivePath(pathname, item.href);
-            const disabled = item.disabled === true;
+              const active = isActivePath(pathname, item.href);
+              const disabled = item.disabled === true;
 
-            if (disabled) {
+              if (disabled) {
+                return (
+                  <div
+                    key={item.href}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground/70"
+                  >
+                    <Icon name="panel" />
+                    {item.label} <span className="ml-2 text-xs">(pronto)</span>
+                  </div>
+                );
+              }
+
+              let iconName: Parameters<typeof Icon>[0]["name"] = "dashboard";
+              if (item.label === "Web pública") iconName = "web";
+              if (item.label === "Leads") iconName = "marketing";
+              if (item.label === "Citas") iconName = "hours";
+
               return (
-                <div
+                <Link
                   key={item.href}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground/70"
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={[
+                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                    active
+                      ? "bg-background font-medium text-foreground ring-1 ring-border shadow-sm"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  ].join(" ")}
                 >
-                  <Icon name="panel" />
-                  {item.label} <span className="ml-2 text-xs">(pronto)</span>
-                </div>
+                  <Icon name={iconName} />
+                  {item.label}
+                </Link>
               );
             }
 
-            const iconName = item.label === "Web pública" ? "web" : "dashboard";
+            if (item.label === "Taller" && !isAdmin) return null;
+            if (!canSee(item.capability)) return null;
+
+            const visibleChildren = item.items.filter((child: NavChildItem) => canSee(child.capability));
+            if (visibleChildren.length === 0) return null;
+
+            const isOpen = openGroups.has(item.label);
+            const groupHasActive = visibleChildren.some((x: NavChildItem) =>
+              isActivePath(pathname, x.href)
+            );
 
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onNavigate}
-                className={[
-                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                  active
-                    ? "bg-muted text-foreground font-medium ring-1 ring-border"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                ].join(" ")}
-              >
-                <Icon name={iconName} />
-                {item.label}
-              </Link>
-            );
-          }
-
-          // group
-          if (!canSee(item.capability)) return null;
-
-          const visibleChildren = item.items.filter((child: NavChildItem) => canSee(child.capability));
-          if (visibleChildren.length === 0) return null;
-
-          const isOpen = openGroups.has(item.label) === true;
-          const groupHasActive = visibleChildren.some((x: NavChildItem) =>
-            isActivePath(pathname, x.href)
-          );
-          const groupDisabled = item.disabled === true;
-
-          return (
-            <div key={item.label} className="mt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (groupDisabled) return;
-                  setOpenGroups((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(item.label)) next.delete(item.label);
-                    else next.add(item.label);
-                    return next;
-                  });
-                }}
-                className={[
-                  "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
-                  groupDisabled
-                    ? "text-muted-foreground/70 cursor-not-allowed"
-                    : groupHasActive
-                      ? "text-foreground font-medium"
+              <div key={item.label} className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenGroups((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(item.label)) next.delete(item.label);
+                      else next.add(item.label);
+                      return next;
+                    });
+                  }}
+                  className={[
+                    "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
+                    groupHasActive
+                      ? "font-medium text-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                ].join(" ")}
-                data-open={isOpen ? "true" : "false"}
-              >
-                <span className="flex items-center gap-2">
-                  <Icon name={groupIcon(item.label)} />
-                  {item.label}
-                </span>
-                <span className={["transition-transform", isOpen ? "rotate-90" : ""].join(" ")}>
-                  <Icon name="chev" />
-                </span>
-              </button>
+                  ].join(" ")}
+                >
+                  <span className="flex items-center gap-2">
+                    <Icon name={groupIcon(item.label)} />
+                    {item.label}
+                  </span>
 
-              <div
-                className={[
-                  "grid overflow-hidden transition-[grid-template-rows] duration-200 ease-out",
-                  isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-                ].join(" ")}
-              >
-                <div className="min-h-0">
-                  <div className="ml-3 mt-1 border-l border-border pl-3">
-                    {visibleChildren.map((child: NavChildItem) => {
-                      const active = isActivePath(pathname, child.href);
-                      const disabled = child.disabled === true;
+                  <span className={["transition-transform", isOpen ? "rotate-90" : ""].join(" ")}>
+                    <Icon name="chev" />
+                  </span>
+                </button>
 
-                      if (disabled) {
+                <div
+                  className={[
+                    "grid overflow-hidden transition-[grid-template-rows] duration-200 ease-out",
+                    isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                  ].join(" ")}
+                >
+                  <div className="min-h-0">
+                    <div className="ml-3 mt-1 border-l border-border pl-3">
+                      {visibleChildren.map((child: NavChildItem) => {
+                        const active = isActivePath(pathname, child.href);
+                        const disabled = child.disabled === true;
+
+                        if (disabled) {
+                          return (
+                            <div
+                              key={child.href}
+                              className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground/70"
+                            >
+                              <Icon name={childIcon(item.label, child.label)} />
+                              {child.label} <span className="ml-2 text-xs">(pronto)</span>
+                            </div>
+                          );
+                        }
+
                         return (
-                          <div
+                          <Link
                             key={child.href}
-                            className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground/70"
+                            href={child.href}
+                            onClick={onNavigate}
+                            className={[
+                              "mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                              active
+                                ? "bg-background font-medium text-foreground ring-1 ring-border shadow-sm"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                            ].join(" ")}
                           >
                             <Icon name={childIcon(item.label, child.label)} />
-                            {child.label} <span className="ml-2 text-xs">(pronto)</span>
-                          </div>
+                            {child.label}
+                          </Link>
                         );
-                      }
-
-                      return (
-                        <Link
-                          key={child.href}
-                          href={child.href}
-                          onClick={onNavigate}
-                          className={[
-                            "mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                            active
-                              ? "bg-muted text-foreground font-medium ring-1 ring-border"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                          ].join(" ")}
-                        >
-                          <Icon name={childIcon(item.label, child.label)} />
-                          {child.label}
-                        </Link>
-                      );
-                    })}
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </nav>
+            );
+          })}
+        </nav>
 
-      <div className="mt-auto pt-4">
-        <div className="border-t border-border pt-4">
-          <div className="px-1 text-xs font-medium text-muted-foreground">Accesos</div>
-          <div className="mt-2 grid gap-2">
-            <a
-              id="sidebar-access-public"
-              href={publicHref}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex w-full items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90"
-              title={activeSlug ? `Abrir /${activeSlug}` : "Abrir web pública (falta slug)"}
-            >
-              Ver web pública ↗
-            </a>
+        <div className="mt-auto pt-4">
+          <div className="border-t border-border pt-4">
+            <div className="px-1 text-xs font-medium text-muted-foreground">Accesos</div>
 
-            {canSee("CAN_EDIT_WEB") ? (
-              <Link
-                id="sidebar-access-edit-web"
-                href="/panel/web-control/hero"
-                onClick={onNavigate}
-                className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+            <div className="mt-2 grid gap-2">
+              <a
+                id="sidebar-access-public"
+                href={publicHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex w-full items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground shadow-sm hover:opacity-90"
+                title={activeSlug ? `Abrir /${activeSlug}` : "Abrir web pública (falta slug)"}
               >
-                Editar web pública
-              </Link>
-            ) : null}
+                Ver web pública ↗
+              </a>
+
+              {canSee("CAN_EDIT_WEB") ? (
+                <Link
+                  id="sidebar-access-edit-web"
+                  href="/panel/web-control/hero"
+                  onClick={onNavigate}
+                  className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-muted"
+                >
+                  Editar web pública
+                </Link>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
