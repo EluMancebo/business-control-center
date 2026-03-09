@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
@@ -49,7 +49,8 @@ function getStudioHubHref(pathname: string) {
   return "/panel/dashboard";
 }
 
-const STUDIO_ANIM_MS = 380;
+const STUDIO_ENTER_MS = 520;
+const STUDIO_EXIT_MS = 380;
 
 function shortId(value: string | undefined, keep = 6) {
   if (!value) return "—";
@@ -95,6 +96,12 @@ function HomeIcon() {
   );
 }
 
+function isStudioPath(pathname: string) {
+  return pathname.startsWith("/panel/web-control/") || pathname.startsWith("/panel/taller/");
+}
+
+type StudioStage = "idle" | "enter-ready" | "entering" | "exiting";
+
 export default function PanelShell({
   children,
   role,
@@ -109,11 +116,10 @@ export default function PanelShell({
   session?: SessionPayload;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [studioExiting, setStudioExiting] = useState(false);
-  const [exitFromPath, setExitFromPath] = useState("");
+  const [studioStage, setStudioStage] = useState<StudioStage>("idle");
 
   const computedIsAdmin = isAdmin ?? role === "admin";
   const caps = capabilities ?? [];
@@ -121,43 +127,107 @@ export default function PanelShell({
   const userId = session?.sub;
   const businessId = session?.businessId;
 
-  const isStudio = useMemo(() => {
-    const p = pathname || "";
-    return p.startsWith("/panel/web-control/") || p.startsWith("/panel/taller/");
-  }, [pathname]);
+  const previousPathRef = useRef(pathname);
+  const enterReadyFrameRef = useRef<number | null>(null);
+  const enterFrameRef = useRef<number | null>(null);
+  const enterTimeoutRef = useRef<number | null>(null);
+  const exitTimeoutRef = useRef<number | null>(null);
 
-  const studioTitle = useMemo(() => getStudioTitle(pathname || ""), [pathname]);
-  const studioHubHref = useMemo(() => getStudioHubHref(pathname || ""), [pathname]);
+  const isStudio = useMemo(() => isStudioPath(pathname), [pathname]);
+
+  const studioTitle = useMemo(() => getStudioTitle(pathname), [pathname]);
+  const studioHubHref = useMemo(() => getStudioHubHref(pathname), [pathname]);
 
   const brandScope = useMemo(() => {
-    const p = pathname || "";
-    if (p.startsWith("/panel/taller")) return "system" as const;
+    if (pathname.startsWith("/panel/taller")) return "system" as const;
     return "panel" as const;
   }, [pathname]);
 
-  const isExitingCurrentStudio =
-    studioExiting && exitFromPath === (pathname || "");
+  const clearStudioTimers = useCallback(() => {
+    if (enterReadyFrameRef.current !== null) {
+      window.cancelAnimationFrame(enterReadyFrameRef.current);
+      enterReadyFrameRef.current = null;
+    }
+
+    if (enterFrameRef.current !== null) {
+      window.cancelAnimationFrame(enterFrameRef.current);
+      enterFrameRef.current = null;
+    }
+
+    if (enterTimeoutRef.current !== null) {
+      window.clearTimeout(enterTimeoutRef.current);
+      enterTimeoutRef.current = null;
+    }
+
+    if (exitTimeoutRef.current !== null) {
+      window.clearTimeout(exitTimeoutRef.current);
+      exitTimeoutRef.current = null;
+    }
+  }, []);
 
   const leaveStudio = useCallback(
     (nextHref: string) => {
-      const currentPath = pathname || "";
+      if (!isStudio || studioStage === "exiting") return;
 
-      if (studioExiting && exitFromPath === currentPath) return;
+      clearStudioTimers();
+      setStudioStage("exiting");
 
-      setExitFromPath(currentPath);
-      setStudioExiting(true);
-
-      window.setTimeout(() => {
+      exitTimeoutRef.current = window.setTimeout(() => {
         router.push(nextHref);
-
-        window.setTimeout(() => {
-          setStudioExiting(false);
-          setExitFromPath("");
-        }, 0);
-      }, STUDIO_ANIM_MS);
+      }, STUDIO_EXIT_MS);
     },
-    [pathname, router, studioExiting, exitFromPath]
+    [clearStudioTimers, isStudio, router, studioStage]
   );
+
+  useEffect(() => {
+    const previousPath = previousPathRef.current;
+    const wasStudio = isStudioPath(previousPath);
+    const nowStudio = isStudioPath(pathname);
+
+    if (!wasStudio && nowStudio) {
+      clearStudioTimers();
+
+      enterReadyFrameRef.current = window.requestAnimationFrame(() => {
+        setStudioStage("enter-ready");
+
+        enterFrameRef.current = window.requestAnimationFrame(() => {
+          setStudioStage("entering");
+
+          enterTimeoutRef.current = window.setTimeout(() => {
+            setStudioStage("idle");
+            enterTimeoutRef.current = null;
+          }, STUDIO_ENTER_MS);
+
+          enterFrameRef.current = null;
+        });
+
+        enterReadyFrameRef.current = null;
+      });
+    }
+
+    if (wasStudio && !nowStudio) {
+      clearStudioTimers();
+      if (studioStage !== "idle") {
+        window.requestAnimationFrame(() => {
+          setStudioStage("idle");
+        });
+      }
+    }
+
+    previousPathRef.current = pathname;
+
+    return () => {
+      if (enterReadyFrameRef.current !== null) {
+        window.cancelAnimationFrame(enterReadyFrameRef.current);
+        enterReadyFrameRef.current = null;
+      }
+
+      if (enterFrameRef.current !== null) {
+        window.cancelAnimationFrame(enterFrameRef.current);
+        enterFrameRef.current = null;
+      }
+    };
+  }, [clearStudioTimers, pathname, studioStage]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -188,27 +258,37 @@ export default function PanelShell({
     };
   }, [mobileOpen, isStudio]);
 
+  useEffect(() => {
+    return () => {
+      clearStudioTimers();
+    };
+  }, [clearStudioTimers]);
+
   if (isStudio) {
+    const studioMotionClass =
+      studioStage === "enter-ready"
+        ? "bcc-studio-enter-ready"
+        : studioStage === "entering"
+          ? "bcc-studio-slide-in"
+          : studioStage === "exiting"
+            ? "bcc-studio-slide-out"
+            : "";
+
     return (
       <div className="fixed inset-0 z-100 bg-background text-foreground">
         <BrandHydrator scope={brandScope} />
 
-        <div
-          key={pathname}
-          className={[
-            "absolute inset-0",
-            isExitingCurrentStudio ? "bcc-studio-slide-out" : "bcc-studio-slide-in",
-          ].join(" ")}
-        >
+        <div className={["absolute inset-0", studioMotionClass].filter(Boolean).join(" ")}>
           <div className="border-b border-border bg-card/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur">
             <div className="mx-auto flex h-14 max-w-400 items-center justify-between px-4">
               <div className="flex min-w-0 items-center gap-3">
                 <button
                   type="button"
                   onClick={() => leaveStudio(studioHubHref)}
-                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground hover:bg-muted"
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-60"
                   aria-label="Volver al hub"
                   title="Volver al hub"
+                  disabled={studioStage === "exiting"}
                 >
                   <ArrowLeftIcon />
                   <span>Volver</span>
@@ -235,9 +315,10 @@ export default function PanelShell({
               <button
                 type="button"
                 onClick={() => leaveStudio("/panel/dashboard")}
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground hover:bg-muted"
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-60"
                 aria-label="Ir al menú principal"
                 title="Ir al menú principal"
+                disabled={studioStage === "exiting"}
               >
                 <HomeIcon />
                 <span>Inicio</span>
