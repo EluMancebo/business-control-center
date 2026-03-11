@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
@@ -179,7 +179,8 @@ export default function PanelShell({
     [clearStudioTimers, isStudio, router, studioStage]
   );
 
-  useEffect(() => {
+  // Prepare enter-ready before paint to avoid first-frame flash on Studio entry.
+  useLayoutEffect(() => {
     const previousPath = previousPathRef.current;
     const wasStudio = isStudioPath(previousPath);
     const nowStudio = isStudioPath(pathname);
