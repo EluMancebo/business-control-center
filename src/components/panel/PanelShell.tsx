@@ -100,6 +100,13 @@ function isStudioPath(pathname: string) {
   return pathname.startsWith("/panel/web-control/") || pathname.startsWith("/panel/taller/");
 }
 
+function readActiveBusinessSlug(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  const value = window.localStorage.getItem("bcc:activeBusinessSlug");
+  const trimmed = value?.trim() ?? "";
+  return trimmed || undefined;
+}
+
 type StudioStage = "idle" | "enter-ready" | "entering" | "exiting";
 
 export default function PanelShell({
@@ -120,6 +127,7 @@ export default function PanelShell({
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [studioStage, setStudioStage] = useState<StudioStage>("idle");
+  const [activeBusinessSlug, setActiveBusinessSlug] = useState<string | undefined>(undefined);
 
   const computedIsAdmin = isAdmin ?? role === "admin";
   const caps = capabilities ?? [];
@@ -139,9 +147,15 @@ export default function PanelShell({
   const studioHubHref = useMemo(() => getStudioHubHref(pathname), [pathname]);
 
   const brandScope = useMemo(() => {
+    if (pathname === "/panel/settings/appearance" && computedIsAdmin) return "system" as const;
     if (pathname.startsWith("/panel/taller")) return "system" as const;
     return "panel" as const;
-  }, [pathname]);
+  }, [pathname, computedIsAdmin]);
+
+  const brandBusinessSlug = useMemo(() => {
+    if (brandScope !== "panel") return undefined;
+    return activeBusinessSlug;
+  }, [brandScope, activeBusinessSlug]);
 
   const clearStudioTimers = useCallback(() => {
     if (enterReadyFrameRef.current !== null) {
@@ -208,11 +222,9 @@ export default function PanelShell({
 
     if (wasStudio && !nowStudio) {
       clearStudioTimers();
-      if (studioStage !== "idle") {
-        window.requestAnimationFrame(() => {
-          setStudioStage("idle");
-        });
-      }
+      window.requestAnimationFrame(() => {
+        setStudioStage("idle");
+      });
     }
 
     previousPathRef.current = pathname;
@@ -228,7 +240,7 @@ export default function PanelShell({
         enterFrameRef.current = null;
       }
     };
-  }, [clearStudioTimers, pathname, studioStage]);
+  }, [pathname, clearStudioTimers]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -246,6 +258,16 @@ export default function PanelShell({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isStudio, leaveStudio, studioHubHref]);
+
+  useEffect(() => {
+    const sync = () => {
+      setActiveBusinessSlug(readActiveBusinessSlug());
+    };
+
+    sync();
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
 
   useEffect(() => {
     const shouldLock = mobileOpen || isStudio;
@@ -277,7 +299,7 @@ export default function PanelShell({
 
     return (
       <div className="fixed inset-0 z-100 bg-background text-foreground">
-        <BrandHydrator scope={brandScope} />
+        <BrandHydrator scope={brandScope} businessSlug={brandBusinessSlug} />
 
         <div className={["absolute inset-0", studioMotionClass].filter(Boolean).join(" ")}>
           <div className="border-b border-border bg-card/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur">
@@ -342,7 +364,7 @@ export default function PanelShell({
       data-business-id={businessId ?? ""}
       data-user-id={userId ?? ""}
     >
-      <BrandHydrator scope={brandScope} />
+      <BrandHydrator scope={brandScope} businessSlug={brandBusinessSlug} />
 
       <div className="mx-auto flex min-h-screen max-w-7xl">
         <div className="hidden sm:block">

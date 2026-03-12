@@ -23,18 +23,10 @@ function readActiveBusinessSlug(): string {
   return window.localStorage.getItem("bcc:activeBusinessSlug")?.trim() || "";
 }
 
-function defer(fn: () => void) {
-  const q =
-    typeof queueMicrotask === "function"
-      ? queueMicrotask
-      : (cb: () => void) => Promise.resolve().then(cb);
-  q(fn);
-}
-
-function useBrandScoped(storageKey: string, channel: string, fallback: Brand) {
+function useBrandScoped(storageKey: string, channel: string, fallback: Brand, enabled: boolean) {
   return useSyncExternalStore(
-    (cb) => subscribeBrand(cb, storageKey, channel, fallback),
-    () => getBrand(storageKey, channel, fallback),
+    (cb) => (enabled ? subscribeBrand(cb, storageKey, channel, fallback) : () => {}),
+    () => (enabled ? getBrand(storageKey, channel, fallback) : fallback),
     () => fallback
   );
 }
@@ -45,18 +37,22 @@ type BrandEditorProps = {
 };
 
 export default function BrandEditor({ scope = "panel", businessSlug }: BrandEditorProps) {
-  const [resolvedSlug, setResolvedSlug] = useState<string>("");
+  const [resolvedSlug, setResolvedSlug] = useState<string>(() => readActiveBusinessSlug());
 
   // Para panel/web cliente: toma activeBusinessSlug (si NO viene businessSlug por prop)
   useEffect(() => {
     if (scope === "system") return;
     if (businessSlug && businessSlug.trim()) return;
 
-    defer(() => setResolvedSlug(readActiveBusinessSlug()));
+    const sync = () => setResolvedSlug(readActiveBusinessSlug());
+    sync();
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
   }, [scope, businessSlug]);
 
   const effectiveSlug =
     scope === "system" ? "" : (businessSlug?.trim() || resolvedSlug);
+  const skipWebWithoutSlug = scope === "web" && !effectiveSlug;
 
   const storageKey = useMemo(
     () => getBrandStorageKey(scope, scope === "system" ? undefined : effectiveSlug || undefined),
@@ -72,10 +68,11 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
 
   // Rehidratación: en scope web dentro del panel NO aplicamos al documento
   useEffect(() => {
+    if (skipWebWithoutSlug) return;
     syncBrandFromStorage(storageKey, channel, fallback, { applyToDocument: scope !== "web" });
-  }, [storageKey, channel, fallback, scope]);
+  }, [storageKey, channel, fallback, scope, skipWebWithoutSlug]);
 
-  const current = useBrandScoped(storageKey, channel, fallback);
+  const current = useBrandScoped(storageKey, channel, fallback, !skipWebWithoutSlug);
   const [brand, setBrandLocal] = useState<Brand>(fallback);
 
   useEffect(() => {
@@ -89,6 +86,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
 
   function update(next: Brand) {
     setBrandLocal(next);
+    if (skipWebWithoutSlug) return;
 
     // ✅ clave: web no aplica al documento del panel
     setBrand(next, storageKey, channel, fallback, { applyToDocument: scope !== "web" });

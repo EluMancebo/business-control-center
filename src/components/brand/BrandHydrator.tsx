@@ -27,6 +27,8 @@ export default function BrandHydrator({
   useEffect(() => {
     const resolvedSlug =
       scope === "system" ? undefined : businessSlug ?? readActiveBusinessSlug();
+    const skipWebWithoutSlug = scope === "web" && !resolvedSlug;
+    if (skipWebWithoutSlug) return;
 
     const storageKey = getBrandStorageKey(scope, resolvedSlug);
     const channel = getBrandChannel(scope, resolvedSlug);

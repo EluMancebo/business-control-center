@@ -3,7 +3,6 @@
  "use client";
 
 import type { Brand } from "./types";
-import { applyBrandToDocument } from "./apply";
 import { DEFAULT_BRAND, loadBrandFromStorage, saveBrandToStorage } from "./storage";
 
 type Listener = () => void;
@@ -65,17 +64,14 @@ export function setBrand(
   storageKey: string = DEFAULT_STORAGE_KEY,
   channel: string = DEFAULT_CHANNEL,
   fallback?: Brand,
-  options?: SetBrandOptions
+  _options?: SetBrandOptions
 ) {
+  void _options;
   const store = getOrCreateStore(storageKey, channel, fallback);
   store.brand = next;
 
   // Persistencia
   saveBrandToStorage(storageKey, next);
-
-  // Aplicación al documento (solo si procede)
-  const apply = options?.applyToDocument !== false;
-  if (apply) applyBrandToDocument(next);
 
   // Notificar
   notify(store);
@@ -106,15 +102,12 @@ export function syncBrandFromStorage(
   storageKey: string = DEFAULT_STORAGE_KEY,
   channel: string = DEFAULT_CHANNEL,
   fallback?: Brand,
-  options?: SetBrandOptions
+  _options?: SetBrandOptions
 ) {
+  void _options;
   const store = getOrCreateStore(storageKey, channel, fallback);
   const fromStorage = loadBrandFromStorage(storageKey, fallback ?? DEFAULT_BRAND);
   store.brand = fromStorage;
-
-  // ✅ IMPORTANTE: en modo "web" dentro del panel, NO aplicar al documento del panel
-  const apply = options?.applyToDocument !== false;
-  if (apply) applyBrandToDocument(fromStorage);
 
   notify(store);
 } 
