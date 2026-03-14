@@ -147,10 +147,9 @@ export default function PanelShell({
   const studioHubHref = useMemo(() => getStudioHubHref(pathname), [pathname]);
 
   const brandScope = useMemo(() => {
-    if (pathname === "/panel/settings/appearance" && computedIsAdmin) return "system" as const;
     if (pathname.startsWith("/panel/taller")) return "system" as const;
     return "panel" as const;
-  }, [pathname, computedIsAdmin]);
+  }, [pathname]);
 
   const brandBusinessSlug = useMemo(() => {
     if (brandScope !== "panel") return undefined;
