@@ -2,34 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import PageHeader from "@/components/panel/PageHeader";
-
-type AssetItem = {
-  _id: string;
-  scope: "system" | "tenant";
-  kind: "image" | "svg" | "video";
-  bucket: string;
-  key: string;
-  url: string;
-  label: string;
-  tags: string[];
-  allowedIn: string[];
-  mime: string;
-  bytes: number;
-  status: "active" | "archived";
-  createdAt?: string;
-};
-
-function formatBytes(bytes: number) {
-  if (!bytes || bytes < 0) return "0 B";
-  const units = ["B", "KB", "MB", "GB"];
-  let i = 0;
-  let n = bytes;
-  while (n >= 1024 && i < units.length - 1) {
-    n /= 1024;
-    i += 1;
-  }
-  return `${n.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
-}
+import type { AssetItem } from "@/lib/taller/media/types";
+import {
+  fetchSystemMediaClient,
+  formatBytes,
+  uploadSystemMediaClient,
+} from "@/lib/taller/media/service";
 
 export default function TallerMediaPage() {
   const [items, setItems] = useState<AssetItem[]>([]);
@@ -48,20 +26,8 @@ export default function TallerMediaPage() {
     setLoading(true);
     setError(null);
     try {
-      const qs = new URLSearchParams();
-      qs.set("scope", "system");
-      qs.set("status", "active");
-      if (tagFilter.trim()) qs.set("tag", tagFilter.trim());
-
-      const res = await fetch(`/api/taller/media?${qs.toString()}`, {
-        method: "GET",
-        cache: "no-store",
-      });
-
-      const json = await res.json();
-      if (!res.ok || !json?.ok) throw new Error(json?.error || "Error loading assets");
-
-      setItems((json.items || []) as AssetItem[]);
+      const nextItems = await fetchSystemMediaClient(tagFilter);
+      setItems(nextItems);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error loading assets");
     } finally {
@@ -85,21 +51,12 @@ export default function TallerMediaPage() {
       const file = fileRef.current?.files?.[0];
       if (!file) throw new Error("Selecciona un archivo.");
 
-      const form = new FormData();
-      form.set("file", file);
-      if (label.trim()) form.set("label", label.trim());
-      if (tags.trim()) form.set("tag", tags.trim());
-      if (allowedIn.trim()) form.set("allowedIn", allowedIn.trim());
-
-      const res = await fetch("/api/taller/media", {
-        method: "POST",
-        body: form,
+      const created = await uploadSystemMediaClient({
+        file,
+        label,
+        tags,
+        allowedIn,
       });
-
-      const json = await res.json();
-      if (!res.ok || !json?.ok) throw new Error(json?.error || "Upload failed");
-
-      const created = json.item as AssetItem;
       setItems((prev) => [created, ...prev]);
 
       // reset

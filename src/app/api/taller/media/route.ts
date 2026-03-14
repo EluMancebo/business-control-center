@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { dbConnect } from "@/lib/db";
-import { Asset } from "@/models/Asset";
 import { getSessionFromToken } from "@/lib/auth/session";
+import {
+  createSystemAssetRepository,
+  listSystemAssetsRepository,
+} from "@/lib/taller/media/repository";
+import {
+  buildSystemAssetStorageKey,
+  buildSystemMediaListQuery,
+  resolveAssetKindFromMime,
+  splitMediaListValue,
+} from "@/lib/taller/media/service";
 
 export const dynamic = "force-dynamic";
 
@@ -24,17 +33,6 @@ async function requireAdmin(req: NextRequest) {
   return { ok, session };
 }
 
-function splitList(value: unknown): string[] {
-  const raw = String(value || "").trim();
-  if (!raw) return [];
-  // soporta "a,b,c" o "a b c"
-  return raw
-    .split(/[,\s]+/g)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, 20);
-}
-
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (!auth.ok) {
@@ -47,24 +45,8 @@ export async function GET(req: NextRequest) {
   const tag = (searchParams.get("tag") || "").trim();
   const statusParam = (searchParams.get("status") || "active").trim();
 
-  // ✅ Taller (Capa -1): SOLO system
-  const scope = "system";
-  const status: "active" | "archived" = statusParam === "archived" ? "archived" : "active";
-
-  const query: {
-    businessId: null;
-    scope: "system";
-    status: "active" | "archived";
-    tags?: string;
-  } = {
-    businessId: null,
-    scope,
-    status,
-  };
-
-  if (tag) query.tags = tag; // matches arrays containing tag
-
-  const items = await Asset.find(query).sort({ createdAt: -1 }).limit(200).lean();
+  const query = buildSystemMediaListQuery(statusParam, tag);
+  const items = await listSystemAssetsRepository(query);
   return NextResponse.json({ ok: true, items });
 }
 
@@ -81,30 +63,23 @@ export async function POST(req: NextRequest) {
     const file = form.get("file");
 
     const label = String(form.get("label") || "").trim() || "Asset";
-    const tags = splitList(form.get("tag"));
-    const allowedIn = splitList(form.get("allowedIn"));
+    const tags = splitMediaListValue(form.get("tag"));
+    const allowedIn = splitMediaListValue(form.get("allowedIn"));
 
     if (!(file instanceof File)) {
       return NextResponse.json({ ok: false, error: "Missing file" }, { status: 400 });
     }
 
-    const ext = (file.name.split(".").pop() || "bin").toLowerCase();
-    const safeLabel =
-      label.toLowerCase().replace(/[^a-z0-9-_]+/g, "-").slice(0, 60) || "asset";
-    const storageKey = `system/${Date.now()}-${safeLabel}.${ext}`;
+    const storageKey = buildSystemAssetStorageKey(label, file.name, Date.now());
 
     const blob = await put(storageKey, file, {
       access: "public",
       contentType: file.type || undefined,
     });
 
-    const kind = file.type.includes("svg")
-      ? "svg"
-      : file.type.startsWith("video/")
-      ? "video"
-      : "image";
+    const kind = resolveAssetKindFromMime(file.type);
 
-    const created = await Asset.create({
+    const created = await createSystemAssetRepository({
       businessId: null,
       scope: "system",
       kind,

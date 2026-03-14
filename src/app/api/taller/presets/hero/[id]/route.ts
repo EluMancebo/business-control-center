@@ -2,8 +2,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
-import { HeroPreset } from "@/models/HeroPreset";
 import { getSessionFromToken } from "@/lib/auth/session";
+import {
+  archiveHeroPresetByIdRepository,
+  getHeroPresetByIdRepository,
+  updateHeroPresetByIdRepository,
+} from "@/lib/taller/presets/hero/repository";
+import { parseUpdateHeroPresetBody } from "@/lib/taller/presets/hero/service";
 
 export const dynamic = "force-dynamic";
 
@@ -24,40 +29,6 @@ async function requireAdmin(req: NextRequest) {
   return { ok, session };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function getString(obj: Record<string, unknown>, key: string) {
-  const v = obj[key];
-  return typeof v === "string" ? v : "";
-}
-
-function parseTags(value: unknown): string[] | undefined {
-  if (!Array.isArray(value)) return undefined;
-  return value
-    .map((t) => String(t).trim())
-    .filter(Boolean)
-    .slice(0, 20);
-}
-
-function parseHeroData(value: unknown) {
-  if (!isRecord(value)) return null;
-
-  return {
-    badge: getString(value, "badge"),
-    title: getString(value, "title"),
-    description: getString(value, "description"),
-    primaryCtaLabel: getString(value, "primaryCtaLabel"),
-    primaryCtaHref: getString(value, "primaryCtaHref"),
-    secondaryCtaLabel: getString(value, "secondaryCtaLabel"),
-    secondaryCtaHref: getString(value, "secondaryCtaHref"),
-    backgroundImageUrl: getString(value, "backgroundImageUrl"),
-    logoUrl: getString(value, "logoUrl"),
-    logoSvg: getString(value, "logoSvg"),
-  };
-}
-
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin(req);
   if (!auth.ok) {
@@ -67,7 +38,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   await dbConnect();
 
   const { id } = await ctx.params;
-  const item = await HeroPreset.findById(id).lean();
+  const item = await getHeroPresetByIdRepository(id);
 
   if (!item) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   return NextResponse.json({ ok: true, item });
@@ -85,25 +56,12 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
     const { id } = await ctx.params;
 
     const raw = (await req.json()) as unknown;
-    if (!isRecord(raw)) {
-      return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
+    const parsed = parseUpdateHeroPresetBody(raw);
+    if (!parsed.ok) {
+      return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
     }
 
-    const update: Record<string, unknown> = {};
-
-    if (typeof raw["label"] === "string") update["label"] = raw["label"].trim();
-    if (typeof raw["description"] === "string") update["description"] = raw["description"].trim();
-
-    const tags = parseTags(raw["tags"]);
-    if (tags) update["tags"] = tags;
-
-    const status = raw["status"];
-    if (status === "active" || status === "archived") update["status"] = status;
-
-    const data = parseHeroData(raw["data"]);
-    if (data) update["data"] = data;
-
-    const saved = await HeroPreset.findByIdAndUpdate(id, update, { new: true }).lean();
+    const saved = await updateHeroPresetByIdRepository(id, parsed.data);
     if (!saved) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
 
     return NextResponse.json({ ok: true, item: saved });
@@ -122,7 +80,7 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
   await dbConnect();
 
   const { id } = await ctx.params;
-  const saved = await HeroPreset.findByIdAndUpdate(id, { status: "archived" }, { new: true }).lean();
+  const saved = await archiveHeroPresetByIdRepository(id);
 
   if (!saved) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   return NextResponse.json({ ok: true, item: saved });

@@ -4,43 +4,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/panel/PageHeader";
-
-type HeroData = {
-  badge: string;
-  title: string;
-  description: string;
-  primaryCtaLabel: string;
-  primaryCtaHref: string;
-  secondaryCtaLabel: string;
-  secondaryCtaHref: string;
-  backgroundImageUrl: string;
-  logoUrl: string;
-  logoSvg: string;
-};
-
-type HeroPresetItem = {
-  _id: string;
-  key: string;
-  label: string;
-  description?: string;
-  tags?: string[];
-  status: "active" | "archived";
-  data: HeroData;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
-type HeroPresetListResponse = {
-  ok: boolean;
-  items?: HeroPresetItem[];
-  error?: string;
-};
-
-type HeroPresetDetailResponse = {
-  ok: boolean;
-  item?: HeroPresetItem;
-  error?: string;
-};
+import type { HeroData, HeroPresetItem } from "@/lib/taller/presets/hero/types";
+import {
+  archiveHeroPresetClient,
+  createHeroPresetClient,
+  fetchHeroPresetByIdClient,
+  fetchHeroPresetsClient,
+  normalizeHeroPresetKey,
+  tagsArrayToText,
+  tagsTextToArray,
+  updateHeroPresetClient,
+} from "@/lib/taller/presets/hero/service";
 
 const EMPTY_HERO_DATA: HeroData = {
   badge: "",
@@ -55,7 +29,13 @@ const EMPTY_HERO_DATA: HeroData = {
   logoSvg: "",
 };
 
-const NEW_PRESET_TEMPLATE = {
+const NEW_PRESET_TEMPLATE: {
+  key: string;
+  label: string;
+  description: string;
+  tagsText: string;
+  data: HeroData;
+} = {
   key: "",
   label: "",
   description: "",
@@ -73,117 +53,6 @@ const NEW_PRESET_TEMPLATE = {
     logoSvg: "",
   } satisfies HeroData,
 };
-
-function normalizeKey(input: string) {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9-_]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 60);
-}
-
-function tagsArrayToText(tags?: string[]) {
-  return Array.isArray(tags) ? tags.join(", ") : "";
-}
-
-function tagsTextToArray(tagsText: string) {
-  return tagsText
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean)
-    .slice(0, 20);
-}
-
-async function fetchHeroPresets(status: "active" | "archived" = "active") {
-  const res = await fetch(`/api/taller/presets/hero?status=${status}`, {
-    cache: "no-store",
-  });
-
-  const json = (await res.json().catch(() => null)) as HeroPresetListResponse | null;
-
-  if (!res.ok || !json?.ok) {
-    throw new Error(json?.error || "No se pudieron cargar los presets");
-  }
-
-  return json.items ?? [];
-}
-
-async function fetchHeroPresetById(id: string) {
-  const res = await fetch(`/api/taller/presets/hero/${encodeURIComponent(id)}`, {
-    cache: "no-store",
-  });
-
-  const json = (await res.json().catch(() => null)) as HeroPresetDetailResponse | null;
-
-  if (!res.ok || !json?.ok || !json.item) {
-    throw new Error(json?.error || "No se pudo cargar el preset");
-  }
-
-  return json.item;
-}
-
-async function createHeroPreset(payload: {
-  key: string;
-  label: string;
-  description: string;
-  tags: string[];
-  data: HeroData;
-}) {
-  const res = await fetch("/api/taller/presets/hero", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  const json = (await res.json().catch(() => null)) as HeroPresetDetailResponse | null;
-
-  if (!res.ok || !json?.ok || !json.item) {
-    throw new Error(json?.error || "No se pudo crear el preset");
-  }
-
-  return json.item;
-}
-
-async function updateHeroPreset(
-  id: string,
-  payload: {
-    label: string;
-    description: string;
-    tags: string[];
-    status: "active" | "archived";
-    data: HeroData;
-  }
-) {
-  const res = await fetch(`/api/taller/presets/hero/${encodeURIComponent(id)}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  const json = (await res.json().catch(() => null)) as HeroPresetDetailResponse | null;
-
-  if (!res.ok || !json?.ok || !json.item) {
-    throw new Error(json?.error || "No se pudo actualizar el preset");
-  }
-
-  return json.item;
-}
-
-async function archiveHeroPreset(id: string) {
-  const res = await fetch(`/api/taller/presets/hero/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
-
-  const json = (await res.json().catch(() => null)) as HeroPresetDetailResponse | null;
-
-  if (!res.ok || !json?.ok) {
-    throw new Error(json?.error || "No se pudo archivar el preset");
-  }
-
-  return json.item ?? null;
-}
 
 export default function TallerPresetsHeroPage() {
   const [items, setItems] = useState<HeroPresetItem[]>([]);
@@ -221,7 +90,7 @@ export default function TallerPresetsHeroPage() {
     setLoadingList(true);
 
     try {
-      const activeItems = await fetchHeroPresets("active");
+      const activeItems = await fetchHeroPresetsClient("active");
       setItems(activeItems);
 
       const preferredId =
@@ -247,7 +116,7 @@ export default function TallerPresetsHeroPage() {
     setMsg("");
 
     try {
-      const item = await fetchHeroPresetById(id);
+      const item = await fetchHeroPresetByIdClient(id);
 
       setForm({
         id: item._id,
@@ -344,7 +213,7 @@ export default function TallerPresetsHeroPage() {
       setMsg("");
 
       const payload = {
-        key: normalizeKey(form.key),
+        key: normalizeHeroPresetKey(form.key),
         label: form.label.trim(),
         description: form.description.trim(),
         tags: tagsTextToArray(form.tagsText),
@@ -363,7 +232,7 @@ export default function TallerPresetsHeroPage() {
         },
       };
 
-      const created = await createHeroPreset(payload);
+      const created = await createHeroPresetClient(payload);
 
       await loadList(created._id);
       setCreateMode(false);
@@ -383,7 +252,7 @@ export default function TallerPresetsHeroPage() {
       setSaving(true);
       setMsg("");
 
-      const saved = await updateHeroPreset(form.id, {
+      const saved = await updateHeroPresetClient(form.id, {
         label: form.label.trim(),
         description: form.description.trim(),
         tags: tagsTextToArray(form.tagsText),
@@ -426,7 +295,7 @@ export default function TallerPresetsHeroPage() {
       setSaving(true);
       setMsg("");
 
-      await archiveHeroPreset(form.id);
+      await archiveHeroPresetClient(form.id);
       await loadList();
       setCreateMode(false);
       setMsg("Preset archivado ✓");
@@ -442,7 +311,7 @@ export default function TallerPresetsHeroPage() {
   const canSaveExisting = Boolean(form.id) && !createMode;
   const canCreate =
     createMode &&
-    Boolean(normalizeKey(form.key)) &&
+    Boolean(normalizeHeroPresetKey(form.key)) &&
     Boolean(form.label.trim()) &&
     Boolean(form.data.badge.trim()) &&
     Boolean(form.data.title.trim()) &&
@@ -624,7 +493,7 @@ export default function TallerPresetsHeroPage() {
                   <Field
                     label="Key técnica"
                     value={form.key}
-                    onChange={(value) => updateRootField("key", normalizeKey(value))}
+                    onChange={(value) => updateRootField("key", normalizeHeroPresetKey(value))}
                     placeholder="default"
                     disabled={!createMode || saving}
                     helpText={
