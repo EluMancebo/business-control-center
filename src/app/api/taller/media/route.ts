@@ -50,6 +50,16 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ ok: true, items });
 }
 
+function getBlobReadWriteToken() {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) {
+    throw new Error(
+      "Missing BLOB_READ_WRITE_TOKEN environment variable. Set it in .env.local (or in Vercel env vars) to upload files to Vercel Blob."
+    );
+  }
+  return token;
+}
+
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (!auth.ok) {
@@ -73,6 +83,7 @@ export async function POST(req: NextRequest) {
     const storageKey = buildSystemAssetStorageKey(label, file.name, Date.now());
 
     const blob = await put(storageKey, file, {
+      token: getBlobReadWriteToken(),
       access: "public",
       contentType: file.type || undefined,
     });
