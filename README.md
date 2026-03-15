@@ -161,7 +161,7 @@ sequenceDiagram
     API->>API: bcrypt.compare(password, hash)
     alt Válido
         API->>API: jose.sign({userId, businessId, role}, JWT_SECRET)
-        API->>CK: Set-Cookie: session=token; HttpOnly
+        API->>CK: Set-Cookie: session=token#59; HttpOnly
         API-->>U: 200 OK
     else Inválido
         API-->>U: 401 Unauthorized
