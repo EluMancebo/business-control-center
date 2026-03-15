@@ -39,3 +39,41 @@ export type AssetCreateInput = {
   bytes: number;
   status: "active";
 };
+
+// Nuevos tipos para taxonomía y políticas de media
+export type MediaKind =
+  | "logo"
+  | "hero-image"
+  | "gallery-image"
+  | "product-image"
+  | "news-image"
+  | "banner-image"
+  | "popup-image"
+  | "card-image"
+  | "background-image"
+  | "document";
+
+export type MediaUsageContext =
+  | "brand.logo.header"
+  | "brand.logo.footer"
+  | "home.hero.background"
+  | "home.gallery.item"
+  | "home.services.card"
+  | "catalog.product.cover"
+  | "catalog.product.gallery"
+  | "news.item.cover"
+  | "popup.campaign.cover";
+
+export type MediaPolicy = {
+  allowedMimeTypes: string[];
+  maxBytes: number;
+  minWidth?: number;
+  minHeight?: number;
+  recommendedRatio?: string; // e.g. "16:9"
+  requiredRatio?: string;
+  generateVariants: boolean;
+  allowOverlay: boolean;
+  requireAltText: boolean;
+  cropMode: "none" | "center" | "smart";
+};
+
