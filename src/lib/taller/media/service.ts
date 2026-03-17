@@ -99,3 +99,43 @@ export async function uploadSystemMediaClient(args: {
 
   return json.item;
 }
+
+export async function updateSystemMediaMetadataClient(args: {
+  id: string;
+  label: string;
+  tags: string;
+  allowedIn: string;
+}): Promise<AssetItem> {
+  const id = args.id.trim();
+  if (!id) throw new Error("Missing asset id");
+
+  const label = args.label.trim();
+  if (!label) throw new Error("El label es obligatorio.");
+
+  const res = await fetch(`/api/taller/media?id=${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      label,
+      tags: args.tags,
+      allowedIn: args.allowedIn,
+    }),
+  });
+
+  const json = (await res.json().catch(() => null)) as MediaItemResponse | null;
+  if (!res.ok || !json?.ok || !json.item) throw new Error(json?.error || "Update failed");
+
+  return json.item;
+}
+
+export async function deleteSystemMediaClient(id: string): Promise<void> {
+  const cleanId = id.trim();
+  if (!cleanId) throw new Error("Missing asset id");
+
+  const res = await fetch(`/api/taller/media?id=${encodeURIComponent(cleanId)}`, {
+    method: "DELETE",
+  });
+
+  const json = (await res.json().catch(() => null)) as MediaItemResponse | null;
+  if (!res.ok || !json?.ok) throw new Error(json?.error || "Delete failed");
+}

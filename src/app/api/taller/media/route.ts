@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import { del, put } from "@vercel/blob";
 import { dbConnect } from "@/lib/db";
 import { getSessionFromToken } from "@/lib/auth/session";
 import {
   createSystemAssetRepository,
+  deleteSystemAssetRepository,
+  findSystemAssetByIdRepository,
   listSystemAssetsRepository,
+  updateSystemAssetMetadataRepository,
 } from "@/lib/taller/media/repository";
 import {
   buildSystemAssetStorageKey,
@@ -111,3 +114,91 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }  
+
+function readAssetIdFromRequest(req: NextRequest): string {
+  const { searchParams } = new URL(req.url);
+  return (searchParams.get("id") || "").trim();
+}
+
+export async function PATCH(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const assetId = readAssetIdFromRequest(req);
+  if (!assetId) {
+    return NextResponse.json({ ok: false, error: "Missing asset id" }, { status: 400 });
+  }
+
+  await dbConnect();
+
+  try {
+    const payload = (await req.json().catch(() => null)) as
+      | {
+          label?: unknown;
+          tags?: unknown;
+          allowedIn?: unknown;
+        }
+      | null;
+
+    const label = String(payload?.label || "").trim();
+    if (!label) {
+      return NextResponse.json({ ok: false, error: "Label is required" }, { status: 400 });
+    }
+
+    const tags = splitMediaListValue(payload?.tags);
+    const allowedIn = splitMediaListValue(payload?.allowedIn);
+
+    const updated = await updateSystemAssetMetadataRepository(assetId, {
+      label,
+      tags,
+      allowedIn,
+    });
+
+    if (!updated) {
+      return NextResponse.json({ ok: false, error: "Asset not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true, item: updated });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Update failed";
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const assetId = readAssetIdFromRequest(req);
+  if (!assetId) {
+    return NextResponse.json({ ok: false, error: "Missing asset id" }, { status: 400 });
+  }
+
+  await dbConnect();
+
+  try {
+    const existing = await findSystemAssetByIdRepository(assetId);
+    if (!existing) {
+      return NextResponse.json({ ok: false, error: "Asset not found" }, { status: 404 });
+    }
+
+    const blobUrl = String(existing.url || "").trim();
+    if (blobUrl) {
+      await del(blobUrl, { token: getBlobReadWriteToken() });
+    }
+
+    const deleted = await deleteSystemAssetRepository(assetId);
+    if (!deleted) {
+      return NextResponse.json({ ok: false, error: "Asset not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true, item: deleted });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Delete failed";
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
+}

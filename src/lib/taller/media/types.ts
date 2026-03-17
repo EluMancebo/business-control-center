@@ -40,6 +40,12 @@ export type AssetCreateInput = {
   status: "active";
 };
 
+export type AssetUpdateMetadataInput = {
+  label: string;
+  tags: string[];
+  allowedIn: string[];
+};
+
 // Nuevos tipos para taxonomía y políticas de media
 export type MediaKind =
   | "logo"
@@ -76,4 +82,3 @@ export type MediaPolicy = {
   requireAltText: boolean;
   cropMode: "none" | "center" | "smart";
 };
-

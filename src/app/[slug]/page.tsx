@@ -2,6 +2,9 @@
 import { headers } from "next/headers";
 import PublicHero from "@/components/web/hero/PublicHero";
 import BrandHydrator from "@/components/brand/BrandHydrator";
+import { resolvePublicSitePage, type PublicSiteRepository } from "@/lib/public-site";
+import { buildBusinessSite } from "@/lib/site/helpers";
+import type { RenderableHeroSection, RenderableLocationSection, RenderableSection } from "@/lib/site-renderer";
 
 export const dynamic = "force-dynamic";
 
@@ -201,6 +204,49 @@ async function getPublishedPage(slug: string): Promise<PublishedPagePublic | nul
   return parsePublishedPageResponse(json);
 }
 
+function normalizeLookupSlug(value: string): string {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isRenderableHeroSection(section: RenderableSection): section is RenderableHeroSection {
+  return section.type === "hero";
+}
+
+function isRenderableLocationSection(section: RenderableSection): section is RenderableLocationSection {
+  return section.type === "location";
+}
+
+function createPublicSiteRepository(args: {
+  lookupSlug: string;
+  business: BusinessPublic | null;
+  publishedPage: PublishedPagePublic | null;
+}): PublicSiteRepository {
+  const normalizedLookupSlug = normalizeLookupSlug(args.lookupSlug);
+
+  return {
+    async findByDomain() {
+      return null;
+    },
+    async findBySlug(slug) {
+      const normalizedRequestedSlug = normalizeLookupSlug(safeDecodeSlug(slug));
+      if (normalizedRequestedSlug !== normalizedLookupSlug) return null;
+      if (!args.business) return null;
+
+      return buildBusinessSite({
+        businessId: args.business.slug,
+        slug: args.business.slug,
+        brandConfig: args.business.name ? { brandName: args.business.name } : undefined,
+        homeHero: args.publishedPage
+          ? {
+              variantKey: args.publishedPage.hero.variantKey,
+              data: args.publishedPage.hero.data,
+            }
+          : undefined,
+      });
+    },
+  };
+}
+
 // ---------- Page ----------
 export default async function PublicBusinessPage({
   params,
@@ -209,10 +255,46 @@ export default async function PublicBusinessPage({
 }) {
   const resolved = await Promise.resolve(params);
   const decodedSlug = safeDecodeSlug(resolved.slug);
-
   const business = await getBusinessPublic(decodedSlug);
   const publishedPage = await getPublishedPage(decodedSlug);
-  const hero = publishedPage?.hero?.data ?? null;
+  const publicSiteLookup = {
+    slug: decodedSlug,
+    pageKey: "home",
+  } as const;
+
+  let resolvedPublicSitePage: Awaited<ReturnType<typeof resolvePublicSitePage>> | null = null;
+
+  try {
+    resolvedPublicSitePage = await resolvePublicSitePage(
+      publicSiteLookup,
+      createPublicSiteRepository({
+        lookupSlug: decodedSlug,
+        business,
+        publishedPage,
+      })
+    );
+  } catch {
+    resolvedPublicSitePage = null;
+  }
+
+  if (resolvedPublicSitePage?.ok) {
+    void resolvedPublicSitePage.site;
+    void resolvedPublicSitePage.page;
+    void resolvedPublicSitePage.render;
+  } else if (resolvedPublicSitePage?.reason === "site_not_found") {
+    // Safe fallback path: keep current page behavior unchanged.
+  } else if (resolvedPublicSitePage?.reason === "page_not_found") {
+    // Safe fallback path: keep current page behavior unchanged.
+  }
+
+  const resolvedHeroSection = resolvedPublicSitePage?.ok
+    ? resolvedPublicSitePage.render.sections.find(isRenderableHeroSection)
+    : undefined;
+  const resolvedLocationSection = resolvedPublicSitePage?.ok
+    ? resolvedPublicSitePage.render.sections.find(isRenderableLocationSection)
+    : undefined;
+  const hero = resolvedHeroSection?.payload ?? publishedPage?.hero?.data ?? null;
+  const location = resolvedLocationSection?.payload;
   const activeVariantKey = business?.activeHeroVariantKey ?? "default";
 
   return (
@@ -224,9 +306,60 @@ export default async function PublicBusinessPage({
         className="min-h-svh w-full overflow-x-hidden overflow-y-auto bcc-scrollbar bg-background text-foreground"
       >
         {hero ? (
-          <section id="public-business-hero">
-            <PublicHero data={hero} business={business ?? undefined} />
-          </section>
+          <>
+            <section id="public-business-hero">
+              <PublicHero data={hero} business={business ?? undefined} />
+            </section>
+
+            {location ? (
+              <section id="public-business-location" className="border-t border-border bg-card/50">
+                <div className="mx-auto w-full max-w-6xl px-6 py-8">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Ubicacion y contacto
+                  </p>
+
+                  <div className="mt-3 grid gap-3 text-sm text-foreground sm:grid-cols-2">
+                    {location.address ? (
+                      <p>
+                        <span className="font-semibold">Direccion:</span> {location.address}
+                      </p>
+                    ) : null}
+
+                    {location.phone ? (
+                      <p>
+                        <span className="font-semibold">Telefono:</span>{" "}
+                        <a className="underline-offset-2 hover:underline" href={`tel:${location.phone}`}>
+                          {location.phone}
+                        </a>
+                      </p>
+                    ) : null}
+
+                    {location.email ? (
+                      <p>
+                        <span className="font-semibold">Email:</span>{" "}
+                        <a className="underline-offset-2 hover:underline" href={`mailto:${location.email}`}>
+                          {location.email}
+                        </a>
+                      </p>
+                    ) : null}
+
+                    {location.mapsUrl ? (
+                      <p>
+                        <a
+                          className="font-semibold underline-offset-2 hover:underline"
+                          href={location.mapsUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Ver en mapa
+                        </a>
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </section>
+            ) : null}
+          </>
         ) : (
           <section id="public-business-fallback" className="flex h-full items-center justify-center px-6">
             <div

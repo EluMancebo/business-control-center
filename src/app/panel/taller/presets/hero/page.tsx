@@ -345,7 +345,7 @@ export default function TallerPresetsHeroPage() {
                 <button
                   type="button"
                   onClick={startCreateMode}
-                  className="shrink-0 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                  className="shrink-0 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 [background:var(--cta-primary)] [color:var(--cta-primary-foreground)] hover:[background:var(--cta-primary-hover)]"
                   disabled={saving}
                 >
                   Nuevo
@@ -356,7 +356,7 @@ export default function TallerPresetsHeroPage() {
                 <button
                   type="button"
                   onClick={() => loadList(selectedId)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted [background:var(--cta-secondary)] [color:var(--cta-secondary-foreground)] hover:[background:var(--cta-secondary-hover)]"
                   disabled={loadingList || saving}
                 >
                   {loadingList ? "Cargando…" : "Refrescar lista"}
@@ -368,7 +368,7 @@ export default function TallerPresetsHeroPage() {
                   <button
                     type="button"
                     onClick={() => setCreateMode(true)}
-                    className="w-full rounded-lg border border-primary bg-primary/10 px-3 py-3 text-left"
+                    className="w-full rounded-lg border border-primary bg-primary/10 px-3 py-3 text-left [border-color:var(--accent-strong)] [background:var(--accent-soft)]"
                   >
                     <div className="text-sm font-semibold text-foreground">Nuevo preset</div>
                     <div className="mt-1 text-xs text-muted-foreground">
@@ -398,7 +398,7 @@ export default function TallerPresetsHeroPage() {
                       className={[
                         "w-full rounded-lg border px-3 py-3 text-left transition",
                         active
-                          ? "border-primary bg-primary/10"
+                          ? "border-primary bg-primary/10 [border-color:var(--accent-strong)] [background:var(--accent-soft)]"
                           : "border-border bg-background hover:bg-muted",
                       ].join(" ")}
                     >
@@ -417,7 +417,7 @@ export default function TallerPresetsHeroPage() {
                 })}
               </div>
 
-              <div className="mt-4 shrink-0 rounded-lg border border-border bg-background px-3 py-3 text-xs text-muted-foreground">
+              <div className="mt-4 shrink-0 rounded-lg border border-border bg-background px-3 py-3 text-xs text-muted-foreground [background:var(--surface-2)]">
                 Lo que crees aquí aparecerá automáticamente en:
                 <div className="mt-1 font-semibold text-foreground">
                   GET /api/web/presets/hero → Capa 2 → Business.activeHeroVariantKey
@@ -450,7 +450,7 @@ export default function TallerPresetsHeroPage() {
                         <button
                           type="button"
                           onClick={cancelCreateMode}
-                          className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-semibold hover:bg-muted"
+                          className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-semibold hover:bg-muted [background:var(--cta-secondary)] [color:var(--cta-secondary-foreground)] hover:[background:var(--cta-secondary-hover)]"
                           disabled={saving}
                         >
                           Cancelar
@@ -469,7 +469,7 @@ export default function TallerPresetsHeroPage() {
                         <button
                           type="button"
                           onClick={handleArchive}
-                          className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-semibold hover:bg-muted disabled:opacity-50"
+                          className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-semibold hover:bg-muted disabled:opacity-50 [background:var(--cta-secondary)] [color:var(--cta-secondary-foreground)] hover:[background:var(--cta-secondary-hover)]"
                           disabled={!canSaveExisting || isBusy}
                         >
                           Archivar

@@ -145,6 +145,7 @@ export default function PanelShell({
 
   const studioTitle = useMemo(() => getStudioTitle(pathname), [pathname]);
   const studioHubHref = useMemo(() => getStudioHubHref(pathname), [pathname]);
+  const isTallerStudio = useMemo(() => pathname.startsWith("/panel/taller/"), [pathname]);
 
   const brandScope = useMemo(() => {
     if (pathname.startsWith("/panel/taller")) return "system" as const;
@@ -295,19 +296,31 @@ export default function PanelShell({
           : studioStage === "exiting"
             ? "bcc-studio-slide-out"
             : "";
+    const studioRootClass = isTallerStudio
+      ? "fixed inset-0 z-100 bg-background text-foreground [background:var(--surface-2,var(--background))]"
+      : "fixed inset-0 z-100 bg-background text-foreground";
+    const studioTopbarClass = isTallerStudio
+      ? "border-b border-border bg-card/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur [background:var(--surface-3,var(--card))]"
+      : "border-b border-border bg-card/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur";
+    const studioSecondaryButtonClass = isTallerStudio
+      ? "inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-60 [background:var(--cta-secondary,var(--background))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]"
+      : "inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-60";
+    const studioBadgeClass = isTallerStudio
+      ? "inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[11px] font-semibold [background:var(--badge-bg,var(--muted))] [color:var(--badge-fg,var(--foreground))] [border-color:var(--badge-bg,var(--border))]"
+      : "inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-semibold text-foreground";
 
     return (
-      <div className="fixed inset-0 z-100 bg-background text-foreground">
+      <div className={studioRootClass}>
         <BrandHydrator scope={brandScope} businessSlug={brandBusinessSlug} />
 
         <div className={["absolute inset-0", studioMotionClass].filter(Boolean).join(" ")}>
-          <div className="border-b border-border bg-card/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur">
+          <div className={studioTopbarClass}>
             <div className="mx-auto flex h-14 max-w-400 items-center justify-between px-4">
               <div className="flex min-w-0 items-center gap-3">
                 <button
                   type="button"
                   onClick={() => leaveStudio(studioHubHref)}
-                  className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-60"
+                  className={studioSecondaryButtonClass}
                   aria-label="Volver al hub"
                   title="Volver al hub"
                   disabled={studioStage === "exiting"}
@@ -327,7 +340,10 @@ export default function PanelShell({
                 </div>
 
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold">{studioTitle}</div>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <div className="truncate text-sm font-semibold">{studioTitle}</div>
+                    {isTallerStudio ? <span className={studioBadgeClass}>Capa 1</span> : null}
+                  </div>
                   <div className="truncate text-xs text-muted-foreground">
                     Estás editando esta sección del sistema
                   </div>
@@ -337,7 +353,7 @@ export default function PanelShell({
               <button
                 type="button"
                 onClick={() => leaveStudio("/panel/dashboard")}
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-60"
+                className={studioSecondaryButtonClass}
                 aria-label="Ir al menú principal"
                 title="Ir al menú principal"
                 disabled={studioStage === "exiting"}

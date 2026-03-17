@@ -12,5 +12,9 @@ export default async function TallerLayout({ children }: { children: React.React
     redirect("/panel/dashboard");
   }
 
-  return <>{children}</>;
+  return (
+    <div className="min-h-full bg-background text-foreground [background:var(--surface-2,var(--background))]">
+      {children}
+    </div>
+  );
 }

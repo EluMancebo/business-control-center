@@ -1,9 +1,21 @@
 // src/components/panel/brand/BrandEditor.tsx
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Brand, BrandMode, BrandPaletteKey } from "@/lib/brand/types";
 import { BRAND_PALETTES } from "@/lib/brand/presets";
+import {
+  applyBrandThemePreviewToDocument,
+  BRAND_THEME_ACCENT_STYLE_OPTIONS,
+  BRAND_THEME_HARMONY_OPTIONS,
+  BRAND_THEME_TYPOGRAPHY_OPTIONS,
+  DEFAULT_BRAND_THEME_CONFIG,
+} from "@/lib/brand-theme";
+import type {
+  BrandAccentStyle,
+  BrandHarmonyStrategy,
+  BrandTypographyPreset,
+} from "@/lib/brand-theme";
 import {
   getBrandChannel,
   getBrandStorageKey,
@@ -11,12 +23,35 @@ import {
   type BrandScope,
 } from "@/lib/brand/storage";
 import { getBrand, setBrand, subscribeBrand, syncBrandFromStorage } from "@/lib/brand/service";
+import BrandThemePreviewSurface from "./BrandThemePreviewSurface";
 
 const MODES: Array<{ key: BrandMode; label: string }> = [
   { key: "system", label: "System" },
   { key: "light", label: "Light" },
   { key: "dark", label: "Dark" },
 ];
+
+const HARMONY_LABELS: Record<BrandHarmonyStrategy, string> = {
+  monochromatic: "Monochromatic",
+  analogous: "Analogous",
+  complementary: "Complementary",
+  "split-complementary": "Split-complementary",
+  triadic: "Triadic",
+  tetradic: "Tetradic",
+};
+
+const ACCENT_STYLE_LABELS: Record<BrandAccentStyle, string> = {
+  minimal: "Minimal",
+  balanced: "Balanced",
+  expressive: "Expressive",
+};
+
+const TYPOGRAPHY_LABELS: Record<BrandTypographyPreset, string> = {
+  editorial: "Editorial",
+  modern: "Modern",
+  classic: "Classic",
+  geometric: "Geometric",
+};
 
 function readActiveBusinessSlug(): string {
   if (typeof window === "undefined") return "";
@@ -37,7 +72,18 @@ type BrandEditorProps = {
 };
 
 export default function BrandEditor({ scope = "panel", businessSlug }: BrandEditorProps) {
+  const previewTargetRef = useRef<HTMLDivElement | null>(null);
   const [resolvedSlug, setResolvedSlug] = useState<string>(() => readActiveBusinessSlug());
+  const [previewEnabled, setPreviewEnabled] = useState(false);
+  const [previewHarmony, setPreviewHarmony] = useState<BrandHarmonyStrategy>(
+    DEFAULT_BRAND_THEME_CONFIG.harmony
+  );
+  const [previewAccentStyle, setPreviewAccentStyle] = useState<BrandAccentStyle>(
+    DEFAULT_BRAND_THEME_CONFIG.accentStyle
+  );
+  const [previewTypography, setPreviewTypography] = useState<BrandTypographyPreset>(
+    DEFAULT_BRAND_THEME_CONFIG.typographyPreset
+  );
 
   // Para panel/web cliente: toma activeBusinessSlug (si NO viene businessSlug por prop)
   useEffect(() => {
@@ -84,6 +130,38 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     []
   );
 
+  useEffect(() => {
+    if (!previewEnabled) return;
+    if (skipWebWithoutSlug) return;
+    const previewTarget = previewTargetRef.current;
+    if (!previewTarget) return;
+
+    return applyBrandThemePreviewToDocument({
+      brand,
+      config: {
+        harmony: previewHarmony,
+        accentStyle: previewAccentStyle,
+        typographyPreset: previewTypography,
+      },
+      options: { systemModeFallback: "light" },
+      target: previewTarget,
+    });
+  }, [
+    previewEnabled,
+    previewHarmony,
+    previewAccentStyle,
+    previewTypography,
+    brand,
+    skipWebWithoutSlug,
+  ]);
+
+  function resetPreviewState() {
+    setPreviewHarmony(DEFAULT_BRAND_THEME_CONFIG.harmony);
+    setPreviewAccentStyle(DEFAULT_BRAND_THEME_CONFIG.accentStyle);
+    setPreviewTypography(DEFAULT_BRAND_THEME_CONFIG.typographyPreset);
+    setPreviewEnabled(false);
+  }
+
   function update(next: Brand) {
     setBrandLocal(next);
     if (skipWebWithoutSlug) return;
@@ -108,7 +186,10 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
 
   return (
     <section className="w-full max-w-3xl">
-      <div className="rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm">
+      <div
+        ref={previewTargetRef}
+        className="rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm"
+      >
         <header className="mb-6">
           <h1 className="text-xl font-semibold">{title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
@@ -173,6 +254,96 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
             </select>
           </label>
         </div>
+
+        <section className="mt-6 rounded-xl border border-border bg-muted/40 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium text-foreground">Brand Theme Preview (runtime only)</p>
+            <button
+              type="button"
+              onClick={() => setPreviewEnabled((value) => !value)}
+              disabled={skipWebWithoutSlug}
+              className="h-9 rounded-lg border border-border bg-background px-3 text-xs font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {previewEnabled ? "Disable preview" : "Enable preview"}
+            </button>
+          </div>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            No se guarda en DB/localStorage. Solo aplica en esta pestaña y se limpia al desactivar o salir.
+          </p>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Harmony</span>
+              <select
+                value={previewHarmony}
+                onChange={(e) => setPreviewHarmony(e.target.value as BrandHarmonyStrategy)}
+                disabled={!previewEnabled || skipWebWithoutSlug}
+                className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {BRAND_THEME_HARMONY_OPTIONS.map((item) => (
+                  <option key={item} value={item}>
+                    {HARMONY_LABELS[item]}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Accent style</span>
+              <select
+                value={previewAccentStyle}
+                onChange={(e) => setPreviewAccentStyle(e.target.value as BrandAccentStyle)}
+                disabled={!previewEnabled || skipWebWithoutSlug}
+                className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {BRAND_THEME_ACCENT_STYLE_OPTIONS.map((item) => (
+                  <option key={item} value={item}>
+                    {ACCENT_STYLE_LABELS[item]}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Typography</span>
+              <select
+                value={previewTypography}
+                onChange={(e) => setPreviewTypography(e.target.value as BrandTypographyPreset)}
+                disabled={!previewEnabled || skipWebWithoutSlug}
+                className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {BRAND_THEME_TYPOGRAPHY_OPTIONS.map((item) => (
+                  <option key={item} value={item}>
+                    {TYPOGRAPHY_LABELS[item]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span>
+              Preview: {previewEnabled ? "active" : "off"} · {previewHarmony} · {previewAccentStyle} ·{" "}
+              {previewTypography}
+            </span>
+
+            <button
+              type="button"
+              onClick={resetPreviewState}
+              className="h-8 rounded-lg border border-border bg-background px-3 font-medium text-foreground hover:opacity-90"
+            >
+              Clear preview
+            </button>
+          </div>
+
+          <BrandThemePreviewSurface
+            previewEnabled={previewEnabled}
+            harmony={previewHarmony}
+            accentStyle={previewAccentStyle}
+            typographyPreset={previewTypography}
+          />
+        </section>
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm text-muted-foreground">

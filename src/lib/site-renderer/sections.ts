@@ -1,6 +1,7 @@
 import { getSitePageSections, type SitePageSectionsInput } from "@/lib/site-reader";
 import type { SectionInstance } from "@/lib/studio";
 import { renderHeroSection } from "./hero";
+import { renderLocationSection } from "./location";
 import type { RenderableSection, RenderableUnsupportedSection, RendererInputSection } from "./types";
 
 function normalizeText(value: string): string {
@@ -44,6 +45,11 @@ export function renderSiteSections(input: SitePageSectionsInput): RenderableSect
 
     if (normalizedSection.id === "hero") {
       renderable.push(renderHeroSection(normalizedSection));
+      continue;
+    }
+
+    if (normalizedSection.id === "location") {
+      renderable.push(renderLocationSection(normalizedSection));
       continue;
     }
 

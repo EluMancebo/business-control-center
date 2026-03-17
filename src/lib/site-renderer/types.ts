@@ -8,6 +8,20 @@ export type RenderableHeroSection = {
   payload: HeroSectionPayload;
 };
 
+export type LocationSectionPayload = {
+  address?: string;
+  phone?: string;
+  email?: string;
+  mapsUrl?: string;
+};
+
+export type RenderableLocationSection = {
+  type: "location";
+  sectionId: "location";
+  variant: string;
+  payload: LocationSectionPayload;
+};
+
 export type RenderableUnsupportedSection = {
   type: "unsupported";
   sectionId: string;
@@ -15,7 +29,10 @@ export type RenderableUnsupportedSection = {
   reason: "unknown_section" | "invalid_payload";
 };
 
-export type RenderableSection = RenderableHeroSection | RenderableUnsupportedSection;
+export type RenderableSection =
+  | RenderableHeroSection
+  | RenderableLocationSection
+  | RenderableUnsupportedSection;
 
 export type RendererInputSection = {
   id: string;
