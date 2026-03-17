@@ -22,4 +22,14 @@
 
 UX primero  
 Arquitectura escalable  
-Componentes reutilizables    
+Componentes reutilizables 
+
+ ## Theme and UI consistency
+
+Todas las nuevas interfaces deben consumir tokens semánticos del sistema de brand-theme cuando aplique.  
+No se deben introducir colores hardcodeados ni patrones visuales aislados fuera del contrato de diseño.
+
+## Mobile-first
+
+El panel y las herramientas operativas deben priorizar diseño mobile-first. 
+
