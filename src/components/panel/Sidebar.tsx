@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NAV, type NavItem, type NavChildItem } from "@/components/panel/nav";
+import PanelButton from "@/components/panel/ui/PanelButton";
 import type { Capability } from "@/lib/auth/capabilities";
 
 function isActivePath(pathname: string, href: string) {
@@ -534,26 +535,28 @@ export default function Sidebar({
             <div className="px-1 text-xs font-medium text-muted-foreground">Accesos</div>
 
             <div className="mt-2 grid gap-2">
-              <a
+              <PanelButton
                 id="sidebar-access-public"
                 href={publicHref}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex w-full items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground shadow-sm hover:opacity-90"
+                variant="primary"
+                className="w-full text-xs shadow-sm"
                 title={activeSlug ? `Abrir /${activeSlug}` : "Abrir web pública (falta slug)"}
               >
                 Ver web pública ↗
-              </a>
+              </PanelButton>
 
               {canSee("CAN_EDIT_WEB") ? (
-                <Link
+                <PanelButton
                   id="sidebar-access-edit-web"
                   href="/panel/web-control/hero"
                   onClick={onNavigate}
-                  className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-muted"
+                  variant="secondary"
+                  className="w-full text-xs shadow-sm"
                 >
                   Editar web pública
-                </Link>
+                </PanelButton>
               ) : null}
             </div>
           </div>
