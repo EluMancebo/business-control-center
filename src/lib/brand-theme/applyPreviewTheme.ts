@@ -1,7 +1,9 @@
 import type { Brand } from "@/lib/brand/types";
+import { resolveBrandThemeTokensFromPaletteSeed } from "./palette";
 import { resolveBrandThemeTokensFromBrand } from "./resolver";
 import { toBrandCssVariables } from "./tokens";
 import type {
+  BrandPaletteSeedInput,
   BrandTypographyPreset,
   BuildBrandThemeConfigOptions,
   ResolveBrandThemeOptions,
@@ -10,6 +12,7 @@ import type {
 export type ApplyBrandThemePreviewInput = {
   brand: Brand;
   config: BuildBrandThemeConfigOptions;
+  paletteSeed?: BrandPaletteSeedInput;
   options?: ResolveBrandThemeOptions;
   target?: HTMLElement;
 };
@@ -50,11 +53,23 @@ export function applyBrandThemePreviewToDocument(input: ApplyBrandThemePreviewIn
 
   const target = input.target ?? document.documentElement;
 
-  const tokens = resolveBrandThemeTokensFromBrand({
-    brand: input.brand,
-    config: input.config,
-    options: input.options,
-  });
+  const tokens = input.paletteSeed
+    ? resolveBrandThemeTokensFromPaletteSeed({
+        seed: input.paletteSeed,
+        mode: input.brand.mode,
+        config: input.config,
+        options: input.options,
+      }) ??
+      resolveBrandThemeTokensFromBrand({
+        brand: input.brand,
+        config: input.config,
+        options: input.options,
+      })
+    : resolveBrandThemeTokensFromBrand({
+        brand: input.brand,
+        config: input.config,
+        options: input.options,
+      });
 
   const cssVariables = toBrandCssVariables(tokens);
   cssVariables["--brand-typography-preset"] = tokens.typographyPreset;

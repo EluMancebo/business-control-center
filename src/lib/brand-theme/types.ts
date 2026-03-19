@@ -2,6 +2,21 @@ import type { Brand, BrandMode, BrandPaletteKey } from "@/lib/brand/types";
 
 export type BrandThemePaletteId = BrandPaletteKey;
 export type BrandThemeMode = BrandMode;
+export type BrandPaletteSeedSource = "manual" | "logo" | "hero";
+
+export type BrandPaletteSeedInput = {
+  source: BrandPaletteSeedSource;
+  primary: string;
+  accent?: string;
+  neutral?: string;
+};
+
+export type BrandPaletteSeed = {
+  source: BrandPaletteSeedSource;
+  primary: string;
+  accent: string;
+  neutral: string;
+};
 
 export type BrandHarmonyStrategy =
   | "monochromatic"

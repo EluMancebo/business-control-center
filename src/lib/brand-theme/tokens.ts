@@ -201,10 +201,11 @@ export function buildBrandSemanticTokens(args: {
   harmony: BrandHarmonyStrategy;
   accentStyle: BrandAccentStyle;
   typographyPreset: BrandTypographyPreset;
+  accentBase?: string;
 }): BrandSemanticTokens {
-  const { core, oppositeCore, mode, harmony, accentStyle, typographyPreset } = args;
+  const { core, oppositeCore, mode, harmony, accentStyle, typographyPreset, accentBase } = args;
 
-  const accent = deriveAccentBase(core.primary, harmony, accentStyle, mode);
+  const accent = accentBase ?? deriveAccentBase(core.primary, harmony, accentStyle, mode);
   const accentStrong =
     mode === "dark"
       ? transformHexHsl(accent, (hsl) => ({ h: hsl.h, s: clamp(hsl.s + 8, 0, 100), l: clamp(hsl.l + 10, 0, 100) }))

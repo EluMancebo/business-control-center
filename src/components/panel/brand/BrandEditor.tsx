@@ -10,10 +10,12 @@ import {
   BRAND_THEME_HARMONY_OPTIONS,
   BRAND_THEME_TYPOGRAPHY_OPTIONS,
   DEFAULT_BRAND_THEME_CONFIG,
+  normalizeBrandPaletteSeed,
 } from "@/lib/brand-theme";
 import type {
   BrandAccentStyle,
   BrandHarmonyStrategy,
+  BrandPaletteSeedSource,
   BrandTypographyPreset,
 } from "@/lib/brand-theme";
 import {
@@ -53,6 +55,12 @@ const TYPOGRAPHY_LABELS: Record<BrandTypographyPreset, string> = {
   geometric: "Geometric",
 };
 
+const PALETTE_SOURCE_LABELS: Record<BrandPaletteSeedSource, string> = {
+  manual: "Manual",
+  logo: "Logo",
+  hero: "Hero image",
+};
+
 function readActiveBusinessSlug(): string {
   if (typeof window === "undefined") return "";
   return window.localStorage.getItem("bcc:activeBusinessSlug")?.trim() || "";
@@ -84,7 +92,12 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const [previewTypography, setPreviewTypography] = useState<BrandTypographyPreset>(
     DEFAULT_BRAND_THEME_CONFIG.typographyPreset
   );
+  const [paletteSeedSource, setPaletteSeedSource] = useState<BrandPaletteSeedSource>("manual");
+  const [paletteSeedPrimary, setPaletteSeedPrimary] = useState("#2563eb");
+  const [paletteSeedAccent, setPaletteSeedAccent] = useState("");
+  const [paletteSeedNeutral, setPaletteSeedNeutral] = useState("");
   const scopeUsesBusinessSlug = scope === "panel" || scope === "web";
+  const canUsePaletteEngine = scope === "system";
 
   // Para panel/web cliente: toma activeBusinessSlug (si NO viene businessSlug por prop)
   useEffect(() => {
@@ -99,6 +112,19 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
 
   const effectiveSlug = scopeUsesBusinessSlug ? (businessSlug?.trim() || resolvedSlug) : "";
   const skipWebWithoutSlug = scope === "web" && !effectiveSlug;
+  const paletteSeedInput = useMemo(
+    () => ({
+      source: paletteSeedSource,
+      primary: paletteSeedPrimary,
+      accent: paletteSeedAccent,
+      neutral: paletteSeedNeutral,
+    }),
+    [paletteSeedSource, paletteSeedPrimary, paletteSeedAccent, paletteSeedNeutral]
+  );
+  const normalizedPaletteSeed = useMemo(
+    () => normalizeBrandPaletteSeed(paletteSeedInput),
+    [paletteSeedInput]
+  );
 
   const storageKey = useMemo(
     () => getBrandStorageKey(scope, scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined),
@@ -145,6 +171,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
         accentStyle: previewAccentStyle,
         typographyPreset: previewTypography,
       },
+      paletteSeed: canUsePaletteEngine ? paletteSeedInput : undefined,
       options: { systemModeFallback: "light" },
       target: previewTarget,
     });
@@ -154,6 +181,8 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     previewAccentStyle,
     previewTypography,
     brand,
+    canUsePaletteEngine,
+    paletteSeedInput,
     skipWebWithoutSlug,
   ]);
 
@@ -263,6 +292,105 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
           </label>
         </div>
 
+        {canUsePaletteEngine ? (
+          <section className="mt-6 rounded-xl border border-border bg-muted/40 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium text-foreground">Motor de paleta (Fase 1)</p>
+              <span className="text-xs text-muted-foreground">
+                Scope: system · preview local aislada
+              </span>
+            </div>
+
+            <p className="mt-1 text-xs text-muted-foreground">
+              Fase 1 hibrida: eliges una fuente (logo/hero/manual) y defines un seed cromatico.
+              La extraccion automatica desde imagen se anadira despues.
+            </p>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1">
+                <span className="text-xs font-medium text-muted-foreground">Fuente base</span>
+                <select
+                  value={paletteSeedSource}
+                  onChange={(e) => setPaletteSeedSource(e.target.value as BrandPaletteSeedSource)}
+                  className="h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {Object.keys(PALETTE_SOURCE_LABELS).map((value) => (
+                    <option key={value} value={value}>
+                      {PALETTE_SOURCE_LABELS[value as BrandPaletteSeedSource]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="grid gap-1">
+                <span className="text-xs font-medium text-muted-foreground">Color principal</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={normalizedPaletteSeed?.primary ?? "#2563eb"}
+                    onChange={(e) => setPaletteSeedPrimary(e.target.value)}
+                    className="h-10 w-11 cursor-pointer rounded-lg border border-border bg-background p-1"
+                    aria-label="Seleccionar color principal"
+                  />
+                  <input
+                    value={paletteSeedPrimary}
+                    onChange={(e) => setPaletteSeedPrimary(e.target.value)}
+                    placeholder="#2563eb"
+                    className="h-10 flex-1 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-1">
+                <span className="text-xs font-medium text-muted-foreground">Acento (opcional)</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={normalizedPaletteSeed?.accent ?? "#0ea5e9"}
+                    onChange={(e) => setPaletteSeedAccent(e.target.value)}
+                    className="h-10 w-11 cursor-pointer rounded-lg border border-border bg-background p-1"
+                    aria-label="Seleccionar color acento"
+                  />
+                  <input
+                    value={paletteSeedAccent}
+                    onChange={(e) => setPaletteSeedAccent(e.target.value)}
+                    placeholder="auto"
+                    className="h-10 flex-1 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-1">
+                <span className="text-xs font-medium text-muted-foreground">Neutral (opcional)</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={normalizedPaletteSeed?.neutral ?? "#e2e8f0"}
+                    onChange={(e) => setPaletteSeedNeutral(e.target.value)}
+                    className="h-10 w-11 cursor-pointer rounded-lg border border-border bg-background p-1"
+                    aria-label="Seleccionar color neutral"
+                  />
+                  <input
+                    value={paletteSeedNeutral}
+                    onChange={(e) => setPaletteSeedNeutral(e.target.value)}
+                    placeholder="auto"
+                    className="h-10 flex-1 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <p className="mt-3 text-xs text-muted-foreground">
+              Seed activo:{" "}
+              <span className="font-medium text-foreground">
+                {normalizedPaletteSeed
+                  ? `${normalizedPaletteSeed.source} · ${normalizedPaletteSeed.primary} · ${normalizedPaletteSeed.accent} · ${normalizedPaletteSeed.neutral}`
+                  : "invalido (usa formato #RRGGBB)"}
+              </span>
+            </p>
+          </section>
+        ) : null}
+
         <section className="mt-6 rounded-xl border border-border bg-muted/40 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-medium text-foreground">Brand Theme Preview (runtime only)</p>
@@ -279,6 +407,11 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
           <p className="mt-1 text-xs text-muted-foreground">
             No se guarda en DB/localStorage. Solo aplica en esta pestaña y se limpia al desactivar o salir.
           </p>
+          {canUsePaletteEngine ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Si el seed de paleta no es valido, el preview usa el preset de `palette` actual.
+            </p>
+          ) : null}
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <label className="grid gap-1">

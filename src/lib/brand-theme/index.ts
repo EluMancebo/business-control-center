@@ -1,4 +1,7 @@
 export type {
+  BrandPaletteSeed,
+  BrandPaletteSeedInput,
+  BrandPaletteSeedSource,
   BrandAccentStyle,
   BrandCorePaletteTokens,
   BrandHarmonyStrategy,
@@ -23,6 +26,11 @@ export {
 } from "./presets";
 
 export { buildBrandSemanticTokens, toBrandCssVariables } from "./tokens";
+export {
+  normalizeBrandPaletteSeed,
+  normalizeHexColor,
+  resolveBrandThemeTokensFromPaletteSeed,
+} from "./palette";
 export { applyBrandThemePreviewToDocument } from "./applyPreviewTheme";
 export type { ApplyBrandThemePreviewInput } from "./applyPreviewTheme";
 
