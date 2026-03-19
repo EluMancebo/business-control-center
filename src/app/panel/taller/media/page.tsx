@@ -291,7 +291,7 @@ export default function TallerMediaPage() {
     "inline-flex h-9 items-center justify-center rounded-lg border border-border px-3 text-xs font-semibold transition-colors duration-180 [background:var(--cta-secondary)] [color:var(--cta-secondary-foreground)] hover:[background:var(--cta-secondary-hover)] disabled:opacity-60";
 
   return (
-    <div className="mx-auto w-full max-w-[1180px] space-y-6 pb-4">
+    <div className="mx-auto w-full max-w-[1180px] space-y-6 px-3 pb-4 sm:px-4 lg:px-0">
       <PageHeader
         title="Media Center (Taller)"
         description="Gestiona libreria de assets del sistema con filtros, restricciones y metadatos operativos."

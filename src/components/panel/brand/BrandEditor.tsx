@@ -84,38 +84,40 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const [previewTypography, setPreviewTypography] = useState<BrandTypographyPreset>(
     DEFAULT_BRAND_THEME_CONFIG.typographyPreset
   );
+  const scopeUsesBusinessSlug = scope === "panel" || scope === "web";
 
   // Para panel/web cliente: toma activeBusinessSlug (si NO viene businessSlug por prop)
   useEffect(() => {
-    if (scope === "system") return;
+    if (!scopeUsesBusinessSlug) return;
     if (businessSlug && businessSlug.trim()) return;
 
     const sync = () => setResolvedSlug(readActiveBusinessSlug());
     sync();
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
-  }, [scope, businessSlug]);
+  }, [scopeUsesBusinessSlug, businessSlug]);
 
-  const effectiveSlug =
-    scope === "system" ? "" : (businessSlug?.trim() || resolvedSlug);
+  const effectiveSlug = scopeUsesBusinessSlug ? (businessSlug?.trim() || resolvedSlug) : "";
   const skipWebWithoutSlug = scope === "web" && !effectiveSlug;
 
   const storageKey = useMemo(
-    () => getBrandStorageKey(scope, scope === "system" ? undefined : effectiveSlug || undefined),
-    [scope, effectiveSlug]
+    () => getBrandStorageKey(scope, scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined),
+    [scope, scopeUsesBusinessSlug, effectiveSlug]
   );
 
   const channel = useMemo(
-    () => getBrandChannel(scope, scope === "system" ? undefined : effectiveSlug || undefined),
-    [scope, effectiveSlug]
+    () => getBrandChannel(scope, scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined),
+    [scope, scopeUsesBusinessSlug, effectiveSlug]
   );
 
   const fallback = useMemo(() => getDefaultBrandForScope(scope), [scope]);
 
-  // Rehidratación: en scope web dentro del panel NO aplicamos al documento
+  // Rehidratación: solo scopes de shell global (studio/panel) aplican al documento.
   useEffect(() => {
     if (skipWebWithoutSlug) return;
-    syncBrandFromStorage(storageKey, channel, fallback, { applyToDocument: scope !== "web" });
+    syncBrandFromStorage(storageKey, channel, fallback, {
+      applyToDocument: scope === "panel" || scope === "studio",
+    });
   }, [storageKey, channel, fallback, scope, skipWebWithoutSlug]);
 
   const current = useBrandScoped(storageKey, channel, fallback, !skipWebWithoutSlug);
@@ -166,22 +168,28 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     setBrandLocal(next);
     if (skipWebWithoutSlug) return;
 
-    // ✅ clave: web no aplica al documento del panel
-    setBrand(next, storageKey, channel, fallback, { applyToDocument: scope !== "web" });
+    // Solo "studio/panel" gobiernan shell global. "system/web" quedan aislados.
+    setBrand(next, storageKey, channel, fallback, {
+      applyToDocument: scope === "panel" || scope === "studio",
+    });
   }
 
   const title =
     scope === "system"
       ? "Apariencia (Taller / Capa 1)"
+      : scope === "studio"
+      ? "Apariencia del shell (Capa 1)"
       : scope === "panel"
       ? "Apariencia del panel (Capa 2)"
       : "Apariencia web pública";
 
   const subtitle =
     scope === "system"
-      ? "Solo afecta al Taller (Admin)."
+      ? "Laboratorio de identidad del sistema (aislado del shell global del panel)."
+      : scope === "studio"
+      ? "Gobierna la UI global interna de Capa 1 (admin/studio)."
       : scope === "panel"
-      ? "Solo afecta a la UI del panel del cliente."
+      ? "Gobierna la UI global del panel cliente (Capa 2)."
       : "Solo afecta a la web pública del negocio.";
 
   return (
@@ -194,7 +202,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
           <h1 className="text-xl font-semibold">{title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
 
-          {scope !== "system" ? (
+          {scopeUsesBusinessSlug ? (
             <p className="mt-2 text-xs text-muted-foreground">
               Business slug activo:{" "}
               <span className="font-semibold text-foreground">{effectiveSlug || "—"}</span>

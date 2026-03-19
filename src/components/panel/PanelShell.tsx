@@ -147,15 +147,15 @@ export default function PanelShell({
   const studioHubHref = useMemo(() => getStudioHubHref(pathname), [pathname]);
   const isTallerStudio = useMemo(() => pathname.startsWith("/panel/taller/"), [pathname]);
 
-  const brandScope = useMemo(() => {
-    if (pathname.startsWith("/panel/taller")) return "system" as const;
-    return "panel" as const;
-  }, [pathname]);
-
-  const brandBusinessSlug = useMemo(() => {
-    if (brandScope !== "panel") return undefined;
-    return activeBusinessSlug;
-  }, [brandScope, activeBusinessSlug]);
+  // Shell policy: Capa 1 (admin/studio) y Capa 2 (panel cliente) usan scopes separados.
+  const brandScope = useMemo(
+    () => (computedIsAdmin ? ("studio" as const) : ("panel" as const)),
+    [computedIsAdmin]
+  );
+  const brandBusinessSlug = useMemo(
+    () => (brandScope === "panel" ? activeBusinessSlug : undefined),
+    [brandScope, activeBusinessSlug]
+  );
 
   const clearStudioTimers = useCallback(() => {
     if (enterReadyFrameRef.current !== null) {

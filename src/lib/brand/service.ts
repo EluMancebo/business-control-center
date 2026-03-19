@@ -11,6 +11,7 @@ type Store = {
   storageKey: string;
   channel: string;
   brand: Brand;
+  applyToDocument: boolean;
   listeners: Set<Listener>;
 };
 
@@ -29,6 +30,17 @@ function notify(store: Store) {
   store.listeners.forEach((l) => l());
 }
 
+function resolveApplyToDocument(
+  store: Store,
+  options?: SetBrandOptions
+): boolean {
+  if (typeof options?.applyToDocument === "boolean") {
+    return options.applyToDocument;
+  }
+
+  return store.applyToDocument;
+}
+
 function getOrCreateStore(storageKey: string, channel: string, fallback?: Brand): Store {
   const key = makeKey(storageKey, channel);
 
@@ -41,6 +53,7 @@ function getOrCreateStore(storageKey: string, channel: string, fallback?: Brand)
     storageKey,
     channel,
     brand: initial,
+    applyToDocument: true,
     listeners: new Set<Listener>(),
   };
 
@@ -64,11 +77,11 @@ export function setBrand(
   storageKey: string = DEFAULT_STORAGE_KEY,
   channel: string = DEFAULT_CHANNEL,
   fallback?: Brand,
-  _options?: SetBrandOptions
+  options?: SetBrandOptions
 ) {
-  void _options;
   const store = getOrCreateStore(storageKey, channel, fallback);
   store.brand = next;
+  store.applyToDocument = resolveApplyToDocument(store, options);
 
   // Persistencia
   saveBrandToStorage(storageKey, next);
@@ -98,16 +111,24 @@ export function subscribeBrand(
   return () => store.listeners.delete(listener);
 }
 
+export function shouldApplyBrandToDocument(
+  storageKey: string = DEFAULT_STORAGE_KEY,
+  channel: string = DEFAULT_CHANNEL,
+  fallback?: Brand
+): boolean {
+  return getOrCreateStore(storageKey, channel, fallback).applyToDocument;
+}
+
 export function syncBrandFromStorage(
   storageKey: string = DEFAULT_STORAGE_KEY,
   channel: string = DEFAULT_CHANNEL,
   fallback?: Brand,
-  _options?: SetBrandOptions
+  options?: SetBrandOptions
 ) {
-  void _options;
   const store = getOrCreateStore(storageKey, channel, fallback);
   const fromStorage = loadBrandFromStorage(storageKey, fallback ?? DEFAULT_BRAND);
   store.brand = fromStorage;
+  store.applyToDocument = resolveApplyToDocument(store, options);
 
   notify(store);
-} 
+}

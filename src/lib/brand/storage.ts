@@ -1,7 +1,7 @@
 // src/lib/brand/storage.ts
 import type { Brand } from "./types";
 
-export type BrandScope = "system" | "panel" | "web";
+export type BrandScope = "system" | "studio" | "panel" | "web";
 
 // Base keys (v0)
 export const STORAGE_KEY_BASE = "bcc.brand.v0";
@@ -17,6 +17,7 @@ export const DEFAULT_BRAND: Brand = {
 // Defaults por scope (puedes ajustarlos si quieres)
 const DEFAULT_BRAND_BY_SCOPE: Record<BrandScope, Brand> = {
   system: { ...DEFAULT_BRAND, palette: "bcc", mode: "light", brandName: "BCC · Taller" },
+  studio: { ...DEFAULT_BRAND, palette: "bcc", mode: "system", brandName: "BCC · Studio" },
   panel: { ...DEFAULT_BRAND, palette: "bcc", mode: "system", brandName: "BCC · Panel" },
   web: { ...DEFAULT_BRAND, palette: "bcc", mode: "system", brandName: "BCC · Web" },
 };
@@ -37,6 +38,7 @@ export function getDefaultBrandForScope(scope: BrandScope): Brand {
 
 export function getBrandStorageKey(scope: BrandScope, businessSlug?: string): string {
   if (scope === "system") return `${STORAGE_KEY_BASE}.system`;
+  if (scope === "studio") return `${STORAGE_KEY_BASE}.studio`;
 
   const slug = typeof businessSlug === "string" ? normalizeSlug(businessSlug) : "";
   if (slug) return `${STORAGE_KEY_BASE}.${scope}.${slug}`;
@@ -46,6 +48,7 @@ export function getBrandStorageKey(scope: BrandScope, businessSlug?: string): st
 
 export function getBrandChannel(scope: BrandScope, businessSlug?: string): string {
   if (scope === "system") return `${BRAND_CHANNEL_BASE}:system`;
+  if (scope === "studio") return `${BRAND_CHANNEL_BASE}:studio`;
 
   const slug = typeof businessSlug === "string" ? normalizeSlug(businessSlug) : "";
   if (slug) return `${BRAND_CHANNEL_BASE}:${scope}:${slug}`;

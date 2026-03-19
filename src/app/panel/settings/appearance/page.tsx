@@ -6,15 +6,20 @@ import BrandEditor from "@/components/panel/brand/BrandEditor";
 export const dynamic = "force-dynamic";
 
 export default async function AppearancePage() {
+  let role: string | undefined;
+
   try {
-    await requireSession();
+    const session = await requireSession();
+    role = session.role;
   } catch {
     redirect("/login?next=/panel/settings/appearance");
   }
 
+  const scope = role === "admin" ? ("studio" as const) : ("panel" as const);
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
-      <BrandEditor scope={"panel" as const} />
+      <BrandEditor scope={scope} />
     </div>
   );
 }
