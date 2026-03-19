@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { buildBreadcrumbs, getRouteMeta } from "./routeMeta";
+import PanelButton from "@/components/panel/ui/PanelButton";
 
 function getPublicHrefFromSlug(slug: string | null | undefined) {
   const clean = String(slug || "").trim();
@@ -76,15 +77,16 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
     <header className="sticky top-0 z-10 border-b border-border bg-card/92 shadow-[0_10px_28px_rgba(15,23,42,0.08)] backdrop-blur">
       <div className="flex items-center justify-between px-4 py-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <button
+          <PanelButton
             type="button"
             onClick={() => onOpenMenu?.()}
-            className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm sm:hidden"
+            variant="secondary"
+            className="shadow-sm sm:hidden"
             aria-label="Abrir menú"
             title="Abrir menú"
           >
             ☰
-          </button>
+          </PanelButton>
 
           <div className="min-w-0">
             {crumbs.length > 0 ? (
@@ -115,26 +117,28 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <a
+          <PanelButton
             href={publicHref}
+            variant="secondary"
             target="_blank"
             rel="noreferrer"
-            className="hidden items-center rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm hover:bg-muted sm:inline-flex"
+            className="hidden shadow-sm sm:inline-flex"
             title={activeSlug ? `Abrir /${activeSlug}` : "Abrir web pública (falta slug)"}
           >
             Ver web
-          </a>
+          </PanelButton>
 
-          <a
+          <PanelButton
             href={publicHref}
+            variant="secondary"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm hover:bg-muted sm:hidden"
+            className="px-2.5 shadow-sm sm:hidden"
             aria-label="Ver web"
             title={activeSlug ? `Abrir /${activeSlug}` : "Ver web"}
           >
             <ExternalLinkIcon />
-          </a>
+          </PanelButton>
 
           <LogoutButton />
         </div>
