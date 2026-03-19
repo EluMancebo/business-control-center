@@ -30,6 +30,51 @@ const ACCENT_LIGHTNESS_DELTA: Record<BrandAccentStyle, number> = {
   expressive: 4,
 };
 
+const HARMONY_SATURATION_DELTA: Record<BrandHarmonyStrategy, number> = {
+  monochromatic: -16,
+  analogous: -4,
+  complementary: 12,
+  "split-complementary": 8,
+  triadic: 10,
+  tetradic: 16,
+};
+
+const HARMONY_LIGHTNESS_DELTA: Record<BrandHarmonyStrategy, number> = {
+  monochromatic: 2,
+  analogous: 0,
+  complementary: -2,
+  "split-complementary": -1,
+  triadic: -1,
+  tetradic: -2,
+};
+
+const HARMONY_SOFT_MIX: Record<BrandHarmonyStrategy, number> = {
+  monochromatic: 0.9,
+  analogous: 0.82,
+  complementary: 0.68,
+  "split-complementary": 0.74,
+  triadic: 0.72,
+  tetradic: 0.66,
+};
+
+const HARMONY_STRONG_SATURATION_DELTA: Record<BrandHarmonyStrategy, number> = {
+  monochromatic: 4,
+  analogous: 6,
+  complementary: 12,
+  "split-complementary": 10,
+  triadic: 11,
+  tetradic: 14,
+};
+
+const HARMONY_STRONG_LIGHTNESS_DELTA: Record<BrandHarmonyStrategy, number> = {
+  monochromatic: 6,
+  analogous: 8,
+  complementary: 12,
+  "split-complementary": 10,
+  triadic: 11,
+  tetradic: 14,
+};
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -166,8 +211,8 @@ function deriveAccentBase(
   mode: ResolvedBrandThemeMode
 ): string {
   const hueShift = HARMONY_HUE_SHIFT[harmony];
-  const saturationDelta = ACCENT_SATURATION_DELTA[accentStyle];
-  const styleLightnessDelta = ACCENT_LIGHTNESS_DELTA[accentStyle];
+  const saturationDelta = ACCENT_SATURATION_DELTA[accentStyle] + HARMONY_SATURATION_DELTA[harmony];
+  const styleLightnessDelta = ACCENT_LIGHTNESS_DELTA[accentStyle] + HARMONY_LIGHTNESS_DELTA[harmony];
   const modeLightnessDelta = mode === "dark" ? 8 : -6;
 
   return transformHexHsl(primary, (hsl) => ({
@@ -206,11 +251,23 @@ export function buildBrandSemanticTokens(args: {
   const { core, oppositeCore, mode, harmony, accentStyle, typographyPreset, accentBase } = args;
 
   const accent = accentBase ?? deriveAccentBase(core.primary, harmony, accentStyle, mode);
+  const strongSaturationDelta = HARMONY_STRONG_SATURATION_DELTA[harmony];
+  const strongLightnessDelta = HARMONY_STRONG_LIGHTNESS_DELTA[harmony];
+  const softMixBase = HARMONY_SOFT_MIX[harmony];
+  const softMixRatio = mode === "dark" ? clamp(softMixBase + 0.08, 0.58, 0.94) : clamp(softMixBase, 0.58, 0.94);
   const accentStrong =
     mode === "dark"
-      ? transformHexHsl(accent, (hsl) => ({ h: hsl.h, s: clamp(hsl.s + 8, 0, 100), l: clamp(hsl.l + 10, 0, 100) }))
-      : transformHexHsl(accent, (hsl) => ({ h: hsl.h, s: clamp(hsl.s + 6, 0, 100), l: clamp(hsl.l - 10, 0, 100) }));
-  const accentSoft = mixHexColors(accent, core.background, mode === "dark" ? 0.7 : 0.82);
+      ? transformHexHsl(accent, (hsl) => ({
+          h: hsl.h,
+          s: clamp(hsl.s + strongSaturationDelta, 0, 100),
+          l: clamp(hsl.l + strongLightnessDelta, 0, 100),
+        }))
+      : transformHexHsl(accent, (hsl) => ({
+          h: hsl.h,
+          s: clamp(hsl.s + strongSaturationDelta, 0, 100),
+          l: clamp(hsl.l - strongLightnessDelta, 0, 100),
+        }));
+  const accentSoft = mixHexColors(accent, core.background, softMixRatio);
 
   const accentForeground = getContrastText(accent, "#0a0a0a", "#ffffff");
   const accentStrongForeground = getContrastText(accentStrong, "#0a0a0a", "#ffffff");

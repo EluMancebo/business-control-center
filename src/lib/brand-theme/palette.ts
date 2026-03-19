@@ -2,6 +2,7 @@ import { DEFAULT_BRAND_THEME_CONFIG } from "./resolver";
 import { buildBrandSemanticTokens } from "./tokens";
 import type {
   BrandCorePaletteTokens,
+  BrandHarmonyStrategy,
   BrandPaletteSeed,
   BrandPaletteSeedInput,
   BuildBrandThemeConfigOptions,
@@ -10,6 +11,33 @@ import type {
 } from "./types";
 
 type RGB = { r: number; g: number; b: number };
+
+const HARMONY_HUE_SHIFT: Record<BrandHarmonyStrategy, number> = {
+  monochromatic: 0,
+  analogous: 30,
+  complementary: 180,
+  "split-complementary": 150,
+  triadic: 120,
+  tetradic: 90,
+};
+
+const HARMONY_ACCENT_SATURATION_DELTA: Record<BrandHarmonyStrategy, number> = {
+  monochromatic: -12,
+  analogous: -4,
+  complementary: 12,
+  "split-complementary": 8,
+  triadic: 10,
+  tetradic: 16,
+};
+
+const HARMONY_ACCENT_LIGHTNESS_DELTA: Record<BrandHarmonyStrategy, number> = {
+  monochromatic: 2,
+  analogous: 0,
+  complementary: -2,
+  "split-complementary": -1,
+  triadic: -1,
+  tetradic: -2,
+};
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -153,11 +181,15 @@ function getReadableForeground(background: string, darkText = "#0f172a", lightTe
   return luminance > 0.58 ? darkText : lightText;
 }
 
-function deriveAccent(primary: string): string {
+function deriveAccent(primary: string, harmony: BrandHarmonyStrategy): string {
+  const hueShift = HARMONY_HUE_SHIFT[harmony];
+  const saturationDelta = HARMONY_ACCENT_SATURATION_DELTA[harmony];
+  const lightnessDelta = HARMONY_ACCENT_LIGHTNESS_DELTA[harmony];
+
   return transformHexHsl(primary, (hsl) => ({
-    h: hsl.h + 24,
-    s: clamp(hsl.s + 8, 10, 96),
-    l: clamp(hsl.l - 6, 12, 88),
+    h: hsl.h + hueShift,
+    s: clamp(hsl.s + 8 + saturationDelta, 10, 96),
+    l: clamp(hsl.l - 6 + lightnessDelta, 12, 88),
   }));
 }
 
@@ -179,7 +211,7 @@ export function normalizeBrandPaletteSeed(input: BrandPaletteSeedInput): BrandPa
   const primary = normalizeHexColor(input.primary);
   if (!primary) return null;
 
-  const accent = normalizeHexColor(input.accent ?? "") ?? deriveAccent(primary);
+  const accent = normalizeHexColor(input.accent ?? "") ?? deriveAccent(primary, "analogous");
   const neutral = normalizeHexColor(input.neutral ?? "") ?? deriveNeutral(primary);
 
   return {
@@ -241,19 +273,27 @@ export function resolveBrandThemeTokensFromPaletteSeed(input: {
   const normalizedSeed = normalizeBrandPaletteSeed(input.seed);
   if (!normalizedSeed) return null;
 
+  const harmony = input.config?.harmony ?? DEFAULT_BRAND_THEME_CONFIG.harmony;
+  const explicitAccent = normalizeHexColor(input.seed.accent ?? "");
+  const accentBase = explicitAccent ?? deriveAccent(normalizedSeed.primary, harmony);
+  const resolvedSeed: BrandPaletteSeed = {
+    ...normalizedSeed,
+    accent: accentBase,
+  };
+
   const mode = resolveMode(input.mode, input.options);
   const oppositeMode = mode === "dark" ? "light" : "dark";
 
-  const core = buildCoreTokensFromSeed(normalizedSeed, mode);
-  const oppositeCore = buildCoreTokensFromSeed(normalizedSeed, oppositeMode);
+  const core = buildCoreTokensFromSeed(resolvedSeed, mode);
+  const oppositeCore = buildCoreTokensFromSeed(resolvedSeed, oppositeMode);
 
   return buildBrandSemanticTokens({
     core,
     oppositeCore,
     mode,
-    harmony: input.config?.harmony ?? DEFAULT_BRAND_THEME_CONFIG.harmony,
+    harmony,
     accentStyle: input.config?.accentStyle ?? DEFAULT_BRAND_THEME_CONFIG.accentStyle,
     typographyPreset: input.config?.typographyPreset ?? DEFAULT_BRAND_THEME_CONFIG.typographyPreset,
-    accentBase: normalizedSeed.accent,
+    accentBase,
   });
 }
