@@ -1,4 +1,6 @@
-import PageHeader from "../../../../components/panel/PageHeader";
+import PageHeader from "@/components/panel/PageHeader";
+import PanelCard from "@/components/panel/ui/PanelCard";
+import PanelButton from "@/components/panel/ui/PanelButton";
 
 export default function WebControlServicesPage() {
   return (
@@ -6,18 +8,23 @@ export default function WebControlServicesPage() {
       <PageHeader
         title="Web Control · Servicios"
         description="Gestiona el catálogo de servicios que se muestra en la web."
+        actions={
+          <PanelButton href="/panel/web-control" variant="ghost">
+            Volver al panel
+          </PanelButton>
+        }
       />
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-4 sm:p-6">
-        <div className="text-sm font-semibold text-zinc-900">Servicios</div>
-        <div className="mt-1 text-sm text-zinc-500">
+      <PanelCard>
+        <div className="text-sm font-semibold text-foreground">Servicios</div>
+        <div className="mt-1 text-sm text-muted-foreground">
           CRUD de servicios: nombre, descripción, precio “desde”, duración (si citas), visible, orden.
         </div>
 
-        <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
+        <div className="mt-4 rounded-lg border border-border bg-background p-4 text-sm text-muted-foreground">
           Próximamente: tabla + filtros + ordenación + editor seguro.
         </div>
-      </section>
+      </PanelCard>
     </>
   );
 }
