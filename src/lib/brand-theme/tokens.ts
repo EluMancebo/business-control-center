@@ -49,12 +49,12 @@ const HARMONY_LIGHTNESS_DELTA: Record<BrandHarmonyStrategy, number> = {
 };
 
 const HARMONY_SOFT_MIX: Record<BrandHarmonyStrategy, number> = {
-  monochromatic: 0.9,
-  analogous: 0.82,
-  complementary: 0.68,
-  "split-complementary": 0.74,
-  triadic: 0.72,
-  tetradic: 0.66,
+  monochromatic: 0.92,
+  analogous: 0.8,
+  complementary: 0.58,
+  "split-complementary": 0.64,
+  triadic: 0.62,
+  tetradic: 0.54,
 };
 
 const HARMONY_STRONG_SATURATION_DELTA: Record<BrandHarmonyStrategy, number> = {
@@ -110,6 +110,33 @@ function hexToRgb(input: string): RGB | null {
 function rgbToHex(rgb: RGB): string {
   const toHex = (value: number) => clamp(Math.round(value), 0, 255).toString(16).padStart(2, "0");
   return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`;
+}
+
+function srgbChannelToLinear(channel: number): number {
+  const normalized = clamp(channel, 0, 255) / 255;
+  return normalized <= 0.03928
+    ? normalized / 12.92
+    : Math.pow((normalized + 0.055) / 1.055, 2.4);
+}
+
+function getRelativeLuminance(color: string): number | null {
+  const rgb = hexToRgb(color);
+  if (!rgb) return null;
+  return (
+    0.2126 * srgbChannelToLinear(rgb.r) +
+    0.7152 * srgbChannelToLinear(rgb.g) +
+    0.0722 * srgbChannelToLinear(rgb.b)
+  );
+}
+
+function getContrastRatio(a: string, b: string): number {
+  const luminanceA = getRelativeLuminance(a);
+  const luminanceB = getRelativeLuminance(b);
+  if (luminanceA === null || luminanceB === null) return 1;
+
+  const lighter = Math.max(luminanceA, luminanceB);
+  const darker = Math.min(luminanceA, luminanceB);
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 function rgbToHsl(rgb: RGB): { h: number; s: number; l: number } {
@@ -191,6 +218,87 @@ function transformHexHsl(
   return rgbToHex(hslToRgb(next.h, next.s, next.l));
 }
 
+function nudgeForContrast(
+  input: string,
+  step: number,
+  saturationStep: number
+): string {
+  return transformHexHsl(input, (hsl) => ({
+    h: hsl.h,
+    s: clamp(hsl.s + saturationStep, 0, 100),
+    l: clamp(hsl.l + step, 4, 96),
+  }));
+}
+
+function tryAdjustContrast(args: {
+  color: string;
+  background: string;
+  minRatio: number;
+  step: number;
+  saturationStep: number;
+}): { color: string; ratio: number } {
+  let current = args.color;
+  let best = current;
+  let bestRatio = getContrastRatio(current, args.background);
+
+  if (bestRatio >= args.minRatio) {
+    return { color: current, ratio: bestRatio };
+  }
+
+  for (let index = 0; index < 14; index += 1) {
+    const next = nudgeForContrast(current, args.step, args.saturationStep);
+    if (next === current) break;
+    current = next;
+    const ratio = getContrastRatio(current, args.background);
+    if (ratio > bestRatio) {
+      bestRatio = ratio;
+      best = current;
+    }
+    if (ratio >= args.minRatio) {
+      return { color: current, ratio };
+    }
+  }
+
+  return { color: best, ratio: bestRatio };
+}
+
+function ensureContrastAgainstBackground(args: {
+  color: string;
+  background: string;
+  minRatio: number;
+  prefer: "lighter" | "darker";
+}): string {
+  const initialRatio = getContrastRatio(args.color, args.background);
+  if (initialRatio >= args.minRatio) return args.color;
+
+  const preferredStep = args.prefer === "lighter" ? 3 : -3;
+  const oppositeStep = preferredStep * -1;
+  const preferredSaturationStep = args.prefer === "lighter" ? 0 : 1;
+  const oppositeSaturationStep = args.prefer === "lighter" ? 1 : 0;
+
+  const preferredResult = tryAdjustContrast({
+    color: args.color,
+    background: args.background,
+    minRatio: args.minRatio,
+    step: preferredStep,
+    saturationStep: preferredSaturationStep,
+  });
+
+  if (preferredResult.ratio >= args.minRatio) return preferredResult.color;
+
+  const oppositeResult = tryAdjustContrast({
+    color: args.color,
+    background: args.background,
+    minRatio: args.minRatio,
+    step: oppositeStep,
+    saturationStep: oppositeSaturationStep,
+  });
+
+  return oppositeResult.ratio > preferredResult.ratio
+    ? oppositeResult.color
+    : preferredResult.color;
+}
+
 function mixHexColors(baseColor: string, targetColor: string, ratio: number): string {
   const a = hexToRgb(baseColor);
   const b = hexToRgb(targetColor);
@@ -223,15 +331,13 @@ function deriveAccentBase(
 }
 
 function getContrastText(color: string, darkText: string, lightText: string): string {
-  const rgb = hexToRgb(color);
-  if (!rgb) return lightText;
-
-  const luminance = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
-  return luminance > 0.58 ? darkText : lightText;
+  const darkRatio = getContrastRatio(color, darkText);
+  const lightRatio = getContrastRatio(color, lightText);
+  return darkRatio >= lightRatio ? darkText : lightText;
 }
 
 function deriveSurface(background: string, mode: ResolvedBrandThemeMode, step: 1 | 2): string {
-  const lightnessDelta = mode === "dark" ? step * 5 : -step * 4;
+  const lightnessDelta = mode === "dark" ? step * 5 : -step * 6;
   return transformHexHsl(background, (hsl) => ({
     h: hsl.h,
     s: hsl.s,
@@ -250,12 +356,19 @@ export function buildBrandSemanticTokens(args: {
 }): BrandSemanticTokens {
   const { core, oppositeCore, mode, harmony, accentStyle, typographyPreset, accentBase } = args;
 
-  const accent = accentBase ?? deriveAccentBase(core.primary, harmony, accentStyle, mode);
+  const accentSeed = accentBase ?? deriveAccentBase(core.primary, harmony, accentStyle, mode);
+  const accentContrastTarget = mode === "dark" ? 3 : 2.7;
+  const accent = ensureContrastAgainstBackground({
+    color: accentSeed,
+    background: core.background,
+    minRatio: accentContrastTarget,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
   const strongSaturationDelta = HARMONY_STRONG_SATURATION_DELTA[harmony];
   const strongLightnessDelta = HARMONY_STRONG_LIGHTNESS_DELTA[harmony];
   const softMixBase = HARMONY_SOFT_MIX[harmony];
   const softMixRatio = mode === "dark" ? clamp(softMixBase + 0.08, 0.58, 0.94) : clamp(softMixBase, 0.58, 0.94);
-  const accentStrong =
+  const accentStrongRaw =
     mode === "dark"
       ? transformHexHsl(accent, (hsl) => ({
           h: hsl.h,
@@ -267,7 +380,19 @@ export function buildBrandSemanticTokens(args: {
           s: clamp(hsl.s + strongSaturationDelta, 0, 100),
           l: clamp(hsl.l - strongLightnessDelta, 0, 100),
         }));
-  const accentSoft = mixHexColors(accent, core.background, softMixRatio);
+  const accentStrong = ensureContrastAgainstBackground({
+    color: accentStrongRaw,
+    background: core.background,
+    minRatio: mode === "dark" ? 3.6 : 3.2,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+  const accentSoftRaw = mixHexColors(accent, core.background, softMixRatio);
+  const accentSoft = ensureContrastAgainstBackground({
+    color: accentSoftRaw,
+    background: core.background,
+    minRatio: mode === "dark" ? 1.2 : 1.1,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
 
   const accentForeground = getContrastText(accent, "#0a0a0a", "#ffffff");
   const accentStrongForeground = getContrastText(accentStrong, "#0a0a0a", "#ffffff");
@@ -289,6 +414,31 @@ export function buildBrandSemanticTokens(args: {
     mode === "dark"
       ? transformHexHsl(ctaSecondary, (hsl) => ({ h: hsl.h, s: hsl.s, l: clamp(hsl.l + 6, 0, 100) }))
       : transformHexHsl(ctaSecondary, (hsl) => ({ h: hsl.h, s: hsl.s, l: clamp(hsl.l - 6, 0, 100) }));
+
+  const link = ensureContrastAgainstBackground({
+    color: mode === "dark" ? accentStrong : accent,
+    background: core.background,
+    minRatio: mode === "dark" ? 4.2 : 4,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+  const linkHoverSeed =
+    mode === "dark"
+      ? transformHexHsl(link, (hsl) => ({
+          h: hsl.h,
+          s: clamp(hsl.s + 4, 0, 100),
+          l: clamp(hsl.l + 10, 0, 100),
+        }))
+      : transformHexHsl(link, (hsl) => ({
+          h: hsl.h,
+          s: clamp(hsl.s + 2, 0, 100),
+          l: clamp(hsl.l - 10, 0, 100),
+        }));
+  const linkHover = ensureContrastAgainstBackground({
+    color: linkHoverSeed,
+    background: core.background,
+    minRatio: mode === "dark" ? 4.4 : 4.2,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
 
   return {
     background: core.background,
@@ -332,8 +482,8 @@ export function buildBrandSemanticTokens(args: {
     heroOverlay: mode === "dark" ? "rgba(0, 0, 0, 0.42)" : "rgba(0, 0, 0, 0.28)",
     heroOverlayStrong: mode === "dark" ? "rgba(0, 0, 0, 0.64)" : "rgba(0, 0, 0, 0.5)",
 
-    link: accent,
-    linkHover: accentStrong,
+    link,
+    linkHover,
 
     typographyPreset,
   };

@@ -39,6 +39,15 @@ const HARMONY_ACCENT_LIGHTNESS_DELTA: Record<BrandHarmonyStrategy, number> = {
   tetradic: -2,
 };
 
+const HARMONY_EXPLICIT_ACCENT_BLEND: Record<BrandHarmonyStrategy, number> = {
+  monochromatic: 0.22,
+  analogous: 0.3,
+  complementary: 0.52,
+  "split-complementary": 0.46,
+  triadic: 0.48,
+  tetradic: 0.58,
+};
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -181,6 +190,14 @@ function getReadableForeground(background: string, darkText = "#0f172a", lightTe
   return luminance > 0.58 ? darkText : lightText;
 }
 
+function stabilizeDarkModePrimary(primary: string): string {
+  return transformHexHsl(primary, (hsl) => ({
+    h: hsl.h,
+    s: clamp(hsl.s + 4, 10, 96),
+    l: clamp(hsl.l < 34 ? 34 : hsl.l, 20, 88),
+  }));
+}
+
 function deriveAccent(primary: string, harmony: BrandHarmonyStrategy): string {
   const hueShift = HARMONY_HUE_SHIFT[harmony];
   const saturationDelta = HARMONY_ACCENT_SATURATION_DELTA[harmony];
@@ -230,6 +247,7 @@ function buildCoreTokensFromSeed(seed: BrandPaletteSeed, mode: ResolvedBrandThem
     const card = mixHexColors(background, "#111827", 0.42);
     const muted = mixHexColors(background, neutralBase, 0.3);
     const foreground = "#e6edf5";
+    const primary = stabilizeDarkModePrimary(mixHexColors(seed.primary, "#ffffff", 0.16));
 
     return {
       background,
@@ -238,14 +256,14 @@ function buildCoreTokensFromSeed(seed: BrandPaletteSeed, mode: ResolvedBrandThem
       cardForeground: foreground,
       muted,
       mutedForeground: mixHexColors(foreground, "#94a3b8", 0.46),
-      primary: mixHexColors(seed.primary, "#ffffff", 0.16),
-      primaryForeground: "#0b1220",
+      primary,
+      primaryForeground: getReadableForeground(primary, "#0b1220", "#f8fafc"),
       border: toRgba("#cbd5e1", 0.2),
       ring: toRgba(seed.accent, 0.36),
     };
   }
 
-  const background = mixHexColors(neutralBase, "#ffffff", 0.88);
+  const background = mixHexColors(neutralBase, "#ffffff", 0.93);
   const card = "#ffffff";
   const muted = mixHexColors(background, neutralBase, 0.35);
   const foreground = "#0f172a";
@@ -275,7 +293,14 @@ export function resolveBrandThemeTokensFromPaletteSeed(input: {
 
   const harmony = input.config?.harmony ?? DEFAULT_BRAND_THEME_CONFIG.harmony;
   const explicitAccent = normalizeHexColor(input.seed.accent ?? "");
-  const accentBase = explicitAccent ?? deriveAccent(normalizedSeed.primary, harmony);
+  const derivedAccent = deriveAccent(normalizedSeed.primary, harmony);
+  const accentBase = explicitAccent
+    ? mixHexColors(
+        explicitAccent,
+        derivedAccent,
+        HARMONY_EXPLICIT_ACCENT_BLEND[harmony]
+      )
+    : derivedAccent;
   const resolvedSeed: BrandPaletteSeed = {
     ...normalizedSeed,
     accent: accentBase,

@@ -41,3 +41,14 @@ export {
   resolveBrandThemeTokens,
   resolveBrandThemeTokensFromBrand,
 } from "./resolver";
+
+export type {
+  ExtractedColorCandidate,
+  ExtractedPaletteProposal,
+  ExtractedPaletteResult,
+  ExtractPaletteFromImageOptions,
+} from "./extraction";
+export {
+  buildPaletteProposalFromCandidates,
+  extractPaletteFromImageUrl,
+} from "./extraction";
