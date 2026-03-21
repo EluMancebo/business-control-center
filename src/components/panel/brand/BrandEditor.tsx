@@ -487,25 +487,25 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
               {extractError ? <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">{extractError}</p> : null}
               {mediaError ? <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">{mediaError}</p> : null}
               {paletteSeedSource === "manual" ? (
-                <div className="mt-3 rounded-lg border border-dashed border-border/55 p-3 [background:color-mix(in_oklab,var(--surface-3,var(--card))_88%,white)]">
+                <div className="mt-3 min-w-0 rounded-lg border border-dashed border-border/55 p-3 [background:color-mix(in_oklab,var(--surface-3,var(--card))_88%,white)]">
                   <p className="text-xs font-semibold text-foreground">Selección manual de paleta</p>
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     En modo manual trabajas directamente sobre primary, accent y neutral.
                   </p>
                   <div className="mt-3 grid gap-2">
-                    <label className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-md border border-border/55 bg-background/70 p-2">
-                      <input type="color" value={paletteSeedPrimary || "#2563eb"} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-8 w-9 rounded-md border border-border/70 bg-background p-1" />
+                    <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-md border border-border/55 bg-background/70 p-2">
+                      <input type="color" value={paletteSeedPrimary || "#2563eb"} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1" />
                       <input value={paletteSeedPrimary} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-8 w-full min-w-0 rounded-md border border-border/70 bg-background px-2 font-mono text-xs text-foreground" />
                     </label>
-                    <label className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-border/55 bg-background/70 p-2">
-                      <input type="color" value={paletteSeedAccent || "#0f62fe"} onChange={(e) => setPaletteSeedAccent(e.target.value)} className="h-8 w-9 rounded-md border border-border/70 bg-background p-1" />
+                    <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-border/55 bg-background/70 p-2">
+                      <input type="color" value={paletteSeedAccent || "#0f62fe"} onChange={(e) => setPaletteSeedAccent(e.target.value)} className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1" />
                       <input value={paletteSeedAccent} onChange={(e) => setPaletteSeedAccent(e.target.value)} placeholder="AUTO" className="h-8 w-full min-w-0 rounded-md border border-border/70 bg-background px-2 font-mono text-xs text-foreground placeholder:text-muted-foreground" />
-                      <button type="button" onClick={() => setPaletteSeedAccent("")} className="h-8 rounded-md border border-border/70 bg-background px-2 text-[11px] font-semibold text-foreground">Auto</button>
+                      <button type="button" onClick={() => setPaletteSeedAccent("")} className="h-8 shrink-0 whitespace-nowrap rounded-md border border-border/70 bg-background px-2 text-[11px] font-semibold text-foreground">Auto</button>
                     </label>
-                    <label className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-border/55 bg-background/70 p-2">
-                      <input type="color" value={paletteSeedNeutral || "#e2e8f0"} onChange={(e) => setPaletteSeedNeutral(e.target.value)} className="h-8 w-9 rounded-md border border-border/70 bg-background p-1" />
+                    <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-border/55 bg-background/70 p-2">
+                      <input type="color" value={paletteSeedNeutral || "#e2e8f0"} onChange={(e) => setPaletteSeedNeutral(e.target.value)} className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1" />
                       <input value={paletteSeedNeutral} onChange={(e) => setPaletteSeedNeutral(e.target.value)} placeholder="AUTO" className="h-8 w-full min-w-0 rounded-md border border-border/70 bg-background px-2 font-mono text-xs text-foreground placeholder:text-muted-foreground" />
-                      <button type="button" onClick={() => setPaletteSeedNeutral("")} className="h-8 rounded-md border border-border/70 bg-background px-2 text-[11px] font-semibold text-foreground">Auto</button>
+                      <button type="button" onClick={() => setPaletteSeedNeutral("")} className="h-8 shrink-0 whitespace-nowrap rounded-md border border-border/70 bg-background px-2 text-[11px] font-semibold text-foreground">Auto</button>
                     </label>
                   </div>
                 </div>
@@ -537,28 +537,28 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
         {canUsePaletteEngine ? (
           <section className="mt-4 rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
             <h2 className="text-base font-semibold text-foreground">B. Paleta propuesta</h2>
-            <div className="mt-3 grid gap-3 xl:grid-cols-3">
-              <div className="rounded-lg border border-border/55 p-3 shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--surface-3,var(--card))_84%,white)]">
+            <div className="mt-3 grid min-w-0 gap-3 xl:grid-cols-3">
+              <div className="min-w-0 rounded-lg border border-border/45 p-3 shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--surface-3,var(--card))_84%,white)]">
                 <p className="text-sm font-semibold text-foreground">Primary</p>
-                <div className="mt-2 flex items-center gap-2">
-                  <input type="color" value={paletteSeedPrimary || "#2563eb"} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-9 w-10 rounded-md border border-border/70 bg-background p-1" />
-                  <input value={paletteSeedPrimary} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-border/70 bg-background px-3 font-mono text-sm text-foreground" />
+                <div className="mt-2 grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
+                  <input type="color" value={paletteSeedPrimary || "#2563eb"} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-9 w-10 shrink-0 rounded-md border border-border/70 bg-background p-1" />
+                  <input value={paletteSeedPrimary} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-9 w-full min-w-0 flex-1 rounded-md border border-border/70 bg-background px-3 font-mono text-sm text-foreground" />
                 </div>
               </div>
-              <div className="rounded-lg border border-border/55 p-3 shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--surface-3,var(--card))_84%,white)]">
+              <div className="min-w-0 rounded-lg border border-border/45 p-3 shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--surface-3,var(--card))_84%,white)]">
                 <p className="text-sm font-semibold text-foreground">Accent</p>
-                <div className="mt-2 flex items-center gap-2">
-                  <input type="color" value={paletteSeedAccent || "#0f62fe"} onChange={(e) => setPaletteSeedAccent(e.target.value)} className="h-9 w-10 rounded-md border border-border/70 bg-background p-1" />
-                  <input value={paletteSeedAccent} onChange={(e) => setPaletteSeedAccent(e.target.value)} placeholder="AUTO" className="h-9 min-w-0 flex-1 rounded-md border border-border/70 bg-background px-3 font-mono text-sm text-foreground placeholder:text-muted-foreground" />
-                  <button type="button" onClick={() => setPaletteSeedAccent("")} className="h-9 rounded-md border border-border/70 bg-background px-3 text-xs font-semibold text-foreground">Auto</button>
+                <div className="mt-2 grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
+                  <input type="color" value={paletteSeedAccent || "#0f62fe"} onChange={(e) => setPaletteSeedAccent(e.target.value)} className="h-9 w-10 shrink-0 rounded-md border border-border/70 bg-background p-1" />
+                  <input value={paletteSeedAccent} onChange={(e) => setPaletteSeedAccent(e.target.value)} placeholder="AUTO" className="h-9 w-full min-w-0 flex-1 rounded-md border border-border/70 bg-background px-3 font-mono text-sm text-foreground placeholder:text-muted-foreground" />
+                  <button type="button" onClick={() => setPaletteSeedAccent("")} className="h-9 shrink-0 whitespace-nowrap rounded-md border border-border/70 bg-background px-3 text-xs font-semibold text-foreground">Auto</button>
                 </div>
               </div>
-              <div className="rounded-lg border border-border/55 p-3 shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--surface-3,var(--card))_84%,white)]">
+              <div className="min-w-0 rounded-lg border border-border/45 p-3 shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--surface-3,var(--card))_84%,white)]">
                 <p className="text-sm font-semibold text-foreground">Neutral</p>
-                <div className="mt-2 flex items-center gap-2">
-                  <input type="color" value={paletteSeedNeutral || "#e2e8f0"} onChange={(e) => setPaletteSeedNeutral(e.target.value)} className="h-9 w-10 rounded-md border border-border/70 bg-background p-1" />
-                  <input value={paletteSeedNeutral} onChange={(e) => setPaletteSeedNeutral(e.target.value)} placeholder="AUTO" className="h-9 min-w-0 flex-1 rounded-md border border-border/70 bg-background px-3 font-mono text-sm text-foreground placeholder:text-muted-foreground" />
-                  <button type="button" onClick={() => setPaletteSeedNeutral("")} className="h-9 rounded-md border border-border/70 bg-background px-3 text-xs font-semibold text-foreground">Auto</button>
+                <div className="mt-2 grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
+                  <input type="color" value={paletteSeedNeutral || "#e2e8f0"} onChange={(e) => setPaletteSeedNeutral(e.target.value)} className="h-9 w-10 shrink-0 rounded-md border border-border/70 bg-background p-1" />
+                  <input value={paletteSeedNeutral} onChange={(e) => setPaletteSeedNeutral(e.target.value)} placeholder="AUTO" className="h-9 w-full min-w-0 flex-1 rounded-md border border-border/70 bg-background px-3 font-mono text-sm text-foreground placeholder:text-muted-foreground" />
+                  <button type="button" onClick={() => setPaletteSeedNeutral("")} className="h-9 shrink-0 whitespace-nowrap rounded-md border border-border/70 bg-background px-3 text-xs font-semibold text-foreground">Auto</button>
                 </div>
               </div>
             </div>
@@ -682,10 +682,10 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
 
             <section className="rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
               <h3 className="text-sm font-semibold text-foreground">D. Acciones laboratorio</h3>
-              <div className="mt-3 grid gap-2">
-                <button type="button" onClick={resetPreviewState} className="h-10 rounded-lg border border-border/55 bg-background px-3 text-sm font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:-translate-y-px hover:bg-muted">Reset preview</button>
-                <button type="button" onClick={resetLab} className="h-10 rounded-lg border border-border/55 bg-background px-3 text-sm font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:-translate-y-px hover:bg-muted">Reset general</button>
-                <button type="button" onClick={() => update(fallback)} className="h-10 rounded-lg border border-border/55 bg-background px-3 text-sm font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:-translate-y-px hover:bg-muted">Reset scope</button>
+              <div className="mt-3 grid min-w-0 gap-2">
+                <button type="button" onClick={resetPreviewState} className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:-translate-y-px hover:bg-muted">Reset preview</button>
+                <button type="button" onClick={resetLab} className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:-translate-y-px hover:bg-muted">Reset general</button>
+                <button type="button" onClick={() => update(fallback)} className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:-translate-y-px hover:bg-muted">Reset scope</button>
               </div>
               <details className="mt-3 rounded-md border border-border/55 bg-background/70 p-2 shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)]">
                 <summary className="cursor-pointer text-xs font-semibold text-foreground">E. Detalles secundarios</summary>
