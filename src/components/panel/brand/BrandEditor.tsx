@@ -14,6 +14,7 @@ import {
   resolveBrandThemeMode,
   resolveBrandThemeTokensFromBrand,
   resolveBrandThemeTokensFromPaletteSeed,
+  resolveBrandThemeTokensFromPaletteSeedWithMeta,
   toBrandCssVariables,
 } from "@/lib/brand-theme";
 import type {
@@ -32,9 +33,18 @@ import {
   type BrandScope,
 } from "@/lib/brand/storage";
 import { getBrand, setBrand, subscribeBrand, syncBrandFromStorage } from "@/lib/brand/service";
+import {
+  buildBrandThemeStateV1FromEditorInput,
+  persistLegacyAndBrandThemeShadow,
+  saveBrandThemeStateV1Shadow,
+} from "@/lib/brand-theme/state/from-editor";
 import type { AssetItem } from "@/lib/taller/media/types";
 import { fetchSystemMediaClient } from "@/lib/taller/media/service";
 import BrandThemePreviewSurface from "./BrandThemePreviewSurface";
+import {
+  getSeedChannelMode,
+  resolveSeedInputDisplayValue,
+} from "./seedDisplay";
 
 const PRESET_MODULATION_PERCENT = 26;
 const MODES: Array<{ key: BrandMode; label: string }> = [
@@ -219,6 +229,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const canUsePaletteEngine = scope === "system";
   const showLabPreview = scope === "system";
   const effectiveSlug = scopeUsesBusinessSlug ? (businessSlug?.trim() || resolvedSlug) : "";
+  const v1BusinessSlug = scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined;
   const skipWebWithoutSlug = scope === "web" && !effectiveSlug;
   const storageKey = getBrandStorageKey(scope, scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined);
   const channel = getBrandChannel(scope, scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined);
@@ -253,13 +264,54 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const selectedVisualAsset = useMemo(() => mediaAssets.find((item) => item._id === selectedVisualAssetId) ?? null, [mediaAssets, selectedVisualAssetId]);
   const sourceImageUrl = useMemo(() => (paletteSeedSource === "manual" ? "" : selectedVisualAsset?.url || imageUrlInput.trim()), [paletteSeedSource, selectedVisualAsset, imageUrlInput]);
   const paletteSeedInput = useMemo(() => ({ source: paletteSeedSource, primary: paletteSeedPrimary, accent: paletteSeedAccent, neutral: paletteSeedNeutral }), [paletteSeedSource, paletteSeedPrimary, paletteSeedAccent, paletteSeedNeutral]);
-  const normalizedPaletteSeed = useMemo(() => normalizeBrandPaletteSeed(paletteSeedInput), [paletteSeedInput]);
+  const brandThemeStateV1 = useMemo(
+    () =>
+      buildBrandThemeStateV1FromEditorInput({
+        scope,
+        businessSlug: v1BusinessSlug,
+        brand,
+        seed: {
+          source: paletteSeedSource,
+          primary: paletteSeedPrimary,
+          accent: paletteSeedAccent,
+          neutral: paletteSeedNeutral,
+          sourceRef: {
+            assetId: selectedVisualAssetId,
+            imageUrl: sourceImageUrl,
+          },
+        },
+        config: {
+          harmony: previewHarmony,
+          accentStyle: previewAccentStyle,
+          typographyPreset: previewTypography,
+          presetModulationPercent: PRESET_MODULATION_PERCENT,
+        },
+      }),
+    [
+      scope,
+      v1BusinessSlug,
+      brand,
+      paletteSeedSource,
+      paletteSeedPrimary,
+      paletteSeedAccent,
+      paletteSeedNeutral,
+      selectedVisualAssetId,
+      sourceImageUrl,
+      previewHarmony,
+      previewAccentStyle,
+      previewTypography,
+    ]
+  );
+  const normalizedPaletteSeed = useMemo(
+    () => normalizeBrandPaletteSeed(paletteSeedInput),
+    [paletteSeedInput]
+  );
   const resolvedMode = resolveBrandThemeMode(brand.mode, { systemModeFallback: "light" });
   const preset = getBrandThemePalettePreset(brand.palette);
   const presetCore = resolvedMode === "dark" ? preset.dark : preset.light;
-  const resolvedTokensFromSeed = useMemo(
+  const resolvedSeedWithMeta = useMemo(
     () =>
-      resolveBrandThemeTokensFromPaletteSeed({
+      resolveBrandThemeTokensFromPaletteSeedWithMeta({
         seed: paletteSeedInput,
         mode: brand.mode,
         config: { harmony: previewHarmony, accentStyle: previewAccentStyle, typographyPreset: previewTypography },
@@ -267,6 +319,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
       }),
     [paletteSeedInput, brand.mode, previewHarmony, previewAccentStyle, previewTypography]
   );
+  const resolvedTokensFromSeed = resolvedSeedWithMeta?.tokens ?? null;
   const resolvedTokensFromBrand = useMemo(
     () =>
       resolveBrandThemeTokensFromBrand({
@@ -277,6 +330,20 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     [brand, previewHarmony, previewAccentStyle, previewTypography]
   );
   const resolvedTokens = resolvedTokensFromSeed ?? resolvedTokensFromBrand;
+  const resolvedPaletteSeed =
+    resolvedSeedWithMeta?.resolvedSeed ?? normalizedPaletteSeed;
+  const isAccentAuto = getSeedChannelMode(paletteSeedAccent) === "auto";
+  const isNeutralAuto = getSeedChannelMode(paletteSeedNeutral) === "auto";
+  const accentDisplayValue = resolveSeedInputDisplayValue({
+    manualValue: paletteSeedAccent,
+    resolvedValue: resolvedPaletteSeed?.accent,
+    fallbackValue: "#0f62fe",
+  });
+  const neutralDisplayValue = resolveSeedInputDisplayValue({
+    manualValue: paletteSeedNeutral,
+    resolvedValue: resolvedPaletteSeed?.neutral,
+    fallbackValue: "#e2e8f0",
+  });
   const effectiveTokens = modulateTokensWithPreset({ tokens: resolvedTokens, presetCore, modulationPercent: PRESET_MODULATION_PERCENT });
   const previewVariables = useMemo(() => {
     const variables = toBrandCssVariables(effectiveTokens);
@@ -284,6 +351,15 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     variables["--font-sans"] = TYPOGRAPHY_FONT_STACK[effectiveTokens.typographyPreset];
     return variables;
   }, [effectiveTokens]);
+
+  useEffect(() => {
+    if (skipWebWithoutSlug) return;
+    saveBrandThemeStateV1Shadow({
+      scope,
+      businessSlug: v1BusinessSlug,
+      state: brandThemeStateV1,
+    });
+  }, [skipWebWithoutSlug, scope, v1BusinessSlug, brandThemeStateV1]);
 
   useEffect(() => {
     if (!canUsePaletteEngine || process.env.NODE_ENV === "production") return;
@@ -370,7 +446,38 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   function update(next: Brand) {
     setBrandLocal(next);
     if (skipWebWithoutSlug) return;
-    setBrand(next, storageKey, channel, fallback, { applyToDocument: scope === "panel" || scope === "studio" });
+    persistLegacyAndBrandThemeShadow({
+      persistLegacy: () =>
+        setBrand(next, storageKey, channel, fallback, {
+          applyToDocument: scope === "panel" || scope === "studio",
+        }),
+      persistShadow: () =>
+        saveBrandThemeStateV1Shadow({
+          scope,
+          businessSlug: v1BusinessSlug,
+          state: buildBrandThemeStateV1FromEditorInput({
+            scope,
+            businessSlug: v1BusinessSlug,
+            brand: next,
+            seed: {
+              source: paletteSeedSource,
+              primary: paletteSeedPrimary,
+              accent: paletteSeedAccent,
+              neutral: paletteSeedNeutral,
+              sourceRef: {
+                assetId: selectedVisualAssetId,
+                imageUrl: sourceImageUrl,
+              },
+            },
+            config: {
+              harmony: previewHarmony,
+              accentStyle: previewAccentStyle,
+              typographyPreset: previewTypography,
+              presetModulationPercent: PRESET_MODULATION_PERCENT,
+            },
+          }),
+        }),
+    });
   }
   function resetPreviewState() {
     setPreviewEnabled(false);
@@ -428,6 +535,8 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     { label: "link", value: effectiveTokens.link },
     { label: "border", value: effectiveTokens.border },
   ];
+  const shouldShowPaletteProposalRow =
+    canUsePaletteEngine && paletteSeedSource !== "manual";
 
   return (
     <section className="w-full max-w-none">
@@ -469,9 +578,16 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
           </section>
         ) : null}
 
-        {showLabPreview ? (
-          <div className="mt-4 grid items-stretch gap-4 xl:grid-cols-[minmax(320px,360px)_minmax(0,1fr)]">
-          {canUsePaletteEngine ? (
+        <div className="mt-4 grid gap-4">
+          <div
+            className={
+              showLabPreview
+                ? "grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(320px,460px)_minmax(0,1fr)]"
+                : "grid min-w-0 gap-3"
+            }
+          >
+            <div className="grid min-w-0 gap-3">
+              {showLabPreview && canUsePaletteEngine ? (
             <section className="flex h-full flex-col rounded-xl border border-border/55 p-4 shadow-[0_14px_28px_-22px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
               <h2 className="text-base font-semibold text-foreground">A. Fuente visual</h2>
               <p className="mt-1 text-xs text-muted-foreground">Estado: {paletteSeedSource === "manual" ? "Manual" : sourceImageUrl ? "Fuente activa" : "Sin fuente seleccionada"}.</p>
@@ -493,20 +609,56 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                     En modo manual trabajas directamente sobre primary, accent y neutral.
                   </p>
                   <div className="mt-3 grid gap-2">
-                    <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-md border border-border/55 bg-background/70 p-2">
-                      <input type="color" value={paletteSeedPrimary || "#2563eb"} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1" />
-                      <input value={paletteSeedPrimary} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-8 w-full min-w-0 rounded-md border border-border/70 bg-background px-2 font-mono text-xs text-foreground" />
-                    </label>
-                    <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-border/55 bg-background/70 p-2">
-                      <input type="color" value={paletteSeedAccent || "#0f62fe"} onChange={(e) => setPaletteSeedAccent(e.target.value)} className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1" />
-                      <input value={paletteSeedAccent} onChange={(e) => setPaletteSeedAccent(e.target.value)} placeholder="AUTO" className="h-8 w-full min-w-0 rounded-md border border-border/70 bg-background px-2 font-mono text-xs text-foreground placeholder:text-muted-foreground" />
-                      <button type="button" onClick={() => setPaletteSeedAccent("")} className="h-8 shrink-0 whitespace-nowrap rounded-md border border-border/70 bg-background px-2 text-[11px] font-semibold text-foreground">Auto</button>
-                    </label>
-                    <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-border/55 bg-background/70 p-2">
-                      <input type="color" value={paletteSeedNeutral || "#e2e8f0"} onChange={(e) => setPaletteSeedNeutral(e.target.value)} className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1" />
-                      <input value={paletteSeedNeutral} onChange={(e) => setPaletteSeedNeutral(e.target.value)} placeholder="AUTO" className="h-8 w-full min-w-0 rounded-md border border-border/70 bg-background px-2 font-mono text-xs text-foreground placeholder:text-muted-foreground" />
-                      <button type="button" onClick={() => setPaletteSeedNeutral("")} className="h-8 shrink-0 whitespace-nowrap rounded-md border border-border/70 bg-background px-2 text-[11px] font-semibold text-foreground">Auto</button>
-                    </label>
+                    <div className="rounded-md border border-primary/35 bg-primary/[0.08] p-2">
+                      <div className="mb-1 flex flex-wrap items-center justify-between gap-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-foreground">Primary</p>
+                        <p className="text-[10px] text-muted-foreground">Color base del sistema</p>
+                      </div>
+                      <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-md border border-border/60 bg-background/85 p-2">
+                        <input type="color" value={paletteSeedPrimary || "#2563eb"} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1" />
+                        <input value={paletteSeedPrimary} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-8 w-full min-w-0 rounded-md border border-border/70 bg-background px-2 font-mono text-xs text-foreground" />
+                      </label>
+                    </div>
+                    <div className="grid gap-1">
+                      <p className="text-[11px] font-medium text-muted-foreground">Accent</p>
+                      <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-border/55 bg-background/70 p-2">
+                        <input type="color" value={accentDisplayValue} onChange={(e) => setPaletteSeedAccent(e.target.value)} className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1" />
+                        <input
+                          value={accentDisplayValue}
+                          onChange={(e) => setPaletteSeedAccent(e.target.value)}
+                          readOnly={isAccentAuto}
+                          aria-readonly={isAccentAuto}
+                          title={isAccentAuto ? "Valor derivado automáticamente" : undefined}
+                          className={[
+                            "h-8 w-full min-w-0 rounded-md border border-border/70 px-2 font-mono text-xs",
+                            isAccentAuto
+                              ? "bg-muted/45 text-muted-foreground"
+                              : "bg-background text-foreground",
+                          ].join(" ")}
+                        />
+                        <button type="button" onClick={() => setPaletteSeedAccent("")} className="h-8 shrink-0 whitespace-nowrap rounded-md border border-border/70 bg-background px-2 text-[11px] font-semibold text-foreground">Auto</button>
+                      </label>
+                    </div>
+                    <div className="grid gap-1">
+                      <p className="text-[11px] font-medium text-muted-foreground">Neutral</p>
+                      <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-border/55 bg-background/70 p-2">
+                        <input type="color" value={neutralDisplayValue} onChange={(e) => setPaletteSeedNeutral(e.target.value)} className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1" />
+                        <input
+                          value={neutralDisplayValue}
+                          onChange={(e) => setPaletteSeedNeutral(e.target.value)}
+                          readOnly={isNeutralAuto}
+                          aria-readonly={isNeutralAuto}
+                          title={isNeutralAuto ? "Valor derivado automáticamente" : undefined}
+                          className={[
+                            "h-8 w-full min-w-0 rounded-md border border-border/70 px-2 font-mono text-xs",
+                            isNeutralAuto
+                              ? "bg-muted/45 text-muted-foreground"
+                              : "bg-background text-foreground",
+                          ].join(" ")}
+                        />
+                        <button type="button" onClick={() => setPaletteSeedNeutral("")} className="h-8 shrink-0 whitespace-nowrap rounded-md border border-border/70 bg-background px-2 text-[11px] font-semibold text-foreground">Auto</button>
+                      </label>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -528,131 +680,161 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                 </div>
               )}
             </section>
-          ) : null}
+              ) : null}
 
-          <BrandThemePreviewSurface previewEnabled={previewEnabled} harmony={previewHarmony} accentStyle={previewAccentStyle} typographyPreset={previewTypography} showCompositionPanel={canUsePaletteEngine} modeLabel={resolvedMode} paletteLabel={preset.label} presetRoleLabel="La seed manda identidad. Preset modula superficies y atmósfera." presetModulationPercent={PRESET_MODULATION_PERCENT} previewVariables={previewEnabled ? previewVariables : {}} resolvedTokens={effectiveTokens} />
-          </div>
-        ) : null}
-
-        {canUsePaletteEngine ? (
-          <section className="mt-4 rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
-            <h2 className="text-base font-semibold text-foreground">B. Paleta propuesta</h2>
-            <div className="mt-3 grid min-w-0 gap-3 xl:grid-cols-3">
-              <div className="min-w-0 rounded-lg border border-border/45 p-3 shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--surface-3,var(--card))_84%,white)]">
-                <p className="text-sm font-semibold text-foreground">Primary</p>
-                <div className="mt-2 grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
-                  <input type="color" value={paletteSeedPrimary || "#2563eb"} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-9 w-10 shrink-0 rounded-md border border-border/70 bg-background p-1" />
-                  <input value={paletteSeedPrimary} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-9 w-full min-w-0 flex-1 rounded-md border border-border/70 bg-background px-3 font-mono text-sm text-foreground" />
+              <section className="rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)] sm:p-5">
+                <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
+                  <h2 className="text-base font-semibold text-foreground">B. Composición y contexto</h2>
+                  <p className="text-[11px] text-muted-foreground sm:text-right">
+                    Contexto: <span className="font-medium text-foreground/80">{brand.brandName || "Sin nombre"}</span>
+                  </p>
                 </div>
-              </div>
-              <div className="min-w-0 rounded-lg border border-border/45 p-3 shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--surface-3,var(--card))_84%,white)]">
-                <p className="text-sm font-semibold text-foreground">Accent</p>
-                <div className="mt-2 grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
-                  <input type="color" value={paletteSeedAccent || "#0f62fe"} onChange={(e) => setPaletteSeedAccent(e.target.value)} className="h-9 w-10 shrink-0 rounded-md border border-border/70 bg-background p-1" />
-                  <input value={paletteSeedAccent} onChange={(e) => setPaletteSeedAccent(e.target.value)} placeholder="AUTO" className="h-9 w-full min-w-0 flex-1 rounded-md border border-border/70 bg-background px-3 font-mono text-sm text-foreground placeholder:text-muted-foreground" />
-                  <button type="button" onClick={() => setPaletteSeedAccent("")} className="h-9 shrink-0 whitespace-nowrap rounded-md border border-border/70 bg-background px-3 text-xs font-semibold text-foreground">Auto</button>
+                <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-x-3 gap-y-3 lg:gap-x-4">
+                  <label className="grid min-w-0 gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">Mode</span>
+                    <select
+                      value={brand.mode}
+                      onChange={(e) => update({ ...brand, mode: e.target.value as BrandMode })}
+                      className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
+                    >
+                      {MODES.map((item) => (
+                        <option key={item.key} value={item.key}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="grid min-w-0 gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">Preset palette</span>
+                    <select
+                      value={brand.palette}
+                      onChange={(e) => update({ ...brand, palette: e.target.value as BrandPaletteKey })}
+                      className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
+                    >
+                      {BRAND_PALETTES.map((item) => (
+                        <option key={item.key} value={item.key}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="grid min-w-0 gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">Harmony</span>
+                    <select
+                      value={previewHarmony}
+                      onChange={(e) => setPreviewHarmony(e.target.value as BrandHarmonyStrategy)}
+                      className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
+                    >
+                      {BRAND_THEME_HARMONY_OPTIONS.map((item) => (
+                        <option key={item} value={item}>
+                          {HARMONY_LABELS[item]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="grid min-w-0 gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">Accent style</span>
+                    <select
+                      value={previewAccentStyle}
+                      onChange={(e) => setPreviewAccentStyle(e.target.value as BrandAccentStyle)}
+                      className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
+                    >
+                      {BRAND_THEME_ACCENT_STYLE_OPTIONS.map((item) => (
+                        <option key={item} value={item}>
+                          {ACCENT_STYLE_LABELS[item]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="grid min-w-0 gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">Typography</span>
+                    <select
+                      value={previewTypography}
+                      onChange={(e) => setPreviewTypography(e.target.value as BrandTypographyPreset)}
+                      className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
+                    >
+                      {BRAND_THEME_TYPOGRAPHY_OPTIONS.map((item) => (
+                        <option key={item} value={item}>
+                          {TYPOGRAPHY_LABELS[item]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
-              </div>
-              <div className="min-w-0 rounded-lg border border-border/45 p-3 shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--surface-3,var(--card))_84%,white)]">
-                <p className="text-sm font-semibold text-foreground">Neutral</p>
-                <div className="mt-2 grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
-                  <input type="color" value={paletteSeedNeutral || "#e2e8f0"} onChange={(e) => setPaletteSeedNeutral(e.target.value)} className="h-9 w-10 shrink-0 rounded-md border border-border/70 bg-background p-1" />
-                  <input value={paletteSeedNeutral} onChange={(e) => setPaletteSeedNeutral(e.target.value)} placeholder="AUTO" className="h-9 w-full min-w-0 flex-1 rounded-md border border-border/70 bg-background px-3 font-mono text-sm text-foreground placeholder:text-muted-foreground" />
-                  <button type="button" onClick={() => setPaletteSeedNeutral("")} className="h-9 shrink-0 whitespace-nowrap rounded-md border border-border/70 bg-background px-3 text-xs font-semibold text-foreground">Auto</button>
-                </div>
-              </div>
+              </section>
             </div>
-          </section>
-        ) : null}
 
-        <section className="mt-4 rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)] sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
-            <h2 className="text-base font-semibold text-foreground">C. Composición y contexto</h2>
-            <p className="text-[11px] text-muted-foreground sm:text-right">
-              Contexto: <span className="font-medium text-foreground/80">{brand.brandName || "Sin nombre"}</span>
-            </p>
+            {showLabPreview ? (
+              <div className="min-w-0 xl:col-start-2">
+                <BrandThemePreviewSurface previewEnabled={previewEnabled} harmony={previewHarmony} accentStyle={previewAccentStyle} typographyPreset={previewTypography} showCompositionPanel={canUsePaletteEngine} modeLabel={resolvedMode} paletteLabel={preset.label} presetRoleLabel="La seed manda identidad. Preset modula superficies y atmósfera." presetModulationPercent={PRESET_MODULATION_PERCENT} previewVariables={previewEnabled ? previewVariables : {}} resolvedTokens={effectiveTokens} />
+              </div>
+            ) : null}
           </div>
-          <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-x-3 gap-y-3 lg:gap-x-4">
-            <label className="grid min-w-0 gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Mode</span>
-              <select
-                value={brand.mode}
-                onChange={(e) => update({ ...brand, mode: e.target.value as BrandMode })}
-                className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
-              >
-                {MODES.map((item) => (
-                  <option key={item.key} value={item.key}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid min-w-0 gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Preset palette</span>
-              <select
-                value={brand.palette}
-                onChange={(e) => update({ ...brand, palette: e.target.value as BrandPaletteKey })}
-                className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
-              >
-                {BRAND_PALETTES.map((item) => (
-                  <option key={item.key} value={item.key}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid min-w-0 gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Harmony</span>
-              <select
-                value={previewHarmony}
-                onChange={(e) => setPreviewHarmony(e.target.value as BrandHarmonyStrategy)}
-                className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
-              >
-                {BRAND_THEME_HARMONY_OPTIONS.map((item) => (
-                  <option key={item} value={item}>
-                    {HARMONY_LABELS[item]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid min-w-0 gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Accent style</span>
-              <select
-                value={previewAccentStyle}
-                onChange={(e) => setPreviewAccentStyle(e.target.value as BrandAccentStyle)}
-                className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
-              >
-                {BRAND_THEME_ACCENT_STYLE_OPTIONS.map((item) => (
-                  <option key={item} value={item}>
-                    {ACCENT_STYLE_LABELS[item]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid min-w-0 gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Typography</span>
-              <select
-                value={previewTypography}
-                onChange={(e) => setPreviewTypography(e.target.value as BrandTypographyPreset)}
-                className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
-              >
-                {BRAND_THEME_TYPOGRAPHY_OPTIONS.map((item) => (
-                  <option key={item} value={item}>
-                    {TYPOGRAPHY_LABELS[item]}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </section>
+
+          {canUsePaletteEngine && (!showLabPreview || shouldShowPaletteProposalRow) ? (
+            <section className="rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
+              <h2 className="text-base font-semibold text-foreground">C. Paleta propuesta</h2>
+              <div className="mt-3 grid min-w-0 gap-3 xl:grid-cols-3">
+                <div className="min-w-0 rounded-lg border border-border/45 p-3 shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--surface-3,var(--card))_84%,white)]">
+                  <p className="text-sm font-semibold text-foreground">Primary</p>
+                  <p className="mt-1 text-[11px] font-medium text-muted-foreground">Color base del sistema</p>
+                  <div className="mt-2 grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
+                    <input type="color" value={paletteSeedPrimary || "#2563eb"} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-9 w-10 shrink-0 rounded-md border border-border/70 bg-background p-1" />
+                    <input value={paletteSeedPrimary} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-9 w-full min-w-0 flex-1 rounded-md border border-border/70 bg-background px-3 font-mono text-sm text-foreground" />
+                  </div>
+                </div>
+                <div className="min-w-0 rounded-lg border border-border/45 p-3 shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--surface-3,var(--card))_84%,white)]">
+                  <p className="text-sm font-semibold text-foreground">Accent</p>
+                  <div className="mt-2 grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
+                    <input type="color" value={accentDisplayValue} onChange={(e) => setPaletteSeedAccent(e.target.value)} className="h-9 w-10 shrink-0 rounded-md border border-border/70 bg-background p-1" />
+                    <input
+                      value={accentDisplayValue}
+                      onChange={(e) => setPaletteSeedAccent(e.target.value)}
+                      readOnly={isAccentAuto}
+                      aria-readonly={isAccentAuto}
+                      title={isAccentAuto ? "Valor derivado automáticamente" : undefined}
+                      className={[
+                        "h-9 w-full min-w-0 flex-1 rounded-md border border-border/70 px-3 font-mono text-sm",
+                        isAccentAuto
+                          ? "bg-muted/45 text-muted-foreground"
+                          : "bg-background text-foreground",
+                      ].join(" ")}
+                    />
+                    <button type="button" onClick={() => setPaletteSeedAccent("")} className="h-9 shrink-0 whitespace-nowrap rounded-md border border-border/70 bg-background px-3 text-xs font-semibold text-foreground">Auto</button>
+                  </div>
+                </div>
+                <div className="min-w-0 rounded-lg border border-border/45 p-3 shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--surface-3,var(--card))_84%,white)]">
+                  <p className="text-sm font-semibold text-foreground">Neutral</p>
+                  <div className="mt-2 grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
+                    <input type="color" value={neutralDisplayValue} onChange={(e) => setPaletteSeedNeutral(e.target.value)} className="h-9 w-10 shrink-0 rounded-md border border-border/70 bg-background p-1" />
+                    <input
+                      value={neutralDisplayValue}
+                      onChange={(e) => setPaletteSeedNeutral(e.target.value)}
+                      readOnly={isNeutralAuto}
+                      aria-readonly={isNeutralAuto}
+                      title={isNeutralAuto ? "Valor derivado automáticamente" : undefined}
+                      className={[
+                        "h-9 w-full min-w-0 flex-1 rounded-md border border-border/70 px-3 font-mono text-sm",
+                        isNeutralAuto
+                          ? "bg-muted/45 text-muted-foreground"
+                          : "bg-background text-foreground",
+                      ].join(" ")}
+                    />
+                    <button type="button" onClick={() => setPaletteSeedNeutral("")} className="h-9 shrink-0 whitespace-nowrap rounded-md border border-border/70 bg-background px-3 text-xs font-semibold text-foreground">Auto</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : null}
+        </div>
 
         {canUsePaletteEngine ? (
           <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(220px,0.85fr)_minmax(0,1.45fr)_minmax(240px,0.95fr)]">
             <section className="rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
               <h3 className="text-sm font-semibold text-foreground">Seed activa</h3>
               <div className="mt-2 grid gap-2">
-                {normalizedPaletteSeed ? (
-                  [{ label: "Primary", value: normalizedPaletteSeed.primary }, { label: "Accent", value: normalizedPaletteSeed.accent }, { label: "Neutral", value: normalizedPaletteSeed.neutral }].map((item) => (
+                {resolvedPaletteSeed ? (
+                  [{ label: "Primary", value: resolvedPaletteSeed.primary }, { label: "Accent", value: resolvedPaletteSeed.accent }, { label: "Neutral", value: resolvedPaletteSeed.neutral }].map((item) => (
                     <div key={item.label} className="rounded-md border border-border/55 bg-background/75 p-2 shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)]">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{item.label}</p>
                       <div className="mt-1 flex items-center gap-2">

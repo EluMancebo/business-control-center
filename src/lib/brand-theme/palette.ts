@@ -1,10 +1,12 @@
 import { DEFAULT_BRAND_THEME_CONFIG } from "./resolver";
 import { buildBrandSemanticTokens } from "./tokens";
 import type {
+  BrandAccentStyle,
   BrandCorePaletteTokens,
   BrandHarmonyStrategy,
   BrandPaletteSeed,
   BrandPaletteSeedInput,
+  BrandSemanticTokens,
   BuildBrandThemeConfigOptions,
   ResolveBrandThemeOptions,
   ResolvedBrandThemeMode,
@@ -14,42 +16,139 @@ type RGB = { r: number; g: number; b: number };
 
 const HARMONY_HUE_SHIFT: Record<BrandHarmonyStrategy, number> = {
   monochromatic: 0,
-  analogous: 30,
-  complementary: 180,
-  "split-complementary": 150,
-  triadic: 120,
-  tetradic: 90,
+  analogous: 26,
+  complementary: 172,
+  "split-complementary": 148,
+  triadic: 118,
+  tetradic: 88,
 };
 
 const HARMONY_ACCENT_SATURATION_DELTA: Record<BrandHarmonyStrategy, number> = {
-  monochromatic: -12,
-  analogous: -4,
-  complementary: 12,
+  monochromatic: -16,
+  analogous: -8,
+  complementary: 10,
   "split-complementary": 8,
-  triadic: 10,
-  tetradic: 16,
+  triadic: 12,
+  tetradic: 14,
 };
 
 const HARMONY_ACCENT_LIGHTNESS_DELTA: Record<BrandHarmonyStrategy, number> = {
-  monochromatic: 2,
-  analogous: 0,
-  complementary: -2,
-  "split-complementary": -1,
-  triadic: -1,
-  tetradic: -2,
+  monochromatic: 14,
+  analogous: 4,
+  complementary: -8,
+  "split-complementary": -6,
+  triadic: -4,
+  tetradic: -6,
 };
 
 const HARMONY_EXPLICIT_ACCENT_BLEND: Record<BrandHarmonyStrategy, number> = {
-  monochromatic: 0.22,
-  analogous: 0.3,
-  complementary: 0.52,
-  "split-complementary": 0.46,
-  triadic: 0.48,
-  tetradic: 0.58,
+  monochromatic: 0.06,
+  analogous: 0.1,
+  complementary: 0.16,
+  "split-complementary": 0.14,
+  triadic: 0.13,
+  tetradic: 0.17,
 };
+
+const HARMONY_MIN_HUE_DISTANCE: Record<BrandHarmonyStrategy, number> = {
+  monochromatic: 0,
+  analogous: 18,
+  complementary: 56,
+  "split-complementary": 44,
+  triadic: 38,
+  tetradic: 28,
+};
+
+const HARMONY_MIN_LIGHTNESS_DISTANCE: Record<BrandHarmonyStrategy, number> = {
+  monochromatic: 18,
+  analogous: 12,
+  complementary: 10,
+  "split-complementary": 10,
+  triadic: 9,
+  tetradic: 10,
+};
+
+const ACCENT_STYLE_SATURATION_DELTA: Record<BrandAccentStyle, number> = {
+  minimal: -16,
+  balanced: 0,
+  expressive: 18,
+};
+
+const ACCENT_STYLE_LIGHTNESS_DELTA: Record<BrandAccentStyle, number> = {
+  minimal: 6,
+  balanced: 0,
+  expressive: -4,
+};
+
+const ACCENT_STYLE_HUE_DISTANCE_BOOST: Record<BrandAccentStyle, number> = {
+  minimal: -6,
+  balanced: 0,
+  expressive: 10,
+};
+
+const ACCENT_STYLE_PRIMARY_BLEND: Record<BrandAccentStyle, number> = {
+  minimal: 0.16,
+  balanced: 0.06,
+  expressive: 0,
+};
+
+const ACCENT_STYLE_LIGHTNESS_DISTANCE_BOOST: Record<BrandAccentStyle, number> = {
+  minimal: 6,
+  balanced: 0,
+  expressive: -2,
+};
+
+const ACHROMATIC_PRIMARY_HUE_ANCHOR = 220;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function normalizeHue(value: number): number {
+  return ((value % 360) + 360) % 360;
+}
+
+function signedHueDelta(from: number, to: number): number {
+  const delta = ((to - from + 540) % 360) - 180;
+  return delta === -180 ? 180 : delta;
+}
+
+function hueDistance(a: number, b: number): number {
+  return Math.abs(signedHueDelta(a, b));
+}
+
+function enforceHueDistance(primaryHue: number, candidateHue: number, minDistance: number): number {
+  const distance = hueDistance(primaryHue, candidateHue);
+  if (distance >= minDistance) return normalizeHue(candidateHue);
+  const direction = signedHueDelta(primaryHue, candidateHue) >= 0 ? 1 : -1;
+  return normalizeHue(primaryHue + direction * minDistance);
+}
+
+function enforceLightnessDistance(
+  primaryLightness: number,
+  candidateLightness: number,
+  minDistance: number,
+  preferredDirection: "lighter" | "darker"
+): number {
+  if (Math.abs(candidateLightness - primaryLightness) >= minDistance) {
+    return clamp(candidateLightness, 8, 92);
+  }
+
+  const desired =
+    preferredDirection === "lighter"
+      ? primaryLightness + minDistance
+      : primaryLightness - minDistance;
+  const clampedDesired = clamp(desired, 8, 92);
+
+  if (Math.abs(clampedDesired - primaryLightness) >= minDistance) {
+    return clampedDesired;
+  }
+
+  const opposite =
+    preferredDirection === "lighter"
+      ? primaryLightness - minDistance
+      : primaryLightness + minDistance;
+  return clamp(opposite, 8, 92);
 }
 
 export function normalizeHexColor(input: string): string | null {
@@ -198,24 +297,76 @@ function stabilizeDarkModePrimary(primary: string): string {
   }));
 }
 
-function deriveAccent(primary: string, harmony: BrandHarmonyStrategy): string {
-  const hueShift = HARMONY_HUE_SHIFT[harmony];
-  const saturationDelta = HARMONY_ACCENT_SATURATION_DELTA[harmony];
-  const lightnessDelta = HARMONY_ACCENT_LIGHTNESS_DELTA[harmony];
+function deriveAccent(
+  primary: string,
+  harmony: BrandHarmonyStrategy,
+  accentStyle: BrandAccentStyle = "balanced"
+): string {
+  const primaryRgb = hexToRgb(primary);
+  if (!primaryRgb) return primary;
 
-  return transformHexHsl(primary, (hsl) => ({
-    h: hsl.h + hueShift,
-    s: clamp(hsl.s + 8 + saturationDelta, 10, 96),
-    l: clamp(hsl.l - 6 + lightnessDelta, 12, 88),
-  }));
+  const primaryHsl = rgbToHsl(primaryRgb);
+  const hueShift = HARMONY_HUE_SHIFT[harmony];
+  const saturationDelta =
+    HARMONY_ACCENT_SATURATION_DELTA[harmony] + ACCENT_STYLE_SATURATION_DELTA[accentStyle];
+  const lightnessDelta =
+    HARMONY_ACCENT_LIGHTNESS_DELTA[harmony] + ACCENT_STYLE_LIGHTNESS_DELTA[accentStyle];
+  const minHueDistance = clamp(
+    HARMONY_MIN_HUE_DISTANCE[harmony] + ACCENT_STYLE_HUE_DISTANCE_BOOST[accentStyle],
+    0,
+    170
+  );
+  const minLightnessDistance = clamp(
+    HARMONY_MIN_LIGHTNESS_DISTANCE[harmony] +
+      ACCENT_STYLE_LIGHTNESS_DISTANCE_BOOST[accentStyle],
+    8,
+    32
+  );
+
+  const basePrimaryHue =
+    primaryHsl.s < 6 ? ACHROMATIC_PRIMARY_HUE_ANCHOR : primaryHsl.h;
+  const baseHue = normalizeHue(basePrimaryHue + hueShift);
+  const hue =
+    harmony === "monochromatic"
+      ? baseHue
+      : enforceHueDistance(basePrimaryHue, baseHue, minHueDistance);
+  const nonMonoFloor =
+    harmony === "monochromatic"
+      ? 10
+      : 20 + (accentStyle === "expressive" ? 8 : accentStyle === "minimal" ? -4 : 0);
+  const saturation = clamp(
+    Math.max(primaryHsl.s + 10 + saturationDelta, nonMonoFloor),
+    10,
+    98
+  );
+  const preferredDirection = primaryHsl.l >= 52 ? "darker" : "lighter";
+  const extremeLightnessBoost = primaryHsl.l <= 20 || primaryHsl.l >= 82 ? 4 : 0;
+  const lightness = enforceLightnessDistance(
+    primaryHsl.l,
+    clamp(primaryHsl.l - 4 + lightnessDelta, 10, 90),
+    clamp(minLightnessDistance + extremeLightnessBoost, 8, 34),
+    preferredDirection
+  );
+
+  const derived = rgbToHex(hslToRgb(hue, saturation, lightness));
+  const styleBlend = ACCENT_STYLE_PRIMARY_BLEND[accentStyle];
+  if (styleBlend <= 0) return derived;
+  return mixHexColors(derived, primary, styleBlend);
 }
 
 function deriveNeutral(primary: string): string {
-  return transformHexHsl(primary, (hsl) => ({
-    h: hsl.h,
-    s: clamp(hsl.s * 0.16, 3, 20),
-    l: clamp(hsl.l + 36, 14, 90),
-  }));
+  const primaryRgb = hexToRgb(primary);
+  if (!primaryRgb) return "#94a3b8";
+
+  const hsl = rgbToHsl(primaryRgb);
+  const anchorHue = hsl.h >= 140 && hsl.h <= 310 ? 218 : 36;
+  const hueDrift = clamp(0.06 + (hsl.s / 100) * 0.1, 0.06, 0.16);
+  const hue = normalizeHue(hsl.h + signedHueDelta(hsl.h, anchorHue) * hueDrift);
+  const saturation = clamp(3 + hsl.s * 0.08, 3, 12);
+  const lightnessLift = hsl.l >= 78 ? 14 : hsl.l <= 22 ? 38 : 30;
+  const lightness = clamp(hsl.l + lightnessLift - hsl.s * 0.04, 24, 84);
+
+  return rgbToHex(hslToRgb(hue, saturation, lightness));
 }
 
 function resolveMode(mode: "light" | "dark" | "system", options?: ResolveBrandThemeOptions): ResolvedBrandThemeMode {
@@ -228,7 +379,8 @@ export function normalizeBrandPaletteSeed(input: BrandPaletteSeedInput): BrandPa
   const primary = normalizeHexColor(input.primary);
   if (!primary) return null;
 
-  const accent = normalizeHexColor(input.accent ?? "") ?? deriveAccent(primary, "analogous");
+  const accent =
+    normalizeHexColor(input.accent ?? "") ?? deriveAccent(primary, "analogous", "balanced");
   const neutral = normalizeHexColor(input.neutral ?? "") ?? deriveNeutral(primary);
 
   return {
@@ -236,6 +388,47 @@ export function normalizeBrandPaletteSeed(input: BrandPaletteSeedInput): BrandPa
     primary,
     accent,
     neutral,
+  };
+}
+
+export type BrandPaletteSeedResolution = {
+  normalizedSeed: BrandPaletteSeed;
+  resolvedSeed: BrandPaletteSeed;
+  explicitAccent: string | null;
+  derivedAccent: string;
+  accentSource: "explicit-blend" | "derived";
+};
+
+export function resolveBrandPaletteSeedWithHarmony(input: {
+  seed: BrandPaletteSeedInput;
+  harmony: BrandHarmonyStrategy;
+  accentStyle?: BrandAccentStyle;
+}): BrandPaletteSeedResolution | null {
+  const normalizedSeed = normalizeBrandPaletteSeed(input.seed);
+  if (!normalizedSeed) return null;
+
+  const accentStyle = input.accentStyle ?? DEFAULT_BRAND_THEME_CONFIG.accentStyle;
+  const explicitAccent = normalizeHexColor(input.seed.accent ?? "");
+  const derivedAccent = explicitAccent
+    ? deriveAccent(normalizedSeed.primary, input.harmony, "balanced")
+    : deriveAccent(normalizedSeed.primary, input.harmony, accentStyle);
+  const resolvedAccent = explicitAccent
+    ? mixHexColors(
+        explicitAccent,
+        derivedAccent,
+        HARMONY_EXPLICIT_ACCENT_BLEND[input.harmony]
+      )
+    : derivedAccent;
+
+  return {
+    normalizedSeed,
+    resolvedSeed: {
+      ...normalizedSeed,
+      accent: resolvedAccent,
+    },
+    explicitAccent,
+    derivedAccent,
+    accentSource: explicitAccent ? "explicit-blend" : "derived",
   };
 }
 
@@ -287,32 +480,40 @@ export function resolveBrandThemeTokensFromPaletteSeed(input: {
   mode: "light" | "dark" | "system";
   config?: BuildBrandThemeConfigOptions;
   options?: ResolveBrandThemeOptions;
-}) {
-  const normalizedSeed = normalizeBrandPaletteSeed(input.seed);
-  if (!normalizedSeed) return null;
+}): BrandSemanticTokens | null {
+  return resolveBrandThemeTokensFromPaletteSeedWithMeta(input)?.tokens ?? null;
+}
 
+export type ResolveBrandThemeTokensFromPaletteSeedWithMetaResult = {
+  tokens: BrandSemanticTokens;
+  normalizedSeed: BrandPaletteSeed;
+  resolvedSeed: BrandPaletteSeed;
+  accentSource: BrandPaletteSeedResolution["accentSource"];
+  explicitAccent: string | null;
+};
+
+export function resolveBrandThemeTokensFromPaletteSeedWithMeta(input: {
+  seed: BrandPaletteSeedInput;
+  mode: "light" | "dark" | "system";
+  config?: BuildBrandThemeConfigOptions;
+  options?: ResolveBrandThemeOptions;
+}): ResolveBrandThemeTokensFromPaletteSeedWithMetaResult | null {
   const harmony = input.config?.harmony ?? DEFAULT_BRAND_THEME_CONFIG.harmony;
-  const explicitAccent = normalizeHexColor(input.seed.accent ?? "");
-  const derivedAccent = deriveAccent(normalizedSeed.primary, harmony);
-  const accentBase = explicitAccent
-    ? mixHexColors(
-        explicitAccent,
-        derivedAccent,
-        HARMONY_EXPLICIT_ACCENT_BLEND[harmony]
-      )
-    : derivedAccent;
-  const resolvedSeed: BrandPaletteSeed = {
-    ...normalizedSeed,
-    accent: accentBase,
-  };
+  const seedResolution = resolveBrandPaletteSeedWithHarmony({
+    seed: input.seed,
+    harmony,
+    accentStyle: input.config?.accentStyle ?? DEFAULT_BRAND_THEME_CONFIG.accentStyle,
+  });
+  if (!seedResolution) return null;
 
   const mode = resolveMode(input.mode, input.options);
   const oppositeMode = mode === "dark" ? "light" : "dark";
 
-  const core = buildCoreTokensFromSeed(resolvedSeed, mode);
-  const oppositeCore = buildCoreTokensFromSeed(resolvedSeed, oppositeMode);
+  const core = buildCoreTokensFromSeed(seedResolution.resolvedSeed, mode);
+  const oppositeCore = buildCoreTokensFromSeed(seedResolution.resolvedSeed, oppositeMode);
+  const accentBase = seedResolution.resolvedSeed.accent;
 
-  return buildBrandSemanticTokens({
+  const tokens = buildBrandSemanticTokens({
     core,
     oppositeCore,
     mode,
@@ -321,4 +522,12 @@ export function resolveBrandThemeTokensFromPaletteSeed(input: {
     typographyPreset: input.config?.typographyPreset ?? DEFAULT_BRAND_THEME_CONFIG.typographyPreset,
     accentBase,
   });
+
+  return {
+    tokens,
+    normalizedSeed: seedResolution.normalizedSeed,
+    resolvedSeed: seedResolution.resolvedSeed,
+    accentSource: seedResolution.accentSource,
+    explicitAccent: seedResolution.explicitAccent,
+  };
 }

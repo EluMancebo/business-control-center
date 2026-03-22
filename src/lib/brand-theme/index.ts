@@ -29,10 +29,24 @@ export { buildBrandSemanticTokens, toBrandCssVariables } from "./tokens";
 export {
   normalizeBrandPaletteSeed,
   normalizeHexColor,
+  resolveBrandPaletteSeedWithHarmony,
   resolveBrandThemeTokensFromPaletteSeed,
+  resolveBrandThemeTokensFromPaletteSeedWithMeta,
+} from "./palette";
+export type {
+  BrandPaletteSeedResolution,
+  ResolveBrandThemeTokensFromPaletteSeedWithMetaResult,
 } from "./palette";
 export { applyBrandThemePreviewToDocument } from "./applyPreviewTheme";
 export type { ApplyBrandThemePreviewInput } from "./applyPreviewTheme";
+export {
+  resolveBrandThemePipelineFromStateV1,
+} from "./pipeline";
+export type {
+  BrandThemePipelineResult,
+  BrandThemePipelineSource,
+  ResolveBrandThemePipelineOptions,
+} from "./pipeline";
 
 export {
   DEFAULT_BRAND_THEME_CONFIG,

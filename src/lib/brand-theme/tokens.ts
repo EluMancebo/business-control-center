@@ -11,11 +11,11 @@ type RGB = { r: number; g: number; b: number };
 
 const HARMONY_HUE_SHIFT: Record<BrandHarmonyStrategy, number> = {
   monochromatic: 0,
-  analogous: 30,
-  complementary: 180,
-  "split-complementary": 150,
-  triadic: 120,
-  tetradic: 90,
+  analogous: 26,
+  complementary: 172,
+  "split-complementary": 148,
+  triadic: 118,
+  tetradic: 88,
 };
 
 const ACCENT_SATURATION_DELTA: Record<BrandAccentStyle, number> = {
@@ -31,49 +31,75 @@ const ACCENT_LIGHTNESS_DELTA: Record<BrandAccentStyle, number> = {
 };
 
 const HARMONY_SATURATION_DELTA: Record<BrandHarmonyStrategy, number> = {
-  monochromatic: -16,
-  analogous: -4,
-  complementary: 12,
+  monochromatic: -18,
+  analogous: -8,
+  complementary: 10,
   "split-complementary": 8,
-  triadic: 10,
-  tetradic: 16,
+  triadic: 12,
+  tetradic: 14,
 };
 
 const HARMONY_LIGHTNESS_DELTA: Record<BrandHarmonyStrategy, number> = {
-  monochromatic: 2,
-  analogous: 0,
-  complementary: -2,
-  "split-complementary": -1,
-  triadic: -1,
-  tetradic: -2,
+  monochromatic: 14,
+  analogous: 4,
+  complementary: -8,
+  "split-complementary": -6,
+  triadic: -4,
+  tetradic: -6,
 };
 
 const HARMONY_SOFT_MIX: Record<BrandHarmonyStrategy, number> = {
-  monochromatic: 0.92,
-  analogous: 0.8,
-  complementary: 0.58,
-  "split-complementary": 0.64,
-  triadic: 0.62,
-  tetradic: 0.54,
+  monochromatic: 0.94,
+  analogous: 0.84,
+  complementary: 0.56,
+  "split-complementary": 0.62,
+  triadic: 0.6,
+  tetradic: 0.52,
 };
 
 const HARMONY_STRONG_SATURATION_DELTA: Record<BrandHarmonyStrategy, number> = {
-  monochromatic: 4,
+  monochromatic: 2,
   analogous: 6,
+  complementary: 14,
+  "split-complementary": 12,
+  triadic: 13,
+  tetradic: 15,
+};
+
+const HARMONY_STRONG_LIGHTNESS_DELTA: Record<BrandHarmonyStrategy, number> = {
+  monochromatic: 5,
+  analogous: 7,
   complementary: 12,
   "split-complementary": 10,
   triadic: 11,
   tetradic: 14,
 };
 
-const HARMONY_STRONG_LIGHTNESS_DELTA: Record<BrandHarmonyStrategy, number> = {
-  monochromatic: 6,
-  analogous: 8,
-  complementary: 12,
-  "split-complementary": 10,
-  triadic: 11,
-  tetradic: 14,
+const ACCENT_STYLE_SOFT_MIX_DELTA: Record<BrandAccentStyle, number> = {
+  minimal: 0.14,
+  balanced: 0,
+  expressive: -0.12,
 };
+
+const ACCENT_STYLE_STRONG_SATURATION_DELTA: Record<BrandAccentStyle, number> = {
+  minimal: -8,
+  balanced: 0,
+  expressive: 10,
+};
+
+const ACCENT_STYLE_STRONG_LIGHTNESS_DELTA: Record<BrandAccentStyle, number> = {
+  minimal: -4,
+  balanced: 0,
+  expressive: 5,
+};
+
+const ACCENT_STYLE_CONTRAST_DELTA: Record<BrandAccentStyle, number> = {
+  minimal: -0.24,
+  balanced: 0,
+  expressive: 0.36,
+};
+
+const CONTRAST_ADJUST_MAX_STEPS = 20;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -245,7 +271,7 @@ function tryAdjustContrast(args: {
     return { color: current, ratio: bestRatio };
   }
 
-  for (let index = 0; index < 14; index += 1) {
+  for (let index = 0; index < CONTRAST_ADJUST_MAX_STEPS; index += 1) {
     const next = nudgeForContrast(current, args.step, args.saturationStep);
     if (next === current) break;
     current = next;
@@ -357,17 +383,26 @@ export function buildBrandSemanticTokens(args: {
   const { core, oppositeCore, mode, harmony, accentStyle, typographyPreset, accentBase } = args;
 
   const accentSeed = accentBase ?? deriveAccentBase(core.primary, harmony, accentStyle, mode);
-  const accentContrastTarget = mode === "dark" ? 3 : 2.7;
+  const accentContrastTarget =
+    (mode === "dark" ? 3 : 2.7) + ACCENT_STYLE_CONTRAST_DELTA[accentStyle];
   const accent = ensureContrastAgainstBackground({
     color: accentSeed,
     background: core.background,
     minRatio: accentContrastTarget,
     prefer: mode === "dark" ? "lighter" : "darker",
   });
-  const strongSaturationDelta = HARMONY_STRONG_SATURATION_DELTA[harmony];
-  const strongLightnessDelta = HARMONY_STRONG_LIGHTNESS_DELTA[harmony];
-  const softMixBase = HARMONY_SOFT_MIX[harmony];
-  const softMixRatio = mode === "dark" ? clamp(softMixBase + 0.08, 0.58, 0.94) : clamp(softMixBase, 0.58, 0.94);
+  const strongSaturationDelta =
+    HARMONY_STRONG_SATURATION_DELTA[harmony] +
+    ACCENT_STYLE_STRONG_SATURATION_DELTA[accentStyle];
+  const strongLightnessDelta =
+    HARMONY_STRONG_LIGHTNESS_DELTA[harmony] +
+    ACCENT_STYLE_STRONG_LIGHTNESS_DELTA[accentStyle];
+  const softMixBase =
+    HARMONY_SOFT_MIX[harmony] + ACCENT_STYLE_SOFT_MIX_DELTA[accentStyle];
+  const softMixRatio =
+    mode === "dark"
+      ? clamp(softMixBase + 0.08, 0.42, 0.95)
+      : clamp(softMixBase, 0.42, 0.95);
   const accentStrongRaw =
     mode === "dark"
       ? transformHexHsl(accent, (hsl) => ({
@@ -383,14 +418,16 @@ export function buildBrandSemanticTokens(args: {
   const accentStrong = ensureContrastAgainstBackground({
     color: accentStrongRaw,
     background: core.background,
-    minRatio: mode === "dark" ? 3.6 : 3.2,
+    minRatio:
+      (mode === "dark" ? 3.6 : 3.2) +
+      ACCENT_STYLE_CONTRAST_DELTA[accentStyle] * 0.5,
     prefer: mode === "dark" ? "lighter" : "darker",
   });
   const accentSoftRaw = mixHexColors(accent, core.background, softMixRatio);
   const accentSoft = ensureContrastAgainstBackground({
     color: accentSoftRaw,
     background: core.background,
-    minRatio: mode === "dark" ? 1.2 : 1.1,
+    minRatio: mode === "dark" ? 1.35 : 1.22,
     prefer: mode === "dark" ? "lighter" : "darker",
   });
 

@@ -9,6 +9,8 @@ import Topbar from "./Topbar";
 import type { Capability } from "@/lib/auth/capabilities";
 import type { SessionPayload } from "@/lib/auth/serverSession";
 import BrandHydrator from "@/components/brand/BrandHydrator";
+import { isBrandThemeSemanticRuntimeEnabled } from "@/lib/brand-theme/runtime/flag";
+import { resolvePanelBrandHydratorScope } from "./brandHydratorScope";
 
 function getStudioTitle(pathname: string) {
   if (pathname.startsWith("/panel/web-control/")) {
@@ -148,9 +150,15 @@ export default function PanelShell({
   const isTallerStudio = useMemo(() => pathname.startsWith("/panel/taller/"), [pathname]);
 
   // Shell policy: Capa 1 (admin/studio) y Capa 2 (panel cliente) usan scopes separados.
+  // Excepcion controlada: /panel/taller/brand puede usar scope system cuando runtime semantico system esta ON.
   const brandScope = useMemo(
-    () => (computedIsAdmin ? ("studio" as const) : ("panel" as const)),
-    [computedIsAdmin]
+    () =>
+      resolvePanelBrandHydratorScope({
+        isAdmin: computedIsAdmin,
+        pathname,
+        systemSemanticRuntimeEnabled: isBrandThemeSemanticRuntimeEnabled("system"),
+      }),
+    [computedIsAdmin, pathname]
   );
   const brandBusinessSlug = useMemo(
     () => (brandScope === "panel" ? activeBusinessSlug : undefined),
