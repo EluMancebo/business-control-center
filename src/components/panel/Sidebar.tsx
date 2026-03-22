@@ -373,11 +373,11 @@ export default function Sidebar({
   const publicHref = getPublicHrefFromSlug(activeSlug);
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-border bg-card/90 p-4 shadow-[10px_0_30px_rgba(15,23,42,0.08)] backdrop-blur">
+    <aside className="flex h-full w-64 flex-col border-r border-border p-4 shadow-sm backdrop-blur [background:var(--surface-2,var(--card))]">
       <div className="mx-auto flex h-full w-full max-w-57 flex-col">
         <div className="mb-6">
           <div className="flex items-center gap-3">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-background ring-1 ring-border shadow-sm">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl ring-1 ring-border shadow-sm [background:var(--surface-3,var(--background))]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/brand/logo-mark.svg"
@@ -410,7 +410,7 @@ export default function Sidebar({
                 return (
                   <div
                     key={item.href}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground/70"
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm [color:color-mix(in_oklab,var(--text-subtle,var(--muted-foreground))_78%,transparent)]"
                   >
                     <Icon name="panel" />
                     {item.label} <span className="ml-2 text-xs">(pronto)</span>
@@ -431,8 +431,8 @@ export default function Sidebar({
                   className={[
                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                     active
-                      ? "bg-background font-medium text-foreground ring-1 ring-border shadow-sm"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      ? "font-medium ring-1 ring-border shadow-sm [background:var(--accent-soft,var(--surface-3,var(--background)))] [color:var(--accent-soft-foreground,var(--foreground))]"
+                      : "[color:var(--text-subtle,var(--muted-foreground))] hover:[background:var(--surface-3,var(--muted))] hover:[color:var(--foreground,var(--foreground))]",
                   ].join(" ")}
                 >
                   <Icon name={iconName} />
@@ -467,8 +467,8 @@ export default function Sidebar({
                   className={[
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
                     groupHasActive
-                      ? "font-medium text-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      ? "font-medium [color:var(--foreground,var(--foreground))]"
+                      : "[color:var(--text-subtle,var(--muted-foreground))] hover:[background:var(--surface-3,var(--muted))] hover:[color:var(--foreground,var(--foreground))]",
                   ].join(" ")}
                 >
                   <span className="flex items-center gap-2">
@@ -497,7 +497,7 @@ export default function Sidebar({
                           return (
                             <div
                               key={child.href}
-                              className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground/70"
+                              className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm [color:color-mix(in_oklab,var(--text-subtle,var(--muted-foreground))_78%,transparent)]"
                             >
                               <Icon name={childIcon(item.label, child.label)} />
                               {child.label} <span className="ml-2 text-xs">(pronto)</span>
@@ -513,8 +513,8 @@ export default function Sidebar({
                             className={[
                               "mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                               active
-                                ? "bg-background font-medium text-foreground ring-1 ring-border shadow-sm"
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                                ? "font-medium ring-1 ring-border shadow-sm [background:var(--accent-soft,var(--surface-3,var(--background)))] [color:var(--accent-soft-foreground,var(--foreground))]"
+                                : "[color:var(--text-subtle,var(--muted-foreground))] hover:[background:var(--surface-3,var(--muted))] hover:[color:var(--foreground,var(--foreground))]",
                             ].join(" ")}
                           >
                             <Icon name={childIcon(item.label, child.label)} />

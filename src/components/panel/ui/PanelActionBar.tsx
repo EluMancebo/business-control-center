@@ -12,7 +12,7 @@ export default function PanelActionBar({
   return (
     <div
       className={[
-        "flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-sm [background:var(--surface-2,var(--card))]",
+        "flex flex-wrap items-center gap-2 rounded-xl border border-border p-2 shadow-sm [background:var(--surface-2,var(--card))] [color:var(--foreground,var(--foreground))]",
         className,
       ]
         .filter(Boolean)

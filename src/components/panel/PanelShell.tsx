@@ -304,18 +304,14 @@ export default function PanelShell({
           : studioStage === "exiting"
             ? "bcc-studio-slide-out"
             : "";
-    const studioRootClass = isTallerStudio
-      ? "fixed inset-0 z-100 bg-background text-foreground [background:var(--surface-2,var(--background))]"
-      : "fixed inset-0 z-100 bg-background text-foreground";
-    const studioTopbarClass = isTallerStudio
-      ? "border-b border-border bg-card/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur [background:var(--surface-3,var(--card))]"
-      : "border-b border-border bg-card/90 shadow-[0_8px_24px_rgba(15,23,42,0.06)] backdrop-blur";
-    const studioSecondaryButtonClass = isTallerStudio
-      ? "inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-60 [background:var(--cta-secondary,var(--background))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]"
-      : "inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-60";
-    const studioBadgeClass = isTallerStudio
-      ? "inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[11px] font-semibold [background:var(--badge-bg,var(--muted))] [color:var(--badge-fg,var(--foreground))] [border-color:var(--badge-bg,var(--border))]"
-      : "inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-semibold text-foreground";
+    const studioRootClass =
+      "fixed inset-0 z-100 bg-background text-foreground [background:var(--surface-2,var(--background))]";
+    const studioTopbarClass =
+      "border-b border-border shadow-sm backdrop-blur [background:var(--surface-3,var(--card))]";
+    const studioSecondaryButtonClass =
+      "inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border px-3 text-sm font-semibold disabled:pointer-events-none disabled:opacity-60 [background:var(--cta-secondary,var(--background))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]";
+    const studioBadgeClass =
+      "inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[11px] font-semibold [background:var(--badge-bg,var(--muted))] [color:var(--badge-fg,var(--foreground))] [border-color:var(--badge-bg,var(--border))]";
 
     return (
       <div className={studioRootClass}>
@@ -337,7 +333,7 @@ export default function PanelShell({
                   <span>Volver</span>
                 </button>
 
-                <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background shadow-sm">
+                <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border shadow-sm [background:var(--surface-3,var(--background))]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/brand/logo-mark.svg"
@@ -352,7 +348,7 @@ export default function PanelShell({
                     <div className="truncate text-sm font-semibold">{studioTitle}</div>
                     {isTallerStudio ? <span className={studioBadgeClass}>Capa 1</span> : null}
                   </div>
-                  <div className="truncate text-xs text-muted-foreground">
+                  <div className="truncate text-xs [color:var(--text-subtle,var(--muted-foreground))]">
                     Estás editando esta sección del sistema
                   </div>
                 </div>
@@ -396,14 +392,14 @@ export default function PanelShell({
 
         <div className={`sm:hidden ${mobileOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
           <div
-            className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ${
+            className={`fixed inset-0 z-40 transition-opacity duration-300 [background:var(--hero-overlay-strong,rgba(0,0,0,0.45))] ${
               mobileOpen ? "opacity-100" : "opacity-0"
             }`}
             onClick={() => setMobileOpen(false)}
           />
 
           <div
-            className={`fixed inset-y-0 left-0 z-50 w-72 bg-card shadow-2xl transition-transform duration-300 ease-out ${
+            className={`fixed inset-y-0 left-0 z-50 w-72 border-r border-border shadow-2xl transition-transform duration-300 ease-out [background:var(--surface-2,var(--card))] ${
               mobileOpen ? "translate-x-0" : "-translate-x-full"
             }`}
             role="dialog"
@@ -415,7 +411,7 @@ export default function PanelShell({
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm hover:bg-muted"
+                className="rounded-lg border border-border px-3 py-2 text-sm [background:var(--cta-secondary,var(--background))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]"
                 aria-label="Cerrar menú"
                 title="Cerrar menú"
               >
@@ -434,13 +430,13 @@ export default function PanelShell({
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="border-b border-border bg-card/70 px-4 py-2 text-xs text-muted-foreground shadow-[0_2px_10px_rgba(15,23,42,0.04)] sm:px-6">
+          <div className="border-b border-border px-4 py-2 text-xs shadow-sm sm:px-6 [background:var(--surface-3,var(--card))] [color:var(--text-subtle,var(--muted-foreground))]">
             <span className="font-medium text-foreground">Sesión:</span>{" "}
             rol <span className="font-medium text-foreground">{role ?? "—"}</span>{" "}
             · business <span className="font-medium text-foreground">{shortId(businessId)}</span>{" "}
             · user <span className="font-medium text-foreground">{shortId(userId)}</span>
             {computedIsAdmin ? (
-              <span className="ml-2 rounded-md bg-muted px-2 py-0.5 text-[11px] text-foreground">
+              <span className="ml-2 rounded-md px-2 py-0.5 text-[11px] [background:var(--badge-bg,var(--muted))] [color:var(--badge-fg,var(--foreground))]">
                 ADMIN
               </span>
             ) : null}

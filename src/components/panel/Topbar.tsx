@@ -74,7 +74,7 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const publicHref = getPublicHrefFromSlug(activeSlug);
 
   return (
-    <header className="sticky top-0 z-10 border-b border-border bg-card/92 shadow-[0_10px_28px_rgba(15,23,42,0.08)] backdrop-blur">
+    <header className="sticky top-0 z-10 border-b border-border shadow-sm backdrop-blur [background:var(--surface-3,var(--card))]">
       <div className="flex items-center justify-between px-4 py-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <PanelButton
@@ -90,18 +90,21 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
 
           <div className="min-w-0">
             {crumbs.length > 0 ? (
-              <nav className="mb-0.5 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+              <nav className="mb-0.5 flex min-w-0 items-center gap-2 text-xs [color:var(--text-subtle,var(--muted-foreground))]">
                 {crumbs.map((c, idx) => (
                   <div key={c.href} className="flex min-w-0 items-center gap-2">
                     {idx === crumbs.length - 1 ? (
-                      <span className="truncate text-muted-foreground">{c.label}</span>
+                      <span className="truncate [color:var(--text-subtle,var(--muted-foreground))]">{c.label}</span>
                     ) : (
-                      <Link href={c.href} className="truncate hover:text-foreground">
+                      <Link
+                        href={c.href}
+                        className="truncate transition-colors [color:var(--link,var(--muted-foreground))] hover:[color:var(--link-hover,var(--foreground))]"
+                      >
                         {c.label}
                       </Link>
                     )}
                     {idx < crumbs.length - 1 ? (
-                      <span className="text-muted-foreground/40">/</span>
+                      <span className="opacity-40 [color:var(--text-subtle,var(--muted-foreground))]">/</span>
                     ) : null}
                   </div>
                 ))}
@@ -111,7 +114,7 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
             <div className="truncate text-sm font-semibold text-foreground">{meta.title}</div>
 
             {meta.subtitle ? (
-              <div className="truncate text-xs text-muted-foreground">{meta.subtitle}</div>
+              <div className="truncate text-xs [color:var(--text-subtle,var(--muted-foreground))]">{meta.subtitle}</div>
             ) : null}
           </div>
         </div>

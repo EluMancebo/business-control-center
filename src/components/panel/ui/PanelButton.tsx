@@ -23,11 +23,11 @@ type PanelButtonProps = PanelButtonAsButtonProps | PanelButtonAsLinkProps;
 
 const VARIANT_CLASS: Record<Variant, string> = {
   primary:
-    "border border-transparent bg-primary text-primary-foreground hover:opacity-90",
+    "border border-transparent [background:var(--cta-primary,var(--primary))] [color:var(--cta-primary-foreground,var(--primary-foreground))] hover:[background:var(--cta-primary-hover,var(--primary))]",
   secondary:
-    "border border-border bg-background text-foreground hover:bg-muted",
+    "border border-border [background:var(--cta-secondary,var(--background))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]",
   ghost:
-    "border border-transparent bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
+    "border border-transparent bg-transparent [color:var(--text-subtle,var(--muted-foreground))] hover:[background:var(--surface-2,var(--muted))] hover:[color:var(--link,var(--foreground))]",
 };
 
 function buildClassName(variant: Variant, className?: string) {
