@@ -17,6 +17,11 @@ const HeroDataSchema = new Schema(
     backgroundImageUrl: { type: String, default: "" },
     logoUrl: { type: String, default: "" },
     logoSvg: { type: String, default: "" },
+    heroAppearanceVariant: {
+      type: String,
+      enum: ["transparent", "soft", "solid"],
+      default: "soft",
+    },
   },
   { _id: false }
 );

@@ -22,6 +22,11 @@ const HeroDataSchema = new Schema(
     // Logo SVG inline (para poder animarlo en la web pública)
     // Guardas aquí el markup SVG (string) desde el panel/presets.
     logoSvg: { type: String, default: "" },
+    heroAppearanceVariant: {
+      type: String,
+      enum: ["transparent", "soft", "solid"],
+      default: "soft",
+    },
   },
   { _id: false }
 );

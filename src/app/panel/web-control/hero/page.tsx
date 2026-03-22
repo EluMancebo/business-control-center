@@ -3,7 +3,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { HeroData } from "@/lib/web/hero/types";
+import type {
+  HeroAppearanceVariant,
+  HeroData,
+} from "@/lib/web/hero/types";
 import { DEFAULT_HERO } from "@/lib/web/hero/types";
 
 type BusinessPublic = {
@@ -50,6 +53,15 @@ const ALLOWED_HERO_BACKGROUNDS = [
   { label: "Barber close", url: "/hero/barber-close.jpg" },
   { label: "Dark abstract", url: "/hero/dark-abstract.jpg" },
 ] as const;
+
+const HERO_APPEARANCE_OPTIONS: Array<{
+  value: HeroAppearanceVariant;
+  label: string;
+}> = [
+  { value: "transparent", label: "Transparent" },
+  { value: "soft", label: "Soft" },
+  { value: "solid", label: "Solid" },
+];
 
 function normalizeVariantKey(value: string) {
   const v = String(value || "").trim().toLowerCase();
@@ -291,6 +303,7 @@ export default function HeroControlPage() {
         setMsg("");
         await saveDraft({ slug: business.slug, variantKey: activeVariantKey, next: form });
         setMsg("Guardado ✓");
+        setPreviewNonce((n) => n + 1);
       } catch {
         setMsg("Error guardando draft");
       } finally {
@@ -376,8 +389,12 @@ export default function HeroControlPage() {
   }
 
   const canPreview = Boolean(business?.slug);
-  const publishedUrl = business?.slug
-    ? `/${encodeURIComponent(business.slug)}?t=${previewNonce}`
+  const previewUrl = business?.slug
+    ? `/${encodeURIComponent(
+        business.slug
+      )}?previewHeroStatus=draft&previewHeroVariantKey=${encodeURIComponent(
+        activeVariantKey
+      )}&t=${previewNonce}`
     : "/";
 
   const iframeWrapperClass =
@@ -527,6 +544,34 @@ export default function HeroControlPage() {
               </section>
 
               <section className="rounded-xl border border-border p-4 [background:var(--surface-2,var(--card))]">
+                <label htmlFor="hero-appearance-variant" className="text-sm font-semibold text-foreground">
+                  Apariencia Hero
+                </label>
+                <select
+                  id="hero-appearance-variant"
+                  value={form.heroAppearanceVariant ?? "soft"}
+                  onChange={(e) =>
+                    update(
+                      "heroAppearanceVariant",
+                      e.target.value as HeroAppearanceVariant
+                    )
+                  }
+                  className="mt-2 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  disabled={!business?.slug || saving}
+                >
+                  {HERO_APPEARANCE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Control único del acabado visual del hero: overlay, frame, footer y chrome.
+                </p>
+              </section>
+
+              <section className="rounded-xl border border-border p-4 [background:var(--surface-2,var(--card))]">
                 <label htmlFor="hero-bg-select" className="text-sm font-semibold text-foreground">
                   Fondo Hero (disponibles)
                 </label>
@@ -653,7 +698,7 @@ export default function HeroControlPage() {
                 <div className="min-w-0">
                   <div className="text-sm font-semibold">Preview real (web pública)</div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    Lo que ve el cliente: <b>PUBLISHED</b> del preset activo.
+                    Preview en panel: <b>DRAFT</b> del preset activo. La web pública sigue leyendo <b>PUBLISHED</b>.
                   </div>
                 </div>
 
@@ -703,7 +748,7 @@ export default function HeroControlPage() {
                     {canPreview ? (
                       <iframe
                         title="Preview web pública"
-                        src={publishedUrl}
+                        src={previewUrl}
                         className="h-full w-full"
                       />
                     ) : (

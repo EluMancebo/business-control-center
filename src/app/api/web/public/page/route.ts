@@ -2,19 +2,7 @@
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { PublishedPage } from "@/models/PublishedPage";
-
-type PublishedHeroData = {
-  badge: string;
-  title: string;
-  description: string;
-  primaryCtaLabel: string;
-  primaryCtaHref: string;
-  secondaryCtaLabel: string;
-  secondaryCtaHref: string;
-  backgroundImageUrl?: string;
-  logoUrl?: string;
-  logoSvg?: string;
-};
+import type { HeroData } from "@/lib/web/hero/types";
 
 type PublishedPageLean = {
   businessSlug: string;
@@ -25,7 +13,7 @@ type PublishedPageLean = {
     createdAt?: Date;
     hero: {
       variantKey: string;
-      data: PublishedHeroData;
+      data: HeroData;
     };
   }>;
 };

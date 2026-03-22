@@ -5,21 +5,9 @@ import BrandHydrator from "@/components/brand/BrandHydrator";
 import { resolvePublicSitePage, type PublicSiteRepository } from "@/lib/public-site";
 import { buildBusinessSite } from "@/lib/site/helpers";
 import type { RenderableHeroSection, RenderableLocationSection, RenderableSection } from "@/lib/site-renderer";
+import type { HeroData, HeroAppearanceVariant } from "@/lib/web/hero/types";
 
 export const dynamic = "force-dynamic";
-
-type HeroData = {
-  badge: string;
-  title: string;
-  description: string;
-  primaryCtaLabel: string;
-  primaryCtaHref: string;
-  secondaryCtaLabel: string;
-  secondaryCtaHref: string;
-  backgroundImageUrl?: string;
-  logoUrl?: string;
-  logoSvg?: string;
-};
 
 type BusinessPublic = {
   name?: string;
@@ -38,6 +26,8 @@ type PublishedPagePublic = {
   };
 };
 
+type PublicPageSearchParams = Record<string, string | string[] | undefined>;
+
 // ---------- Utils ----------
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -51,6 +41,17 @@ function isNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function asHeroAppearanceVariant(
+  value: unknown
+): HeroAppearanceVariant | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "transparent") return "transparent";
+  if (normalized === "soft") return "soft";
+  if (normalized === "solid") return "solid";
+  return null;
+}
+
 function safeDecodeSlug(value: string): string {
   try {
     return decodeURIComponent(value);
@@ -61,6 +62,24 @@ function safeDecodeSlug(value: string): string {
 
 function trimTrailingSlash(url: string): string {
   return url.replace(/\/$/, "");
+}
+
+function normalizeVariantKey(value: string | null | undefined): string {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized || "default";
+}
+
+function readSearchParam(
+  searchParams: PublicPageSearchParams | undefined,
+  key: string
+): string | null {
+  if (!searchParams) return null;
+  const value = searchParams[key];
+  if (Array.isArray(value)) {
+    const first = value[0];
+    return typeof first === "string" && first.trim() ? first.trim() : null;
+  }
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 // ---------- Origin / Base URL ----------
@@ -161,10 +180,14 @@ function parsePublishedPageResponse(json: unknown): PublishedPagePublic | null {
   const backgroundImageUrl = data["backgroundImageUrl"];
   const logoUrl = data["logoUrl"];
   const logoSvg = data["logoSvg"];
+  const heroAppearanceVariant = asHeroAppearanceVariant(
+    data["heroAppearanceVariant"]
+  );
 
   if (isString(backgroundImageUrl)) heroData.backgroundImageUrl = backgroundImageUrl;
   if (isString(logoUrl)) heroData.logoUrl = logoUrl;
   if (isString(logoSvg)) heroData.logoSvg = logoSvg;
+  if (heroAppearanceVariant) heroData.heroAppearanceVariant = heroAppearanceVariant;
 
   return {
     businessSlug,
@@ -202,6 +225,73 @@ async function getPublishedPage(slug: string): Promise<PublishedPagePublic | nul
 
   const json: unknown = await res.json();
   return parsePublishedPageResponse(json);
+}
+
+async function getDraftHeroPreview(args: {
+  slug: string;
+  variantKey: string;
+}): Promise<HeroData | null> {
+  const baseUrl = await getBaseUrl();
+  const requestHeaders = await headers();
+  const cookieHeader = requestHeaders.get("cookie");
+  if (!cookieHeader) return null;
+
+  const url = new URL("/api/web/hero", baseUrl);
+  url.searchParams.set("status", "draft");
+  url.searchParams.set("slug", args.slug);
+  url.searchParams.set("variantKey", args.variantKey);
+
+  const res = await fetch(url.toString(), {
+    cache: "no-store",
+    headers: {
+      cookie: cookieHeader,
+    },
+  });
+  if (!res.ok) return null;
+
+  const json = (await res.json()) as { ok?: boolean; data?: unknown };
+  if (!json?.ok || !isRecord(json.data)) return null;
+
+  const data = json.data;
+  const badge = data["badge"];
+  const title = data["title"];
+  const description = data["description"];
+  const primaryCtaLabel = data["primaryCtaLabel"];
+  const primaryCtaHref = data["primaryCtaHref"];
+  const secondaryCtaLabel = data["secondaryCtaLabel"];
+  const secondaryCtaHref = data["secondaryCtaHref"];
+
+  if (!isString(badge)) return null;
+  if (!isString(title)) return null;
+  if (!isString(description)) return null;
+  if (!isString(primaryCtaLabel)) return null;
+  if (!isString(primaryCtaHref)) return null;
+  if (!isString(secondaryCtaLabel)) return null;
+  if (!isString(secondaryCtaHref)) return null;
+
+  const hero: HeroData = {
+    badge,
+    title,
+    description,
+    primaryCtaLabel,
+    primaryCtaHref,
+    secondaryCtaLabel,
+    secondaryCtaHref,
+  };
+
+  const backgroundImageUrl = data["backgroundImageUrl"];
+  const logoUrl = data["logoUrl"];
+  const logoSvg = data["logoSvg"];
+  const heroAppearanceVariant = asHeroAppearanceVariant(
+    data["heroAppearanceVariant"]
+  );
+
+  if (isString(backgroundImageUrl)) hero.backgroundImageUrl = backgroundImageUrl;
+  if (isString(logoUrl)) hero.logoUrl = logoUrl;
+  if (isString(logoSvg)) hero.logoSvg = logoSvg;
+  if (heroAppearanceVariant) hero.heroAppearanceVariant = heroAppearanceVariant;
+
+  return hero;
 }
 
 function normalizeLookupSlug(value: string): string {
@@ -250,13 +340,34 @@ function createPublicSiteRepository(args: {
 // ---------- Page ----------
 export default async function PublicBusinessPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }> | { slug: string };
+  searchParams?: Promise<PublicPageSearchParams> | PublicPageSearchParams;
 }) {
   const resolved = await Promise.resolve(params);
+  const resolvedSearchParams = await Promise.resolve(searchParams ?? {});
   const decodedSlug = safeDecodeSlug(resolved.slug);
+  const previewHeroStatus = readSearchParam(resolvedSearchParams, "previewHeroStatus");
+  const previewHeroVariantKey = readSearchParam(
+    resolvedSearchParams,
+    "previewHeroVariantKey"
+  );
+  const shouldUseDraftHeroPreview = previewHeroStatus === "draft";
   const business = await getBusinessPublic(decodedSlug);
   const publishedPage = await getPublishedPage(decodedSlug);
+  const activeVariantKey = normalizeVariantKey(
+    previewHeroVariantKey ??
+      business?.activeHeroVariantKey ??
+      publishedPage?.hero?.variantKey ??
+      "default"
+  );
+  const previewHero = shouldUseDraftHeroPreview
+    ? await getDraftHeroPreview({
+        slug: decodedSlug,
+        variantKey: activeVariantKey,
+      })
+    : null;
   const publicSiteLookup = {
     slug: decodedSlug,
     pageKey: "home",
@@ -293,9 +404,9 @@ export default async function PublicBusinessPage({
   const resolvedLocationSection = resolvedPublicSitePage?.ok
     ? resolvedPublicSitePage.render.sections.find(isRenderableLocationSection)
     : undefined;
-  const hero = resolvedHeroSection?.payload ?? publishedPage?.hero?.data ?? null;
+  const hero =
+    previewHero ?? resolvedHeroSection?.payload ?? publishedPage?.hero?.data ?? null;
   const location = resolvedLocationSection?.payload;
-  const activeVariantKey = business?.activeHeroVariantKey ?? "default";
 
   return (
     <>

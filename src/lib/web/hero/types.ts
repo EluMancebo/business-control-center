@@ -1,5 +1,7 @@
 //src/lib/web/hero/types.ts
 
+export type HeroAppearanceVariant = "transparent" | "soft" | "solid";
+
 export type HeroData = {
   badge: string;
   title: string;
@@ -16,6 +18,7 @@ export type HeroData = {
   logoSvg?: string;
 
   backgroundImageUrl?: string;
+  heroAppearanceVariant?: HeroAppearanceVariant;
 };
 
 export const DEFAULT_HERO: HeroData = {
@@ -30,4 +33,5 @@ export const DEFAULT_HERO: HeroData = {
   logoUrl: "/brand/logo-mark.svg",
   logoSvg: "",
   backgroundImageUrl: "",
+  heroAppearanceVariant: "soft",
 };  

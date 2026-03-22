@@ -1,6 +1,8 @@
 // src/components/web/hero/PublicHero.tsx
 import React from "react";
 import CreatedByMini from "@/components/footer/CreatedByMini";
+import { resolveHeroAppearance } from "./appearance";
+import type { HeroAppearanceVariant } from "@/lib/web/hero/types";
 
 export type HeroData = {
   badge?: string;
@@ -15,6 +17,7 @@ export type HeroData = {
   backgroundImageUrl?: string;
   logoUrl?: string;
   logoSvg?: string;
+  heroAppearanceVariant?: HeroAppearanceVariant;
 };
 
 export type BusinessPublic = {
@@ -72,7 +75,7 @@ function Pill({
     <div
       className={[
         "inline-flex items-center rounded-full px-3 py-1 text-xs",
-        "[background:var(--hero-overlay,rgba(0,0,0,0.28))] [color:var(--text-inverse,#ffffff)]",
+        "[background:var(--hero-chrome-bg)] [color:var(--text-inverse,#ffffff)]",
         className,
       ].join(" ")}
     >
@@ -100,27 +103,42 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
 
   const badge = data.badge ?? "Barbería Premium";
 
-  // ✅ CLAVES REALES (coinciden con HeroConfig)
   const cta1 = (data.primaryCtaLabel as string) ?? "Pedir cita";
-  const cta2 = (data.secondaryCtaLabel as string)?? "Servicios";
+  const cta2 = (data.secondaryCtaLabel as string) ?? "Servicios";
   const href1 = (data.primaryCtaHref as string) ?? "#";
   const href2 = (data.secondaryCtaHref as string) ?? "#";
 
   const bg = normalizeAssetUrl(data.backgroundImageUrl);
+  const heroAppearance = resolveHeroAppearance(data as unknown);
+  const heroAppearanceStyle = {
+    "--hero-overlay-image-bg": heroAppearance.overlayImageBackground,
+    "--hero-overlay-image-opacity": heroAppearance.overlayImageOpacity,
+    "--hero-overlay-gradient-bg": heroAppearance.overlayGradientBackground,
+    "--hero-chrome-bg": heroAppearance.chromeBackground,
+    "--hero-chrome-hover-bg": heroAppearance.chromeHoverBackground,
+    "--hero-frame-bg": heroAppearance.frameBackground,
+    "--hero-footer-bg": heroAppearance.footerBackground,
+  } as React.CSSProperties;
 
-  const headerLogoUrl = normalizeAssetUrl(business?.logoUrl) ?? normalizeAssetUrl(data.logoUrl);
-  const heroLogoUrl = normalizeAssetUrl(data.logoUrl) ?? normalizeAssetUrl(business?.logoUrl);
+  const headerLogoUrl =
+    normalizeAssetUrl(business?.logoUrl) ?? normalizeAssetUrl(data.logoUrl);
+  const heroLogoUrl =
+    normalizeAssetUrl(data.logoUrl) ?? normalizeAssetUrl(business?.logoUrl);
 
   return (
-    <section className="relative min-h-svh w-full overflow-hidden">
+    <section
+      className="relative min-h-svh w-full overflow-hidden"
+      style={heroAppearanceStyle}
+      data-hero-appearance={heroAppearance.variant}
+    >
       {bg ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={bg} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 [background:var(--hero-overlay-strong,rgba(0,0,0,0.6))]" />
+          <div className="absolute inset-0 [background:var(--hero-overlay-image-bg)] [opacity:var(--hero-overlay-image-opacity)]" />
         </>
       ) : (
-        <div className="absolute inset-0 [background:linear-gradient(to_bottom,var(--hero-overlay-strong,rgba(0,0,0,0.64)),var(--hero-overlay,rgba(0,0,0,0.42)),var(--hero-overlay-strong,rgba(0,0,0,0.64)))]" />
+        <div className="absolute inset-0 [background:var(--hero-overlay-gradient-bg)]" />
       )}
 
       <div className="relative z-10 mx-auto flex min-h-svh w-full max-w-6xl flex-col px-6">
@@ -143,19 +161,19 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
           <nav className="hidden items-center gap-3 md:flex">
             <a
               href="#"
-              className="rounded-full px-4 py-2 text-xs font-semibold transition [background:var(--hero-overlay,rgba(0,0,0,0.28))] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_86%,transparent)] hover:[background:var(--hero-overlay-strong,rgba(0,0,0,0.5))]"
+              className="rounded-full px-4 py-2 text-xs font-semibold transition [background:var(--hero-chrome-bg)] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_90%,transparent)] hover:[background:var(--hero-chrome-hover-bg)]"
             >
               Home
             </a>
             <a
               href="#"
-              className="rounded-full px-4 py-2 text-xs font-semibold transition [background:var(--hero-overlay,rgba(0,0,0,0.28))] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_86%,transparent)] hover:[background:var(--hero-overlay-strong,rgba(0,0,0,0.5))]"
+              className="rounded-full px-4 py-2 text-xs font-semibold transition [background:var(--hero-chrome-bg)] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_90%,transparent)] hover:[background:var(--hero-chrome-hover-bg)]"
             >
               Services
             </a>
             <a
               href="#"
-              className="rounded-full px-4 py-2 text-xs font-semibold transition [background:var(--hero-overlay,rgba(0,0,0,0.28))] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_86%,transparent)] hover:[background:var(--hero-overlay-strong,rgba(0,0,0,0.5))]"
+              className="rounded-full px-4 py-2 text-xs font-semibold transition [background:var(--hero-chrome-bg)] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_90%,transparent)] hover:[background:var(--hero-chrome-hover-bg)]"
             >
               Contact
             </a>
@@ -166,7 +184,7 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
 
             <label
               htmlFor="bcc-mobile-menu"
-              className="cursor-pointer rounded-xl p-2 transition [background:var(--hero-overlay,rgba(0,0,0,0.28))] hover:[background:var(--hero-overlay-strong,rgba(0,0,0,0.5))]"
+              className="cursor-pointer rounded-xl p-2 transition [background:var(--hero-chrome-bg)] hover:[background:var(--hero-chrome-hover-bg)]"
               aria-label="Abrir menú"
             >
               <span className="block h-0.5 w-6 [background:var(--text-inverse,#ffffff)]" />
@@ -176,30 +194,30 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
 
             <label
               htmlFor="bcc-mobile-menu"
-              className="pointer-events-none fixed inset-0 z-40 opacity-0 transition-opacity duration-500 peer-checked:pointer-events-auto peer-checked:opacity-100 [background:var(--hero-overlay-strong,rgba(0,0,0,0.55))]"
+              className="pointer-events-none fixed inset-0 z-40 opacity-0 transition-opacity duration-500 peer-checked:pointer-events-auto peer-checked:opacity-100 [background:color-mix(in_oklab,var(--accent,var(--primary))_28%,black)]"
               aria-label="Cerrar menú"
             />
 
-            <div className="fixed inset-y-0 right-0 z-50 w-64 translate-x-full p-4 shadow-2xl transition-transform duration-700 ease-out peer-checked:translate-x-0 [background:color-mix(in_oklab,var(--hero-overlay-strong,rgba(0,0,0,0.7))_88%,black)] [color:var(--text-inverse,#ffffff)]">
+            <div className="fixed inset-y-0 right-0 z-50 w-64 translate-x-full p-4 shadow-2xl transition-transform duration-700 ease-out peer-checked:translate-x-0 [background:color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_34%,black)] [color:var(--text-inverse,#ffffff)]">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold">{business?.name ?? "Menú"}</div>
 
                 <label
                   htmlFor="bcc-mobile-menu"
-                  className="cursor-pointer rounded-lg px-3 py-1 text-xs transition [background:var(--hero-overlay,rgba(0,0,0,0.28))] hover:[background:var(--hero-overlay-strong,rgba(0,0,0,0.5))]"
+                  className="cursor-pointer rounded-lg px-3 py-1 text-xs transition [background:var(--hero-chrome-bg)] hover:[background:var(--hero-chrome-hover-bg)]"
                 >
                   Cerrar
                 </label>
               </div>
 
               <div className="mt-4 space-y-2">
-                <a href="#" className="block rounded-xl px-3 py-2 transition hover:[background:var(--hero-overlay,rgba(0,0,0,0.28))]">
+                <a href="#" className="block rounded-xl px-3 py-2 transition hover:[background:var(--hero-chrome-bg)]">
                   Home
                 </a>
-                <a href="#" className="block rounded-xl px-3 py-2 transition hover:[background:var(--hero-overlay,rgba(0,0,0,0.28))]">
+                <a href="#" className="block rounded-xl px-3 py-2 transition hover:[background:var(--hero-chrome-bg)]">
                   Services
                 </a>
-                <a href="#" className="block rounded-xl px-3 py-2 transition hover:[background:var(--hero-overlay,rgba(0,0,0,0.28))]">
+                <a href="#" className="block rounded-xl px-3 py-2 transition hover:[background:var(--hero-chrome-bg)]">
                   Contact
                 </a>
               </div>
@@ -217,13 +235,15 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
                 {titleAccent ? (
                   <>
                     <br />
-                    <span className="text-primary">{titleAccent}</span>
+                    <span className="[color:var(--accent-strong,var(--primary))]">
+                      {titleAccent}
+                    </span>
                   </>
                 ) : null}
               </h1>
 
               <div className="mt-1.6 md:hidden">
-                <div className="relative mx-auto flex aspect-16/7 w-full max-w-sm items-center justify-center rounded-3xl [background:var(--hero-overlay,rgba(0,0,0,0.22))]">
+                <div className="relative mx-auto flex aspect-16/7 w-full max-w-sm items-center justify-center rounded-3xl [background:var(--hero-frame-bg)]">
                   {heroLogoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -234,17 +254,19 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
                   ) : (
                     <div className="text-center [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_80%,transparent)]">
                       <div className="text-sm">Logo principal</div>
-                      <div className="mt-2 text-xs [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_50%,transparent)]">(pendiente de asset)</div>
+                      <div className="mt-2 text-xs [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_50%,transparent)]">
+                        (pendiente de asset)
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              <p className="mt-0.6 max-w-lg rounded-xl px-3 py-2 text-[13px] leading-snug md:hidden [background:var(--hero-overlay,rgba(0,0,0,0.22))] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_86%,transparent)]">
+              <p className="mt-0.6 max-w-lg rounded-xl px-3 py-2 text-[13px] leading-snug md:hidden [background:var(--hero-frame-bg)] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_90%,transparent)]">
                 {subtitle}
               </p>
 
-              <div className="mt-4  mb-6 grid grid-cols-2 gap-3 md:hidden">
+              <div className="mt-4 mb-6 grid grid-cols-2 gap-3 md:hidden">
                 <a
                   href={href1}
                   className="inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition [background:var(--cta-primary,var(--primary))] [color:var(--cta-primary-foreground,var(--primary-foreground))] hover:[background:var(--cta-primary-hover,var(--primary))]"
@@ -282,7 +304,7 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
             </div>
 
             <div className="mx-auto hidden w-full max-w-md md:block md:max-w-xl">
-              <div className="relative mx-auto flex aspect-16/7 w-full items-center justify-center rounded-[28px] [background:var(--hero-overlay,rgba(0,0,0,0.22))] sm:aspect-video md:aspect-16/10">
+              <div className="relative mx-auto flex aspect-16/7 w-full items-center justify-center rounded-[28px] [background:var(--hero-frame-bg)] sm:aspect-video md:aspect-16/10">
                 {heroLogoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -293,7 +315,9 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
                 ) : (
                   <div className="text-center [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_80%,transparent)]">
                     <div className="text-sm">Logo principal</div>
-                    <div className="mt-2 text-xs [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_50%,transparent)]">(pendiente de asset)</div>
+                    <div className="mt-2 text-xs [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_50%,transparent)]">
+                      (pendiente de asset)
+                    </div>
                   </div>
                 )}
               </div>
@@ -302,7 +326,7 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
         </main>
 
         <footer className="mt-auto pb-3">
-          <div className="rounded-2xl px-4 py-3 [background:var(--hero-overlay,rgba(0,0,0,0.22))] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_85%,transparent)]">
+          <div className="rounded-2xl px-4 py-3 [background:var(--hero-footer-bg)] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_88%,transparent)]">
             <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 md:flex-row md:justify-center md:gap-6">
               <div className="grid w-full max-w-md grid-cols-2 gap-x-4 gap-y-2 md:hidden">
                 <div className="flex justify-center">

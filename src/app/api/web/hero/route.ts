@@ -6,6 +6,7 @@ import { HeroConfig } from "@/models/HeroConfig";
 import { HeroPreset } from "@/models/HeroPreset";
 import { getSessionFromToken } from "@/lib/auth/session";
 import type { HeroData } from "@/lib/web/hero/types";
+import type { HeroAppearanceVariant } from "@/lib/web/hero/types";
 
 const ALLOWED_STATUS = ["draft", "published"] as const;
 type HeroStatus = (typeof ALLOWED_STATUS)[number];
@@ -32,6 +33,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function getString(obj: Record<string, unknown>, key: string): string {
   const v = obj[key];
   return typeof v === "string" ? v : "";
+}
+
+function asHeroAppearanceVariant(
+  value: unknown
+): HeroAppearanceVariant | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "transparent") return "transparent";
+  if (normalized === "soft") return "soft";
+  if (normalized === "solid") return "solid";
+  return null;
 }
 
 function parseHeroData(value: unknown): HeroData | null {
@@ -69,6 +81,8 @@ function parseHeroData(value: unknown): HeroData | null {
     backgroundImageUrl: getString(value, "backgroundImageUrl").trim(),
     logoUrl: getString(value, "logoUrl").trim(),
     logoSvg: getString(value, "logoSvg"),
+    heroAppearanceVariant:
+      asHeroAppearanceVariant(value.heroAppearanceVariant) ?? "soft",
   };
 }
 
@@ -98,6 +112,7 @@ function fallbackHeroTemplate(): HeroData {
     backgroundImageUrl: "",
     logoUrl: "",
     logoSvg: "",
+    heroAppearanceVariant: "soft",
   };
 }
 
