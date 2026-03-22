@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties } from "react";
 import type { Brand, BrandMode, BrandPaletteKey } from "@/lib/brand/types";
 import { BRAND_PALETTES } from "@/lib/brand/presets";
 import {
@@ -186,6 +186,14 @@ function useBrandScoped(storageKey: string, channel: string, fallback: Brand, en
   );
 }
 
+function isSameBrand(a: Brand, b: Brand) {
+  return (
+    a.brandName === b.brandName &&
+    a.palette === b.palette &&
+    a.mode === b.mode
+  );
+}
+
 function pickTokenDiagnostics(tokens: BrandSemanticTokens) {
   return {
     background: tokens.background,
@@ -237,7 +245,9 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const current = useBrandScoped(storageKey, channel, fallback, !skipWebWithoutSlug);
   const [brand, setBrandLocal] = useState<Brand>(fallback);
 
-  useEffect(() => setBrandLocal(current), [current]);
+  useEffect(() => {
+    setBrandLocal((prev) => (isSameBrand(prev, current) ? prev : current));
+  }, [current]);
   useEffect(() => {
     if (!scopeUsesBusinessSlug || (businessSlug && businessSlug.trim())) return;
     const sync = () => setResolvedSlug(readActiveBusinessSlug());
@@ -354,12 +364,22 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
 
   useEffect(() => {
     if (skipWebWithoutSlug) return;
-    saveBrandThemeStateV1Shadow({
+    const savedState = saveBrandThemeStateV1Shadow({
       scope,
       businessSlug: v1BusinessSlug,
       state: brandThemeStateV1,
     });
-  }, [skipWebWithoutSlug, scope, v1BusinessSlug, brandThemeStateV1]);
+
+    if (!savedState || typeof window === "undefined" || scope === "system") return;
+
+    window.dispatchEvent(new Event(channel));
+
+    if (typeof BroadcastChannel !== "undefined") {
+      const bc = new BroadcastChannel(channel);
+      bc.postMessage({ type: "brand-theme:v1-shadow-update" });
+      bc.close();
+    }
+  }, [skipWebWithoutSlug, scope, v1BusinessSlug, brandThemeStateV1, channel]);
 
   useEffect(() => {
     if (!canUsePaletteEngine || process.env.NODE_ENV === "production") return;
@@ -539,7 +559,10 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     canUsePaletteEngine && paletteSeedSource !== "manual";
 
   return (
-    <section className="w-full max-w-none">
+    <section
+      className="w-full max-w-none"
+      style={(!showLabPreview ? previewVariables : undefined) as CSSProperties}
+    >
       <div className="rounded-2xl border border-border/55 bg-card/95 p-4 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.45)] sm:p-6">
         <header>
           <h1 className="text-xl font-semibold">{scope === "system" ? "Brand Lab (Taller / Capa 1)" : "Apariencia"}</h1>

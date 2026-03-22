@@ -8,13 +8,13 @@ export default function WebControlLocationPage() {
         description="Configura dirección, mapa y datos de contacto visibles en la web."
       />
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-4 sm:p-6">
-        <div className="text-sm font-semibold text-zinc-900">Ubicación</div>
-        <div className="mt-1 text-sm text-zinc-500">
+      <section className="rounded-xl border border-border p-4 sm:p-6 [background:var(--surface-2,var(--card))] [color:var(--card-foreground,var(--foreground))]">
+        <div className="text-sm font-semibold text-foreground">Ubicación</div>
+        <div className="mt-1 text-sm [color:var(--text-subtle,var(--muted-foreground))]">
           Dirección, teléfono, email, enlace a Google Maps, coordenadas (opcional).
         </div>
 
-        <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
+        <div className="mt-4 rounded-lg border border-border p-4 text-sm [background:var(--surface-3,var(--background))] [color:var(--text-subtle,var(--muted-foreground))]">
           Próximamente: formulario + preview.
         </div>
       </section>

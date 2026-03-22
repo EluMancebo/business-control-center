@@ -49,12 +49,12 @@ const HARMONY_LIGHTNESS_DELTA: Record<BrandHarmonyStrategy, number> = {
 };
 
 const HARMONY_SOFT_MIX: Record<BrandHarmonyStrategy, number> = {
-  monochromatic: 0.94,
-  analogous: 0.84,
-  complementary: 0.56,
-  "split-complementary": 0.62,
-  triadic: 0.6,
-  tetradic: 0.52,
+  monochromatic: 0.82,
+  analogous: 0.72,
+  complementary: 0.44,
+  "split-complementary": 0.5,
+  triadic: 0.48,
+  tetradic: 0.42,
 };
 
 const HARMONY_STRONG_SATURATION_DELTA: Record<BrandHarmonyStrategy, number> = {
@@ -76,9 +76,9 @@ const HARMONY_STRONG_LIGHTNESS_DELTA: Record<BrandHarmonyStrategy, number> = {
 };
 
 const ACCENT_STYLE_SOFT_MIX_DELTA: Record<BrandAccentStyle, number> = {
-  minimal: 0.14,
+  minimal: 0.2,
   balanced: 0,
-  expressive: -0.12,
+  expressive: -0.2,
 };
 
 const ACCENT_STYLE_STRONG_SATURATION_DELTA: Record<BrandAccentStyle, number> = {
@@ -363,12 +363,39 @@ function getContrastText(color: string, darkText: string, lightText: string): st
 }
 
 function deriveSurface(background: string, mode: ResolvedBrandThemeMode, step: 1 | 2): string {
-  const lightnessDelta = mode === "dark" ? step * 5 : -step * 6;
+  const lightnessDelta =
+    mode === "dark"
+      ? step === 1
+        ? 7
+        : 13
+      : step === 1
+        ? -5
+        : -10;
   return transformHexHsl(background, (hsl) => ({
     h: hsl.h,
-    s: hsl.s,
+    s: clamp(hsl.s * (mode === "dark" ? 0.7 : 0.55), 0, mode === "dark" ? 16 : 10),
     l: clamp(hsl.l + lightnessDelta, 6, 96),
   }));
+}
+
+function stabilizeBackgroundTone(
+  background: string,
+  primary: string,
+  mode: ResolvedBrandThemeMode
+): string {
+  const neutralized = transformHexHsl(background, (hsl) => ({
+    h: hsl.h,
+    s:
+      mode === "dark"
+        ? clamp(hsl.s * 0.25, 0, 14)
+        : clamp(hsl.s * 0.18, 0, 8),
+    l:
+      mode === "dark"
+        ? clamp(hsl.l * 0.35 + 6.5, 4, 14)
+        : clamp(hsl.l * 0.3 + 69, 94, 99),
+  }));
+
+  return mixHexColors(neutralized, primary, mode === "dark" ? 0.032 : 0.024);
 }
 
 export function buildBrandSemanticTokens(args: {
@@ -382,12 +409,66 @@ export function buildBrandSemanticTokens(args: {
 }): BrandSemanticTokens {
   const { core, oppositeCore, mode, harmony, accentStyle, typographyPreset, accentBase } = args;
 
-  const accentSeed = accentBase ?? deriveAccentBase(core.primary, harmony, accentStyle, mode);
+  const background = stabilizeBackgroundTone(core.background, core.primary, mode);
+  const foreground = ensureContrastAgainstBackground({
+    color: core.foreground,
+    background,
+    minRatio: mode === "dark" ? 9.5 : 9,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+  const primary = ensureContrastAgainstBackground({
+    color: core.primary,
+    background,
+    minRatio: mode === "dark" ? 3.4 : 3.2,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+  const primaryForeground = getContrastText(primary, "#0a0a0a", "#ffffff");
+
+  const cardBase = deriveSurface(background, mode, 1);
+  const mutedBase = deriveSurface(background, mode, 2);
+  const primaryTintForSurfaces = mixHexColors(
+    primary,
+    background,
+    mode === "dark" ? 0.8 : 0.86
+  );
+  const card = mixHexColors(cardBase, primaryTintForSurfaces, mode === "dark" ? 0.04 : 0.03);
+  const muted = mixHexColors(mutedBase, primaryTintForSurfaces, mode === "dark" ? 0.05 : 0.04);
+  const cardForeground = ensureContrastAgainstBackground({
+    color: core.cardForeground,
+    background: card,
+    minRatio: mode === "dark" ? 7.2 : 7,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+  const mutedForeground = ensureContrastAgainstBackground({
+    color: core.mutedForeground,
+    background: muted,
+    minRatio: mode === "dark" ? 5.2 : 4.9,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+  const borderBase = mixHexColors(
+    mode === "dark" ? muted : card,
+    background,
+    mode === "dark" ? 0.58 : 0.68
+  );
+  const border = ensureContrastAgainstBackground({
+    color: borderBase,
+    background,
+    minRatio: 1.16,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+  const ring = ensureContrastAgainstBackground({
+    color: core.ring,
+    background,
+    minRatio: mode === "dark" ? 2.8 : 2.6,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+
+  const accentSeed = accentBase ?? deriveAccentBase(primary, harmony, accentStyle, mode);
   const accentContrastTarget =
     (mode === "dark" ? 3 : 2.7) + ACCENT_STYLE_CONTRAST_DELTA[accentStyle];
   const accent = ensureContrastAgainstBackground({
     color: accentSeed,
-    background: core.background,
+    background,
     minRatio: accentContrastTarget,
     prefer: mode === "dark" ? "lighter" : "darker",
   });
@@ -417,16 +498,16 @@ export function buildBrandSemanticTokens(args: {
         }));
   const accentStrong = ensureContrastAgainstBackground({
     color: accentStrongRaw,
-    background: core.background,
+    background,
     minRatio:
       (mode === "dark" ? 3.6 : 3.2) +
       ACCENT_STYLE_CONTRAST_DELTA[accentStyle] * 0.5,
     prefer: mode === "dark" ? "lighter" : "darker",
   });
-  const accentSoftRaw = mixHexColors(accent, core.background, softMixRatio);
+  const accentSoftRaw = mixHexColors(accent, background, softMixRatio);
   const accentSoft = ensureContrastAgainstBackground({
     color: accentSoftRaw,
-    background: core.background,
+    background,
     minRatio: mode === "dark" ? 1.35 : 1.22,
     prefer: mode === "dark" ? "lighter" : "darker",
   });
@@ -435,59 +516,97 @@ export function buildBrandSemanticTokens(args: {
   const accentStrongForeground = getContrastText(accentStrong, "#0a0a0a", "#ffffff");
   const accentSoftForeground = getContrastText(accentSoft, "#0a0a0a", "#ffffff");
 
-  const secondary = core.muted;
-  const secondaryForeground = core.mutedForeground;
+  const surface2Base = deriveSurface(background, mode, 1);
+  const surface3Base = deriveSurface(background, mode, 2);
+  const harmonySurfaceTint: Record<BrandHarmonyStrategy, number> = {
+    monochromatic: 0.01,
+    analogous: 0.018,
+    complementary: 0.026,
+    "split-complementary": 0.024,
+    triadic: 0.028,
+    tetradic: 0.03,
+  };
+  const styleSurfaceTint: Record<BrandAccentStyle, number> = {
+    minimal: -0.004,
+    balanced: 0,
+    expressive: 0.01,
+  };
+  const surface2TintRatio = clamp(
+    (mode === "dark" ? 0.018 : 0.014) +
+      harmonySurfaceTint[harmony] +
+      styleSurfaceTint[accentStyle],
+    0.008,
+    0.06
+  );
+  const surface3TintRatio = clamp(
+    surface2TintRatio + (mode === "dark" ? 0.012 : 0.01),
+    0.015,
+    0.08
+  );
+  const surface2 = mixHexColors(surface2Base, primaryTintForSurfaces, surface2TintRatio);
+  const surface3 = mixHexColors(surface3Base, primaryTintForSurfaces, surface3TintRatio);
 
-  const ctaPrimary = core.primary;
-  const ctaPrimaryForeground = core.primaryForeground;
+  const secondary = muted;
+  const secondaryForeground = mutedForeground;
+
+  const ctaPrimary = accentStrong;
+  const ctaPrimaryForeground = getContrastText(ctaPrimary, "#0a0a0a", "#ffffff");
   const ctaPrimaryHover =
     mode === "dark"
-      ? transformHexHsl(ctaPrimary, (hsl) => ({ h: hsl.h, s: hsl.s, l: clamp(hsl.l + 8, 0, 100) }))
-      : transformHexHsl(ctaPrimary, (hsl) => ({ h: hsl.h, s: hsl.s, l: clamp(hsl.l - 8, 0, 100) }));
+      ? transformHexHsl(ctaPrimary, (hsl) => ({ h: hsl.h, s: clamp(hsl.s + 4, 0, 100), l: clamp(hsl.l + 9, 0, 100) }))
+      : transformHexHsl(ctaPrimary, (hsl) => ({ h: hsl.h, s: clamp(hsl.s + 2, 0, 100), l: clamp(hsl.l - 10, 0, 100) }));
 
-  const ctaSecondary = secondary;
-  const ctaSecondaryForeground = secondaryForeground;
+  const ctaSecondary = mixHexColors(
+    secondary,
+    accentSoft,
+    mode === "dark" ? 0.24 : 0.18
+  );
+  const ctaSecondaryForeground = getContrastText(ctaSecondary, "#0a0a0a", "#ffffff");
   const ctaSecondaryHover =
     mode === "dark"
-      ? transformHexHsl(ctaSecondary, (hsl) => ({ h: hsl.h, s: hsl.s, l: clamp(hsl.l + 6, 0, 100) }))
-      : transformHexHsl(ctaSecondary, (hsl) => ({ h: hsl.h, s: hsl.s, l: clamp(hsl.l - 6, 0, 100) }));
+      ? transformHexHsl(ctaSecondary, (hsl) => ({ h: hsl.h, s: clamp(hsl.s + 3, 0, 100), l: clamp(hsl.l + 8, 0, 100) }))
+      : transformHexHsl(ctaSecondary, (hsl) => ({ h: hsl.h, s: clamp(hsl.s + 2, 0, 100), l: clamp(hsl.l - 8, 0, 100) }));
 
   const link = ensureContrastAgainstBackground({
-    color: mode === "dark" ? accentStrong : accent,
-    background: core.background,
-    minRatio: mode === "dark" ? 4.2 : 4,
+    color: mode === "dark" ? accentStrong : transformHexHsl(accentStrong, (hsl) => ({
+      h: hsl.h,
+      s: clamp(hsl.s + 2, 0, 100),
+      l: clamp(hsl.l - 4, 0, 100),
+    })),
+    background,
+    minRatio: mode === "dark" ? 4.4 : 4.2,
     prefer: mode === "dark" ? "lighter" : "darker",
   });
   const linkHoverSeed =
     mode === "dark"
       ? transformHexHsl(link, (hsl) => ({
           h: hsl.h,
-          s: clamp(hsl.s + 4, 0, 100),
-          l: clamp(hsl.l + 10, 0, 100),
+          s: clamp(hsl.s + 7, 0, 100),
+          l: clamp(hsl.l + 13, 0, 100),
         }))
       : transformHexHsl(link, (hsl) => ({
           h: hsl.h,
-          s: clamp(hsl.s + 2, 0, 100),
-          l: clamp(hsl.l - 10, 0, 100),
+          s: clamp(hsl.s + 5, 0, 100),
+          l: clamp(hsl.l - 13, 0, 100),
         }));
   const linkHover = ensureContrastAgainstBackground({
     color: linkHoverSeed,
-    background: core.background,
+    background,
     minRatio: mode === "dark" ? 4.4 : 4.2,
     prefer: mode === "dark" ? "lighter" : "darker",
   });
 
   return {
-    background: core.background,
-    foreground: core.foreground,
-    card: core.card,
-    cardForeground: core.cardForeground,
-    muted: core.muted,
-    mutedForeground: core.mutedForeground,
-    primary: core.primary,
-    primaryForeground: core.primaryForeground,
-    border: core.border,
-    ring: core.ring,
+    background,
+    foreground,
+    card,
+    cardForeground,
+    muted,
+    mutedForeground,
+    primary,
+    primaryForeground,
+    border,
+    ring,
 
     secondary,
     secondaryForeground,
@@ -499,10 +618,10 @@ export function buildBrandSemanticTokens(args: {
     accentStrong,
     accentStrongForeground,
 
-    surface2: deriveSurface(core.background, mode, 1),
-    surface3: deriveSurface(core.background, mode, 2),
+    surface2,
+    surface3,
 
-    textSubtle: core.mutedForeground,
+    textSubtle: mutedForeground,
     textInverse: oppositeCore.foreground,
 
     ctaPrimary,
@@ -516,8 +635,8 @@ export function buildBrandSemanticTokens(args: {
     badgeBg: accentSoft,
     badgeFg: accentSoftForeground,
 
-    heroOverlay: mode === "dark" ? "rgba(0, 0, 0, 0.42)" : "rgba(0, 0, 0, 0.28)",
-    heroOverlayStrong: mode === "dark" ? "rgba(0, 0, 0, 0.64)" : "rgba(0, 0, 0, 0.5)",
+    heroOverlay: mode === "dark" ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.34)",
+    heroOverlayStrong: mode === "dark" ? "rgba(0, 0, 0, 0.72)" : "rgba(0, 0, 0, 0.58)",
 
     link,
     linkHover,

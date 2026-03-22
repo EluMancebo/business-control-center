@@ -389,15 +389,15 @@ export default function HeroControlPage() {
 
   return (
     <div className="h-full overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-border bg-background px-4 py-3 lg:hidden">
+      <div className="flex items-center gap-2 border-b border-border px-4 py-3 lg:hidden [background:var(--surface-2,var(--background))]">
         <button
           type="button"
           onClick={() => setTab("edit")}
           className={[
             "inline-flex h-9 flex-1 items-center justify-center rounded-lg border px-3 text-sm font-semibold",
             tab === "edit"
-              ? "border-border bg-muted"
-              : "border-border bg-background hover:bg-muted",
+              ? "border-border [background:var(--accent-soft,var(--muted))] [color:var(--accent-soft-foreground,var(--foreground))]"
+              : "border-border [background:var(--surface-2,var(--background))] hover:[background:var(--surface-3,var(--muted))]",
           ].join(" ")}
         >
           Editar
@@ -408,8 +408,8 @@ export default function HeroControlPage() {
           className={[
             "inline-flex h-9 flex-1 items-center justify-center rounded-lg border px-3 text-sm font-semibold",
             tab === "preview"
-              ? "border-border bg-muted"
-              : "border-border bg-background hover:bg-muted",
+              ? "border-border [background:var(--accent-soft,var(--muted))] [color:var(--accent-soft-foreground,var(--foreground))]"
+              : "border-border [background:var(--surface-2,var(--background))] hover:[background:var(--surface-3,var(--muted))]",
           ].join(" ")}
           disabled={!canPreview}
         >
@@ -421,13 +421,13 @@ export default function HeroControlPage() {
         <div className="grid h-full grid-cols-1 lg:grid-cols-[420px_1fr]">
           <aside
             className={[
-              "h-full overflow-hidden border-r border-border bg-background",
+              "h-full overflow-hidden border-r border-border [background:var(--surface-2,var(--background))]",
               "lg:block",
               tab === "edit" ? "block" : "hidden lg:block",
             ].join(" ")}
           >
             <div className="h-full overflow-y-auto bcc-scrollbar space-y-4 p-4 pb-24">
-              <section className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+              <section className="rounded-xl border border-border p-4 text-card-foreground [background:var(--surface-2,var(--card))]">
                 <div className="space-y-3">
                   <div>
                     <label htmlFor="business-slug" className="text-sm font-semibold">
@@ -439,7 +439,7 @@ export default function HeroControlPage() {
                       onChange={(e) => setSlug(e.target.value)}
                       placeholder="caballeros-barberia"
                       disabled={lockedSlug}
-                      className="mt-2 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-70"
+                      className="mt-2 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-70 [background:var(--surface-3,var(--muted))]"
                     />
                     <p className="mt-2 text-xs text-muted-foreground">
                       Negocio:{" "}
@@ -487,7 +487,7 @@ export default function HeroControlPage() {
                 </div>
               </section>
 
-              <section className="rounded-xl border border-border bg-card p-4">
+              <section className="rounded-xl border border-border p-4 [background:var(--surface-2,var(--card))]">
                 <label htmlFor="hero-logo-select" className="text-sm font-semibold text-foreground">
                   Logo (disponibles)
                 </label>
@@ -506,7 +506,7 @@ export default function HeroControlPage() {
                   ))}
                 </select>
 
-                <details className="mt-3 rounded-lg border border-border bg-background p-3">
+                <details className="mt-3 rounded-lg border border-border p-3 [background:var(--surface-3,var(--background))]">
                   <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">
                     Avanzado (URL manual)
                   </summary>
@@ -518,7 +518,7 @@ export default function HeroControlPage() {
                       id="hero-logo-manual"
                       value={form.logoUrl ?? ""}
                       onChange={(e) => update("logoUrl", e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring"
+                      className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring [background:var(--surface-3,var(--muted))]"
                       placeholder="/brand/caballeros-logo.png"
                       disabled={!business?.slug}
                     />
@@ -526,7 +526,7 @@ export default function HeroControlPage() {
                 </details>
               </section>
 
-              <section className="rounded-xl border border-border bg-card p-4">
+              <section className="rounded-xl border border-border p-4 [background:var(--surface-2,var(--card))]">
                 <label htmlFor="hero-bg-select" className="text-sm font-semibold text-foreground">
                   Fondo Hero (disponibles)
                 </label>
@@ -545,7 +545,7 @@ export default function HeroControlPage() {
                   ))}
                 </select>
 
-                <details className="mt-3 rounded-lg border border-border bg-background p-3">
+                <details className="mt-3 rounded-lg border border-border p-3 [background:var(--surface-3,var(--background))]">
                   <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">
                     Avanzado (URL manual)
                   </summary>
@@ -557,7 +557,7 @@ export default function HeroControlPage() {
                       id="hero-bg-manual"
                       value={form.backgroundImageUrl ?? ""}
                       onChange={(e) => update("backgroundImageUrl", e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring"
+                      className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring [background:var(--surface-3,var(--muted))]"
                       placeholder="/hero/mi-fondo.jpg"
                       disabled={!business?.slug}
                     />
@@ -565,7 +565,7 @@ export default function HeroControlPage() {
                 </details>
               </section>
 
-              <section className="rounded-xl border border-border bg-card p-4">
+              <section className="rounded-xl border border-border p-4 [background:var(--surface-2,var(--card))]">
                 <div className="text-sm font-semibold text-foreground">Textos</div>
 
                 <div className="mt-3 space-y-3">
@@ -577,7 +577,7 @@ export default function HeroControlPage() {
                       id="hero-badge"
                       value={form.badge}
                       onChange={(e) => update("badge", e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring [background:var(--surface-3,var(--muted))]"
                       disabled={!business?.slug}
                     />
                   </div>
@@ -590,7 +590,7 @@ export default function HeroControlPage() {
                       id="hero-title"
                       value={form.title}
                       onChange={(e) => update("title", e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring [background:var(--surface-3,var(--muted))]"
                       disabled={!business?.slug}
                     />
                   </div>
@@ -606,19 +606,19 @@ export default function HeroControlPage() {
                       id="hero-description"
                       value={form.description}
                       onChange={(e) => update("description", e.target.value)}
-                      className="bcc-scrollbar mt-1 min-h-24 w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      className="bcc-scrollbar mt-1 min-h-24 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring [background:var(--surface-3,var(--muted))]"
                       disabled={!business?.slug}
                     />
                   </div>
                 </div>
               </section>
 
-              <section className="rounded-xl border border-border bg-card p-4">
+              <section className="rounded-xl border border-border p-4 [background:var(--surface-2,var(--card))]">
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={reset}
-                    className="inline-flex h-10 flex-1 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-semibold hover:bg-muted"
+                    className="inline-flex h-10 flex-1 items-center justify-center rounded-lg border border-border px-4 text-sm font-semibold [background:var(--cta-secondary,var(--background))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]"
                     disabled={!business?.slug || saving}
                   >
                     Reset
@@ -627,7 +627,7 @@ export default function HeroControlPage() {
                   <button
                     type="button"
                     onClick={publish}
-                    className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                    className="inline-flex h-10 flex-1 items-center justify-center rounded-lg px-4 text-sm font-semibold [background:var(--cta-primary,var(--primary))] [color:var(--cta-primary-foreground,var(--primary-foreground))] hover:[background:var(--cta-primary-hover,var(--primary))]"
                     disabled={!business?.slug || saving}
                   >
                     Publish
@@ -643,7 +643,7 @@ export default function HeroControlPage() {
 
           <section
             className={[
-              "h-full overflow-hidden bg-background",
+              "h-full overflow-hidden [background:var(--surface-2,var(--background))]",
               "lg:block",
               tab === "preview" ? "block" : "hidden lg:block",
             ].join(" ")}
@@ -664,8 +664,8 @@ export default function HeroControlPage() {
                     className={[
                       "inline-flex h-9 items-center justify-center rounded-lg border px-3 text-xs font-semibold",
                       viewport === "desktop"
-                        ? "border-border bg-muted"
-                        : "border-border bg-background hover:bg-muted",
+                        ? "border-border [background:var(--accent-soft,var(--muted))] [color:var(--accent-soft-foreground,var(--foreground))]"
+                        : "border-border [background:var(--surface-2,var(--background))] hover:[background:var(--surface-3,var(--muted))]",
                     ].join(" ")}
                     disabled={!canPreview}
                   >
@@ -678,8 +678,8 @@ export default function HeroControlPage() {
                     className={[
                       "inline-flex h-9 items-center justify-center rounded-lg border px-3 text-xs font-semibold",
                       viewport === "mobile"
-                        ? "border-border bg-muted"
-                        : "border-border bg-background hover:bg-muted",
+                        ? "border-border [background:var(--accent-soft,var(--muted))] [color:var(--accent-soft-foreground,var(--foreground))]"
+                        : "border-border [background:var(--surface-2,var(--background))] hover:[background:var(--surface-3,var(--muted))]",
                     ].join(" ")}
                     disabled={!canPreview}
                   >
@@ -690,7 +690,7 @@ export default function HeroControlPage() {
                     href={business?.slug ? `/${encodeURIComponent(business.slug)}` : "/"}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-3 text-xs font-semibold hover:bg-muted"
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-border px-3 text-xs font-semibold [background:var(--cta-secondary,var(--background))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]"
                   >
                     Abrir ↗
                   </a>
@@ -699,7 +699,7 @@ export default function HeroControlPage() {
 
               <div className="flex-1 overflow-hidden p-4">
                 <div className={iframeWrapperClass + " h-full min-h-[70vh]"}>
-                  <div className="h-full overflow-hidden rounded-xl border border-border bg-background">
+                  <div className="h-full overflow-hidden rounded-xl border border-border [background:var(--surface-3,var(--background))]">
                     {canPreview ? (
                       <iframe
                         title="Preview web pública"

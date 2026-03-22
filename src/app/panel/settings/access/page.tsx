@@ -215,7 +215,7 @@ export default function AccessSettingsPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold">Contraseñas y accesos</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm [color:var(--text-subtle,var(--muted-foreground))]">
               Owner/Admin: gestiona usuarios del negocio. Owner: cambia también su email/login desde aquí.
             </p>
           </div>
@@ -223,20 +223,20 @@ export default function AccessSettingsPage() {
           <Link
             id="access-back"
             href="/panel/settings"
-            className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
+            className="inline-flex items-center justify-center rounded-lg border border-border px-3 py-2 text-sm font-medium [background:var(--cta-secondary,var(--background))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]"
           >
             ← Volver
           </Link>
         </div>
 
         {error ? (
-          <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4 text-sm text-foreground">
+          <div className="mt-4 rounded-xl border border-border p-4 text-sm text-foreground [background:color-mix(in_oklab,var(--surface-3,var(--muted))_72%,transparent)]">
             <span className="font-medium">Error:</span> {error}
           </div>
         ) : null}
 
         {notice ? (
-          <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4 text-sm text-foreground">
+          <div className="mt-4 rounded-xl border border-border p-4 text-sm text-foreground [background:color-mix(in_oklab,var(--surface-3,var(--muted))_72%,transparent)]">
             <span className="font-medium">OK:</span> {notice}
           </div>
         ) : null}
@@ -244,39 +244,45 @@ export default function AccessSettingsPage() {
 
       <section className="grid gap-6">
         {/* ✅ Mi cuenta (Owner) */}
-        <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="rounded-2xl border border-border p-6 [background:var(--surface-2,var(--card))]">
           <h2 className="text-base font-semibold">Mi cuenta (Owner)</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-sm [color:var(--text-subtle,var(--muted-foreground))]">
             Cambia tu nombre/email (login) y tu contraseña. Para la demo, puedes poner un email y clave genéricos.
           </p>
 
           <div className="mt-4 grid gap-6 md:grid-cols-2">
-            <div className="rounded-xl border border-border bg-background p-4">
+            <div className="rounded-xl border border-border p-4 [background:var(--surface-3,var(--background))]">
               <div className="text-sm font-semibold">Datos de acceso</div>
 
               <div className="mt-3 grid gap-3">
                 <div>
-                  <label htmlFor="me-name" className="text-xs font-medium text-muted-foreground">
+                  <label
+                    htmlFor="me-name"
+                    className="text-xs font-medium [color:var(--text-subtle,var(--muted-foreground))]"
+                  >
                     Nombre
                   </label>
                   <input
                     id="me-name"
                     value={meName}
                     onChange={(ev) => setMeName(ev.target.value)}
-                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm [background:var(--background)]"
                     placeholder="Nombre visible"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="me-email" className="text-xs font-medium text-muted-foreground">
+                  <label
+                    htmlFor="me-email"
+                    className="text-xs font-medium [color:var(--text-subtle,var(--muted-foreground))]"
+                  >
                     Email (login)
                   </label>
                   <input
                     id="me-email"
                     value={meEmail}
                     onChange={(ev) => setMeEmail(ev.target.value)}
-                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm [background:var(--background)]"
                     placeholder="demo@bcc.local"
                   />
                 </div>
@@ -284,23 +290,26 @@ export default function AccessSettingsPage() {
                 <button
                   type="button"
                   onClick={onUpdateAccount}
-                  className="mt-1 inline-flex items-center justify-center rounded-lg border border-border bg-background px-4 py-2 text-sm font-semibold hover:bg-muted"
+                  className="mt-1 inline-flex items-center justify-center rounded-lg border border-border px-4 py-2 text-sm font-semibold [background:var(--cta-secondary,var(--background))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]"
                 >
                   Guardar nombre/email
                 </button>
 
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs [color:var(--text-subtle,var(--muted-foreground))]">
                   Si cambias el email, el próximo login será con ese email.
                 </p>
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-background p-4">
+            <div className="rounded-xl border border-border p-4 [background:var(--surface-3,var(--background))]">
               <div className="text-sm font-semibold">Cambiar contraseña</div>
 
               <div className="mt-3 grid gap-3">
                 <div>
-                  <label htmlFor="me-current" className="text-xs font-medium text-muted-foreground">
+                  <label
+                    htmlFor="me-current"
+                    className="text-xs font-medium [color:var(--text-subtle,var(--muted-foreground))]"
+                  >
                     Contraseña actual
                   </label>
                   <input
@@ -308,13 +317,16 @@ export default function AccessSettingsPage() {
                     type="password"
                     value={meCurrentPassword}
                     onChange={(ev) => setMeCurrentPassword(ev.target.value)}
-                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm [background:var(--background)]"
                     placeholder="tu contraseña actual"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="me-new" className="text-xs font-medium text-muted-foreground">
+                  <label
+                    htmlFor="me-new"
+                    className="text-xs font-medium [color:var(--text-subtle,var(--muted-foreground))]"
+                  >
                     Nueva contraseña
                   </label>
                   <input
@@ -322,7 +334,7 @@ export default function AccessSettingsPage() {
                     type="password"
                     value={meNewPassword}
                     onChange={(ev) => setMeNewPassword(ev.target.value)}
-                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm [background:var(--background)]"
                     placeholder="mín. 8 caracteres"
                   />
                 </div>
@@ -330,7 +342,7 @@ export default function AccessSettingsPage() {
                 <button
                   type="button"
                   onClick={onChangeMyPassword}
-                  className="mt-1 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                  className="mt-1 inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold [background:var(--cta-primary,var(--primary))] [color:var(--cta-primary-foreground,var(--primary-foreground))] hover:[background:var(--cta-primary-hover,var(--primary))]"
                 >
                   Cambiar contraseña
                 </button>
@@ -340,12 +352,12 @@ export default function AccessSettingsPage() {
         </div>
 
         {/* Tabla usuarios */}
-        <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="rounded-2xl border border-border p-6 [background:var(--surface-2,var(--card))]">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-base font-semibold">Usuarios del negocio</h2>
             <button
               type="button"
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
+              className="rounded-lg border border-border px-3 py-2 text-sm font-medium [background:var(--cta-secondary,var(--background))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]"
               onClick={loadUsers}
               disabled={loading}
             >
@@ -355,7 +367,7 @@ export default function AccessSettingsPage() {
 
           <div className="mt-4 overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-muted-foreground">
+              <thead className="[background:color-mix(in_oklab,var(--surface-3,var(--muted))_72%,transparent)] [color:var(--text-subtle,var(--muted-foreground))]">
                 <tr>
                   <th className="px-3 py-2 text-left font-medium">Nombre</th>
                   <th className="px-3 py-2 text-left font-medium">Email</th>
@@ -366,13 +378,13 @@ export default function AccessSettingsPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td className="px-3 py-4 text-muted-foreground" colSpan={4}>
+                    <td className="px-3 py-4 [color:var(--text-subtle,var(--muted-foreground))]" colSpan={4}>
                       Cargando…
                     </td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td className="px-3 py-4 text-muted-foreground" colSpan={4}>
+                    <td className="px-3 py-4 [color:var(--text-subtle,var(--muted-foreground))]" colSpan={4}>
                       No hay usuarios.
                     </td>
                   </tr>
@@ -382,11 +394,11 @@ export default function AccessSettingsPage() {
                       <td className="px-3 py-2">{u.name}</td>
                       <td className="px-3 py-2">{u.email}</td>
                       <td className="px-3 py-2">
-                        <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-foreground">
+                        <span className="rounded-md px-2 py-0.5 text-xs [background:var(--accent-soft,var(--muted))] [color:var(--accent-soft-foreground,var(--foreground))]">
                           {u.role}
                         </span>
                       </td>
-                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{u.id}</td>
+                      <td className="px-3 py-2 font-mono text-xs [color:var(--text-subtle,var(--muted-foreground))]">{u.id}</td>
                     </tr>
                   ))
                 )}
@@ -397,48 +409,57 @@ export default function AccessSettingsPage() {
 
         {/* Crear / Reset */}
         <div className="grid gap-6 md:grid-cols-2">
-          <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="rounded-2xl border border-border p-6 [background:var(--surface-2,var(--card))]">
             <h2 className="text-base font-semibold">Crear usuario (Marketing / Staff)</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm [color:var(--text-subtle,var(--muted-foreground))]">
               El usuario queda ligado automáticamente al business del Owner (multi-tenant).
             </p>
 
             <div className="mt-4 grid gap-3">
               <div>
-                <label htmlFor="create-name" className="text-xs font-medium text-muted-foreground">
+                <label
+                  htmlFor="create-name"
+                  className="text-xs font-medium [color:var(--text-subtle,var(--muted-foreground))]"
+                >
                   Nombre
                 </label>
                 <input
                   id="create-name"
                   value={name}
                   onChange={(ev) => setName(ev.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm [background:var(--background)]"
                   placeholder="Ej: Ana Marketing"
                 />
               </div>
 
               <div>
-                <label htmlFor="create-email" className="text-xs font-medium text-muted-foreground">
+                <label
+                  htmlFor="create-email"
+                  className="text-xs font-medium [color:var(--text-subtle,var(--muted-foreground))]"
+                >
                   Email
                 </label>
                 <input
                   id="create-email"
                   value={email}
                   onChange={(ev) => setEmail(ev.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm [background:var(--background)]"
                   placeholder="marketing@negocio.com"
                 />
               </div>
 
               <div>
-                <label htmlFor="create-role" className="text-xs font-medium text-muted-foreground">
+                <label
+                  htmlFor="create-role"
+                  className="text-xs font-medium [color:var(--text-subtle,var(--muted-foreground))]"
+                >
                   Rol
                 </label>
                 <select
                   id="create-role"
                   value={role}
                   onChange={(ev) => setRole(ev.target.value as "marketing" | "staff")}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm [background:var(--background)]"
                 >
                   <option value="marketing">marketing</option>
                   <option value="staff">staff</option>
@@ -446,7 +467,10 @@ export default function AccessSettingsPage() {
               </div>
 
               <div>
-                <label htmlFor="create-password" className="text-xs font-medium text-muted-foreground">
+                <label
+                  htmlFor="create-password"
+                  className="text-xs font-medium [color:var(--text-subtle,var(--muted-foreground))]"
+                >
                   Contraseña
                 </label>
                 <input
@@ -454,7 +478,7 @@ export default function AccessSettingsPage() {
                   type="password"
                   value={password}
                   onChange={(ev) => setPassword(ev.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm [background:var(--background)]"
                   placeholder="mín. 8 caracteres"
                 />
               </div>
@@ -463,29 +487,32 @@ export default function AccessSettingsPage() {
                 type="button"
                 onClick={onCreateUser}
                 disabled={!canSubmit}
-                className="mt-2 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                className="mt-2 inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50 [background:var(--cta-primary,var(--primary))] [color:var(--cta-primary-foreground,var(--primary-foreground))] hover:[background:var(--cta-primary-hover,var(--primary))]"
               >
                 Crear usuario
               </button>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="rounded-2xl border border-border p-6 [background:var(--surface-2,var(--card))]">
             <h2 className="text-base font-semibold">Resetear contraseña (Owner/Admin)</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm [color:var(--text-subtle,var(--muted-foreground))]">
               Selecciona un usuario del negocio y asigna una nueva contraseña.
             </p>
 
             <div className="mt-4 grid gap-3">
               <div>
-                <label htmlFor="reset-user" className="text-xs font-medium text-muted-foreground">
+                <label
+                  htmlFor="reset-user"
+                  className="text-xs font-medium [color:var(--text-subtle,var(--muted-foreground))]"
+                >
                   Usuario
                 </label>
                 <select
                   id="reset-user"
                   value={resetId}
                   onChange={(ev) => setResetId(ev.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm [background:var(--background)]"
                 >
                   <option value="">— Selecciona —</option>
                   {users.map((u) => (
@@ -497,7 +524,10 @@ export default function AccessSettingsPage() {
               </div>
 
               <div>
-                <label htmlFor="reset-password" className="text-xs font-medium text-muted-foreground">
+                <label
+                  htmlFor="reset-password"
+                  className="text-xs font-medium [color:var(--text-subtle,var(--muted-foreground))]"
+                >
                   Nueva contraseña
                 </label>
                 <input
@@ -505,7 +535,7 @@ export default function AccessSettingsPage() {
                   type="password"
                   value={resetPassword}
                   onChange={(ev) => setResetPassword(ev.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm [background:var(--background)]"
                   placeholder="mín. 8 caracteres"
                 />
               </div>
@@ -513,7 +543,7 @@ export default function AccessSettingsPage() {
               <button
                 type="button"
                 onClick={onResetPassword}
-                className="mt-2 inline-flex items-center justify-center rounded-lg border border-border bg-background px-4 py-2 text-sm font-semibold hover:bg-muted"
+                className="mt-2 inline-flex items-center justify-center rounded-lg border border-border px-4 py-2 text-sm font-semibold [background:var(--cta-secondary,var(--background))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]"
               >
                 Resetear contraseña
               </button>

@@ -17,11 +17,11 @@ export default function WebControlServicesPage() {
 
       <PanelCard>
         <div className="text-sm font-semibold text-foreground">Servicios</div>
-        <div className="mt-1 text-sm text-muted-foreground">
+        <div className="mt-1 text-sm [color:var(--text-subtle,var(--muted-foreground))]">
           CRUD de servicios: nombre, descripción, precio “desde”, duración (si citas), visible, orden.
         </div>
 
-        <div className="mt-4 rounded-lg border border-border bg-background p-4 text-sm text-muted-foreground">
+        <div className="mt-4 rounded-lg border border-border p-4 text-sm [background:var(--surface-3,var(--background))] [color:var(--text-subtle,var(--muted-foreground))]">
           Próximamente: tabla + filtros + ordenación + editor seguro.
         </div>
       </PanelCard>

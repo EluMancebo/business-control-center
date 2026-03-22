@@ -72,7 +72,7 @@ function Pill({
     <div
       className={[
         "inline-flex items-center rounded-full px-3 py-1 text-xs",
-        "bg-black/20 text-white/90",
+        "[background:var(--hero-overlay,rgba(0,0,0,0.28))] [color:var(--text-inverse,#ffffff)]",
         className,
       ].join(" ")}
     >
@@ -83,7 +83,7 @@ function Pill({
 
 function FooterInlineItem({ icon, text }: { icon: string; text: string }) {
   return (
-    <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs text-white/85">
+    <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_85%,transparent)]">
       <span aria-hidden="true">{icon}</span>
       <span>{text}</span>
     </span>
@@ -117,10 +117,10 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={bg} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 [background:var(--hero-overlay-strong,rgba(0,0,0,0.6))]" />
         </>
       ) : (
-        <div className="absolute inset-0 bg-linear-to-b from-black via-black/90 to-black" />
+        <div className="absolute inset-0 [background:linear-gradient(to_bottom,var(--hero-overlay-strong,rgba(0,0,0,0.64)),var(--hero-overlay,rgba(0,0,0,0.42)),var(--hero-overlay-strong,rgba(0,0,0,0.64)))]" />
       )}
 
       <div className="relative z-10 mx-auto flex min-h-svh w-full max-w-6xl flex-col px-6">
@@ -135,7 +135,7 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
               />
             ) : null}
 
-            <div className="hidden text-sm font-semibold text-white/90 sm:block">
+            <div className="hidden text-sm font-semibold [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_90%,transparent)] sm:block">
               {business?.name ?? "Business Control Center"}
             </div>
           </div>
@@ -143,19 +143,19 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
           <nav className="hidden items-center gap-3 md:flex">
             <a
               href="#"
-              className="rounded-full bg-black/20 px-4 py-2 text-xs font-semibold text-white/85 hover:bg-black/30"
+              className="rounded-full px-4 py-2 text-xs font-semibold transition [background:var(--hero-overlay,rgba(0,0,0,0.28))] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_86%,transparent)] hover:[background:var(--hero-overlay-strong,rgba(0,0,0,0.5))]"
             >
               Home
             </a>
             <a
               href="#"
-              className="rounded-full bg-black/20 px-4 py-2 text-xs font-semibold text-white/85 hover:bg-black/30"
+              className="rounded-full px-4 py-2 text-xs font-semibold transition [background:var(--hero-overlay,rgba(0,0,0,0.28))] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_86%,transparent)] hover:[background:var(--hero-overlay-strong,rgba(0,0,0,0.5))]"
             >
               Services
             </a>
             <a
               href="#"
-              className="rounded-full bg-black/20 px-4 py-2 text-xs font-semibold text-white/85 hover:bg-black/30"
+              className="rounded-full px-4 py-2 text-xs font-semibold transition [background:var(--hero-overlay,rgba(0,0,0,0.28))] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_86%,transparent)] hover:[background:var(--hero-overlay-strong,rgba(0,0,0,0.5))]"
             >
               Contact
             </a>
@@ -166,40 +166,40 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
 
             <label
               htmlFor="bcc-mobile-menu"
-              className="cursor-pointer rounded-xl bg-black/20 p-2 hover:bg-black/30"
+              className="cursor-pointer rounded-xl p-2 transition [background:var(--hero-overlay,rgba(0,0,0,0.28))] hover:[background:var(--hero-overlay-strong,rgba(0,0,0,0.5))]"
               aria-label="Abrir menú"
             >
-              <span className="block h-0.5 w-6 bg-white/90" />
-              <span className="mt-1 block h-0.5 w-6 bg-white/90" />
-              <span className="mt-1 block h-0.5 w-6 bg-white/90" />
+              <span className="block h-0.5 w-6 [background:var(--text-inverse,#ffffff)]" />
+              <span className="mt-1 block h-0.5 w-6 [background:var(--text-inverse,#ffffff)]" />
+              <span className="mt-1 block h-0.5 w-6 [background:var(--text-inverse,#ffffff)]" />
             </label>
 
             <label
               htmlFor="bcc-mobile-menu"
-              className="pointer-events-none fixed inset-0 z-40 bg-black/45 opacity-0 transition-opacity duration-500 peer-checked:pointer-events-auto peer-checked:opacity-100"
+              className="pointer-events-none fixed inset-0 z-40 opacity-0 transition-opacity duration-500 peer-checked:pointer-events-auto peer-checked:opacity-100 [background:var(--hero-overlay-strong,rgba(0,0,0,0.55))]"
               aria-label="Cerrar menú"
             />
 
-            <div className="fixed inset-y-0 right-0 z-50 w-64 translate-x-full bg-black/80 p-4 text-white/90 shadow-2xl transition-transform duration-700 ease-out peer-checked:translate-x-0">
+            <div className="fixed inset-y-0 right-0 z-50 w-64 translate-x-full p-4 shadow-2xl transition-transform duration-700 ease-out peer-checked:translate-x-0 [background:color-mix(in_oklab,var(--hero-overlay-strong,rgba(0,0,0,0.7))_88%,black)] [color:var(--text-inverse,#ffffff)]">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold">{business?.name ?? "Menú"}</div>
 
                 <label
                   htmlFor="bcc-mobile-menu"
-                  className="cursor-pointer rounded-lg bg-white/10 px-3 py-1 text-xs hover:bg-white/15"
+                  className="cursor-pointer rounded-lg px-3 py-1 text-xs transition [background:var(--hero-overlay,rgba(0,0,0,0.28))] hover:[background:var(--hero-overlay-strong,rgba(0,0,0,0.5))]"
                 >
                   Cerrar
                 </label>
               </div>
 
               <div className="mt-4 space-y-2">
-                <a href="#" className="block rounded-xl px-3 py-2 hover:bg-white/10">
+                <a href="#" className="block rounded-xl px-3 py-2 transition hover:[background:var(--hero-overlay,rgba(0,0,0,0.28))]">
                   Home
                 </a>
-                <a href="#" className="block rounded-xl px-3 py-2 hover:bg-white/10">
+                <a href="#" className="block rounded-xl px-3 py-2 transition hover:[background:var(--hero-overlay,rgba(0,0,0,0.28))]">
                   Services
                 </a>
-                <a href="#" className="block rounded-xl px-3 py-2 hover:bg-white/10">
+                <a href="#" className="block rounded-xl px-3 py-2 transition hover:[background:var(--hero-overlay,rgba(0,0,0,0.28))]">
                   Contact
                 </a>
               </div>
@@ -212,7 +212,7 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
             <div className="max-w-xl">
               <Pill className="mb-3">{badge}</Pill>
 
-              <h1 className="text-balance text-3xl font-extrabold leading-[1.02] tracking-tight text-white sm:text-5xl md:text-6xl">
+              <h1 className="text-balance text-3xl font-extrabold leading-[1.02] tracking-tight [color:var(--text-inverse,#ffffff)] sm:text-5xl md:text-6xl">
                 <span>{titleLead || titleRaw}</span>
                 {titleAccent ? (
                   <>
@@ -223,7 +223,7 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
               </h1>
 
               <div className="mt-1.6 md:hidden">
-                <div className="relative mx-auto flex aspect-16/7 w-full max-w-sm items-center justify-center rounded-3xl bg-black/15">
+                <div className="relative mx-auto flex aspect-16/7 w-full max-w-sm items-center justify-center rounded-3xl [background:var(--hero-overlay,rgba(0,0,0,0.22))]">
                   {heroLogoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -232,49 +232,49 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
                       className="max-h-32 w-auto opacity-95"
                     />
                   ) : (
-                    <div className="text-center text-white/80">
+                    <div className="text-center [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_80%,transparent)]">
                       <div className="text-sm">Logo principal</div>
-                      <div className="mt-2 text-xs text-white/50">(pendiente de asset)</div>
+                      <div className="mt-2 text-xs [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_50%,transparent)]">(pendiente de asset)</div>
                     </div>
                   )}
                 </div>
               </div>
 
-              <p className="mt-0.6 max-w-lg rounded-xl bg-black/15 px-3 py-2 text-[13px] leading-snug text-white/85 md:hidden">
+              <p className="mt-0.6 max-w-lg rounded-xl px-3 py-2 text-[13px] leading-snug md:hidden [background:var(--hero-overlay,rgba(0,0,0,0.22))] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_86%,transparent)]">
                 {subtitle}
               </p>
 
               <div className="mt-4  mb-6 grid grid-cols-2 gap-3 md:hidden">
                 <a
                   href={href1}
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-semibold text-black hover:bg-white/90"
+                  className="inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition [background:var(--cta-primary,var(--primary))] [color:var(--cta-primary-foreground,var(--primary-foreground))] hover:[background:var(--cta-primary-hover,var(--primary))]"
                 >
                   {cta1}
                 </a>
 
                 <a
                   href={href2}
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
+                  className="inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition [background:var(--cta-secondary,var(--secondary,var(--background)))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]"
                 >
                   {cta2}
                 </a>
               </div>
 
-              <p className="mt-3 hidden max-w-lg text-sm text-white/80 sm:text-base md:block md:text-lg">
+              <p className="mt-3 hidden max-w-lg text-sm sm:text-base md:block md:text-lg [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_82%,transparent)]">
                 {subtitle}
               </p>
 
               <div className="mt-5 hidden flex-wrap items-center gap-3 md:flex">
                 <a
                   href={href1}
-                  className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-black hover:bg-white/90"
+                  className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition [background:var(--cta-primary,var(--primary))] [color:var(--cta-primary-foreground,var(--primary-foreground))] hover:[background:var(--cta-primary-hover,var(--primary))]"
                 >
                   {cta1}
                 </a>
 
                 <a
                   href={href2}
-                  className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                  className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition [background:var(--cta-secondary,var(--secondary,var(--background)))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]"
                 >
                   {cta2}
                 </a>
@@ -282,7 +282,7 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
             </div>
 
             <div className="mx-auto hidden w-full max-w-md md:block md:max-w-xl">
-              <div className="relative mx-auto flex aspect-16/7 w-full items-center justify-center rounded-[28px] bg-black/15 sm:aspect-video md:aspect-16/10">
+              <div className="relative mx-auto flex aspect-16/7 w-full items-center justify-center rounded-[28px] [background:var(--hero-overlay,rgba(0,0,0,0.22))] sm:aspect-video md:aspect-16/10">
                 {heroLogoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -291,9 +291,9 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
                     className="max-h-44 w-auto opacity-95 md:max-h-65"
                   />
                 ) : (
-                  <div className="text-center text-white/80">
+                  <div className="text-center [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_80%,transparent)]">
                     <div className="text-sm">Logo principal</div>
-                    <div className="mt-2 text-xs text-white/50">(pendiente de asset)</div>
+                    <div className="mt-2 text-xs [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_50%,transparent)]">(pendiente de asset)</div>
                   </div>
                 )}
               </div>
@@ -302,7 +302,7 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
         </main>
 
         <footer className="mt-auto pb-3">
-          <div className="rounded-2xl bg-black/15 px-4 py-3 text-white/85">
+          <div className="rounded-2xl px-4 py-3 [background:var(--hero-overlay,rgba(0,0,0,0.22))] [color:color-mix(in_oklab,var(--text-inverse,#ffffff)_85%,transparent)]">
             <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 md:flex-row md:justify-center md:gap-6">
               <div className="grid w-full max-w-md grid-cols-2 gap-x-4 gap-y-2 md:hidden">
                 <div className="flex justify-center">
@@ -330,7 +330,7 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
             <div className="mt-3 flex items-center justify-between gap-3 text-[11px] md:text-xs">
               <div className="min-w-0 truncate whitespace-nowrap">
                 © 2026{" "}
-                <span className="font-semibold text-white/95">
+                <span className="font-semibold [color:var(--text-inverse,#ffffff)]">
                   {business?.name ?? "Caballeros Barbería"}
                 </span>
               </div>

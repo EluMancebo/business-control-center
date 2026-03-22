@@ -17,16 +17,16 @@ export default function WebControlIndexPage() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-6">
+      <section className="rounded-xl border border-border p-4 text-card-foreground sm:p-6 [background:var(--surface-2,var(--card))] [color:var(--card-foreground,var(--foreground))]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-lg font-semibold tracking-tight">Web Control</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm [color:var(--text-subtle,var(--muted-foreground))]">
               Elige una sección para editar. (Studio abre editor+preview a pantalla completa)
             </p>
           </div>
 
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs [color:var(--text-subtle,var(--muted-foreground))]">
             Ruta: <span className="font-mono">{pathname}</span>
           </div>
         </div>
@@ -37,13 +37,13 @@ export default function WebControlIndexPage() {
           <Link
             key={it.href}
             href={it.href}
-            className="rounded-xl border border-border bg-card p-4 text-card-foreground hover:bg-muted transition-colors"
+            className="rounded-xl border border-border p-4 text-card-foreground transition-colors [background:var(--surface-2,var(--card))] [color:var(--card-foreground,var(--foreground))] hover:[background:var(--surface-3,var(--muted))]"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="text-sm font-semibold">{it.label}</div>
-              <div className="text-xs text-muted-foreground">Abrir →</div>
+              <div className="text-xs [color:var(--link,var(--muted-foreground))]">Abrir →</div>
             </div>
-            <div className="mt-2 text-xs text-muted-foreground">{it.desc}</div>
+            <div className="mt-2 text-xs [color:var(--text-subtle,var(--muted-foreground))]">{it.desc}</div>
           </Link>
         ))}
       </section>

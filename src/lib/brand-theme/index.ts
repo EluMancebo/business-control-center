@@ -66,3 +66,5 @@ export {
   buildPaletteProposalFromCandidates,
   extractPaletteFromImageUrl,
 } from "./extraction";
+
+export * from "./authorized";

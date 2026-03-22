@@ -431,7 +431,7 @@ export default function Sidebar({
                   className={[
                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                     active
-                      ? "font-medium ring-1 ring-border shadow-sm [background:var(--accent-soft,var(--surface-3,var(--background)))] [color:var(--accent-soft-foreground,var(--foreground))]"
+                      ? "font-medium ring-1 ring-border shadow-sm [background:color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--background)))_52%,var(--surface-3,var(--background)))] [color:var(--foreground,var(--foreground))]"
                       : "[color:var(--text-subtle,var(--muted-foreground))] hover:[background:var(--surface-3,var(--muted))] hover:[color:var(--foreground,var(--foreground))]",
                   ].join(" ")}
                 >
@@ -513,7 +513,7 @@ export default function Sidebar({
                             className={[
                               "mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                               active
-                                ? "font-medium ring-1 ring-border shadow-sm [background:var(--accent-soft,var(--surface-3,var(--background)))] [color:var(--accent-soft-foreground,var(--foreground))]"
+                                ? "font-medium ring-1 ring-border shadow-sm [background:color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--background)))_52%,var(--surface-3,var(--background)))] [color:var(--foreground,var(--foreground))]"
                                 : "[color:var(--text-subtle,var(--muted-foreground))] hover:[background:var(--surface-3,var(--muted))] hover:[color:var(--foreground,var(--foreground))]",
                             ].join(" ")}
                           >

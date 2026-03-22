@@ -15,7 +15,7 @@ export default function PanelSettingsPage() {
       <section className="grid gap-4 md:grid-cols-2">
         <PanelCard>
           <h2 className="text-base font-semibold">Apariencia (paleta del panel)</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-sm [color:var(--text-subtle,var(--muted-foreground))]">
             Configura la apariencia global del panel con opciones seguras.
           </p>
           <div className="mt-4">
@@ -31,7 +31,7 @@ export default function PanelSettingsPage() {
 
         <PanelCard>
           <h2 className="text-base font-semibold">Contraseñas y accesos</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-sm [color:var(--text-subtle,var(--muted-foreground))]">
             Gestión de claves por área (Marketing, Web, etc). Solo propietario (v0 demo).
           </p>
           <div className="mt-4">
