@@ -1,64 +1,107 @@
 import type { HeroAppearanceVariant } from "@/lib/web/hero/types";
 
-type HeroAppearanceConfig = {
-  variant: HeroAppearanceVariant;
-  overlayImageBackground: string;
-  overlayImageOpacity: string;
-  overlayGradientBackground: string;
+type HeroChromeSurfaceLevel = "none" | "subtle" | "present";
+
+type HeroOverlayRecipe = {
+  tintBackground: string;
+  tintOpacity: string;
+  noImageBackground: string;
+};
+
+type HeroChromeSurfaceRecipe = {
   chromeBackground: string;
   chromeHoverBackground: string;
   frameBackground: string;
   footerBackground: string;
 };
 
-const HERO_APPEARANCE_CONFIG: Record<HeroAppearanceVariant, HeroAppearanceConfig> = {
+type HeroAppearanceRecipe = {
+  variant: HeroAppearanceVariant;
+  overlay: HeroOverlayRecipe;
+  chromeSurfaceLevel: HeroChromeSurfaceLevel;
+};
+
+type HeroAppearanceConfig = {
+  variant: HeroAppearanceVariant;
+  overlayTintBackground: string;
+  overlayTintOpacity: string;
+  overlayNoImageBackground: string;
+  chromeBackground: string;
+  chromeHoverBackground: string;
+  frameBackground: string;
+  footerBackground: string;
+  chromeSurfaceLevel: HeroChromeSurfaceLevel;
+};
+
+const HERO_CHROME_SURFACE_CONFIG: Record<
+  HeroChromeSurfaceLevel,
+  HeroChromeSurfaceRecipe
+> = {
+  none: {
+    chromeBackground:
+      "color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 8%,transparent)",
+    chromeHoverBackground:
+      "color-mix(in oklab,var(--accent,var(--primary)) 14%,transparent)",
+    frameBackground:
+      "color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 4%,transparent)",
+    footerBackground:
+      "color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 6%,transparent)",
+  },
+  subtle: {
+    chromeBackground:
+      "color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 14%,transparent)",
+    chromeHoverBackground:
+      "color-mix(in oklab,var(--accent,var(--primary)) 22%,transparent)",
+    frameBackground:
+      "color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 10%,transparent)",
+    footerBackground:
+      "color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 12%,transparent)",
+  },
+  present: {
+    chromeBackground:
+      "color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 44%,black)",
+    chromeHoverBackground:
+      "color-mix(in oklab,var(--accent,var(--primary)) 56%,black)",
+    frameBackground:
+      "color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 40%,black)",
+    footerBackground:
+      "color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 42%,black)",
+  },
+};
+
+const HERO_APPEARANCE_RECIPES: Record<HeroAppearanceVariant, HeroAppearanceRecipe> = {
   transparent: {
     variant: "transparent",
-    overlayImageBackground:
-      "color-mix(in_oklab,var(--accent,var(--primary))_12%,black)",
-    overlayImageOpacity: "0.36",
-    overlayGradientBackground:
-      "linear-gradient(to_bottom,color-mix(in_oklab,var(--accent,var(--primary))_42%,transparent),color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_48%,transparent),color-mix(in_oklab,var(--accent,var(--primary))_40%,transparent))",
-    chromeBackground:
-      "color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_18%,transparent)",
-    chromeHoverBackground:
-      "color-mix(in_oklab,var(--accent,var(--primary))_28%,transparent)",
-    frameBackground:
-      "color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_16%,transparent)",
-    footerBackground:
-      "color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_16%,transparent)",
+    overlay: {
+      tintBackground:
+        "linear-gradient(140deg,color-mix(in oklab,var(--accent,var(--primary)) 42%,transparent),color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 34%,transparent) 54%,color-mix(in oklab,var(--accent,var(--primary)) 38%,transparent))",
+      tintOpacity: "0.14",
+      noImageBackground:
+        "linear-gradient(to bottom,color-mix(in oklab,var(--accent,var(--primary)) 52%,transparent),color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 46%,transparent),color-mix(in oklab,var(--accent,var(--primary)) 50%,transparent))",
+    },
+    chromeSurfaceLevel: "none",
   },
   soft: {
     variant: "soft",
-    overlayImageBackground:
-      "color-mix(in_oklab,var(--accent,var(--primary))_22%,black)",
-    overlayImageOpacity: "0.52",
-    overlayGradientBackground:
-      "linear-gradient(to_bottom,color-mix(in_oklab,var(--accent,var(--primary))_28%,black),color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_34%,black),color-mix(in_oklab,var(--accent,var(--primary))_30%,black))",
-    chromeBackground:
-      "color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_30%,black)",
-    chromeHoverBackground:
-      "color-mix(in_oklab,var(--accent,var(--primary))_38%,black)",
-    frameBackground:
-      "color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_26%,black)",
-    footerBackground:
-      "color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_28%,black)",
+    overlay: {
+      tintBackground:
+        "linear-gradient(140deg,color-mix(in oklab,var(--accent,var(--primary)) 68%,transparent),color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 60%,transparent) 54%,color-mix(in oklab,var(--accent,var(--primary)) 66%,transparent))",
+      tintOpacity: "0.34",
+      noImageBackground:
+        "linear-gradient(to bottom,color-mix(in oklab,var(--accent,var(--primary)) 60%,black),color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 54%,black),color-mix(in oklab,var(--accent,var(--primary)) 62%,black))",
+    },
+    chromeSurfaceLevel: "subtle",
   },
   solid: {
     variant: "solid",
-    overlayImageBackground:
-      "color-mix(in_oklab,var(--accent,var(--primary))_42%,black)",
-    overlayImageOpacity: "0.82",
-    overlayGradientBackground:
-      "linear-gradient(to_bottom,color-mix(in_oklab,var(--accent,var(--primary))_48%,black),color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_58%,black),color-mix(in_oklab,var(--accent,var(--primary))_52%,black))",
-    chromeBackground:
-      "color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_56%,black)",
-    chromeHoverBackground:
-      "color-mix(in_oklab,var(--accent,var(--primary))_66%,black)",
-    frameBackground:
-      "color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_50%,black)",
-    footerBackground:
-      "color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_52%,black)",
+    overlay: {
+      tintBackground:
+        "linear-gradient(140deg,color-mix(in oklab,var(--accent,var(--primary)) 72%,black),color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 64%,black) 54%,color-mix(in oklab,var(--accent,var(--primary)) 70%,black))",
+      tintOpacity: "0.58",
+      noImageBackground:
+        "linear-gradient(to bottom,color-mix(in oklab,var(--accent,var(--primary)) 74%,black),color-mix(in oklab,var(--accent-soft,var(--surface-3,var(--muted))) 68%,black),color-mix(in oklab,var(--accent,var(--primary)) 76%,black))",
+    },
+    chromeSurfaceLevel: "present",
   },
 };
 
@@ -98,5 +141,18 @@ function readAppearanceVariantFromData(input: unknown): HeroAppearanceVariant | 
 export function resolveHeroAppearance(input: unknown): HeroAppearanceConfig {
   const variant =
     readAppearanceVariantFromData(input) ?? DEFAULT_HERO_APPEARANCE_VARIANT;
-  return HERO_APPEARANCE_CONFIG[variant];
+  const recipe = HERO_APPEARANCE_RECIPES[variant];
+  const chrome = HERO_CHROME_SURFACE_CONFIG[recipe.chromeSurfaceLevel];
+
+  return {
+    variant: recipe.variant,
+    overlayTintBackground: recipe.overlay.tintBackground,
+    overlayTintOpacity: recipe.overlay.tintOpacity,
+    overlayNoImageBackground: recipe.overlay.noImageBackground,
+    chromeBackground: chrome.chromeBackground,
+    chromeHoverBackground: chrome.chromeHoverBackground,
+    frameBackground: chrome.frameBackground,
+    footerBackground: chrome.footerBackground,
+    chromeSurfaceLevel: recipe.chromeSurfaceLevel,
+  };
 }

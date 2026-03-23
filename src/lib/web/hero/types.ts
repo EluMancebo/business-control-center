@@ -18,6 +18,7 @@ export type HeroData = {
   logoSvg?: string;
 
   backgroundImageUrl?: string;
+  // System/preset-owned value. Client exposure in Capa 2 must be gated by policy.
   heroAppearanceVariant?: HeroAppearanceVariant;
 };
 
