@@ -149,6 +149,8 @@ export default function BrandThemePreviewSurface({
   resolvedTokens,
 }: BrandThemePreviewSurfaceProps) {
   const [previewMode, setPreviewMode] = useState<PreviewMode>("hero");
+  const showDiagnosticLayer = previewEnabled;
+  const showDiagnosticCompositionPanel = showCompositionPanel && showDiagnosticLayer;
   const previewSemanticVars = {
     ...(previewVariables as Record<string, string>),
     ...PREVIEW_SURFACE_SEMANTIC_VARS,
@@ -183,13 +185,18 @@ export default function BrandThemePreviewSurface({
         </div>
 
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <StatusChip text={previewEnabled ? "Preview ON" : "Preview OFF"} />
+          <StatusChip text={showDiagnosticLayer ? "Diagnóstico ON" : "Diagnóstico OFF"} />
           <StatusChip text={`Harmony: ${harmony}`} />
           {modeLabel ? <StatusChip text={`Mode: ${modeLabel}`} /> : null}
           <StatusChip text={`Style: ${accentStyle}`} />
           <StatusChip text={`Type: ${typographyPreset}`} />
           {paletteLabel ? <StatusChip text={`Preset: ${paletteLabel}`} /> : null}
         </div>
+        {!showDiagnosticLayer ? (
+          <p className="text-[11px] text-muted-foreground">
+            Vista operativa: muestra salida final del sistema. Activa diagnóstico para capas auxiliares.
+          </p>
+        ) : null}
 
         <div className="overflow-x-auto">
           <div className="inline-flex min-w-full gap-1 rounded-lg border p-1 [border-color:var(--preview-border)] [background:var(--preview-panel)]">
@@ -225,24 +232,26 @@ export default function BrandThemePreviewSurface({
         </p>
       </div>
 
-      <section className="mb-3 rounded-lg border p-3 [border-color:var(--preview-border)] [background:var(--preview-popover)]">
-        <p className="text-[11px] font-semibold text-foreground">Escala de superficies (diagnóstico)</p>
-        <div className="mt-2 grid gap-2 sm:grid-cols-5">
-          {PREVIEW_SURFACE_SCALE.map((item) => (
-            <div
-              key={item.label}
-              className="rounded-md border p-1.5 [border-color:var(--preview-border)] [background:var(--preview-surface)]"
-            >
-              <span
-                aria-hidden
-                className="mb-1 inline-flex h-5 w-full rounded border [border-color:var(--preview-border)]"
-                style={{ background: item.token }}
-              />
-              <p className="text-[10px] font-semibold leading-tight text-foreground">{item.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {showDiagnosticLayer ? (
+        <section className="mb-3 rounded-lg border p-3 [border-color:var(--preview-border)] [background:var(--preview-popover)]">
+          <p className="text-[11px] font-semibold text-foreground">Escala de superficies (diagnóstico)</p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-5">
+            {PREVIEW_SURFACE_SCALE.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-md border p-1.5 [border-color:var(--preview-border)] [background:var(--preview-surface)]"
+              >
+                <span
+                  aria-hidden
+                  className="mb-1 inline-flex h-5 w-full rounded border [border-color:var(--preview-border)]"
+                  style={{ background: item.token }}
+                />
+                <p className="text-[10px] font-semibold leading-tight text-foreground">{item.label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="overflow-hidden rounded-xl border shadow-[0_14px_30px_-22px_rgba(15,23,42,0.55),inset_0_1px_0_rgba(255,255,255,0.14)] [border-color:var(--preview-border)] [background:var(--preview-background)]">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2 [border-color:var(--preview-border)] [background:var(--preview-surface)]">
@@ -257,12 +266,12 @@ export default function BrandThemePreviewSurface({
         <div
           className={[
             "grid gap-4 p-4",
-            showCompositionPanel
+            showDiagnosticCompositionPanel
               ? "xl:grid-cols-[minmax(0,1.8fr)_minmax(180px,0.55fr)]"
               : "grid-cols-1",
           ].join(" ")}
         >
-          <div className={["grid min-w-0 gap-4", showCompositionPanel ? "min-h-[500px]" : "min-h-[420px]"].join(" ")}>
+          <div className={["grid min-w-0 gap-4", showDiagnosticCompositionPanel ? "min-h-[500px]" : "min-h-[420px]"].join(" ")}>
             {previewMode === "hero" ? (
               <article className="rounded-lg border shadow-[0_12px_26px_-18px_rgba(15,23,42,0.45)] [border-color:var(--preview-border)] [background:linear-gradient(150deg,var(--accent-soft),var(--preview-background))]">
                 <div className="border-b p-4 [border-color:var(--preview-border)]">
@@ -298,7 +307,7 @@ export default function BrandThemePreviewSurface({
                     <p className="mt-1 text-[11px] text-muted-foreground">Legibilidad en capas altas.</p>
                   </div>
                 </div>
-                <DiagnosticActionStates />
+                {showDiagnosticLayer ? <DiagnosticActionStates /> : null}
               </article>
             ) : null}
 
@@ -330,7 +339,7 @@ export default function BrandThemePreviewSurface({
                     </p>
                   </article>
                 </div>
-                <DiagnosticActionStates />
+                {showDiagnosticLayer ? <DiagnosticActionStates /> : null}
               </section>
             ) : null}
 
@@ -360,7 +369,7 @@ export default function BrandThemePreviewSurface({
                   </button>
                 </div>
                 <div className="px-3 pb-3">
-                  <DiagnosticActionStates />
+                  {showDiagnosticLayer ? <DiagnosticActionStates /> : null}
                 </div>
               </article>
             ) : null}
@@ -388,14 +397,14 @@ export default function BrandThemePreviewSurface({
                         Cerrar
                       </button>
                     </div>
-                    <DiagnosticActionStates />
+                    {showDiagnosticLayer ? <DiagnosticActionStates /> : null}
                   </div>
                 </div>
               </section>
             ) : null}
           </div>
 
-          {showCompositionPanel ? (
+          {showDiagnosticCompositionPanel ? (
             <aside className="min-w-0 rounded-lg border p-2.5 shadow-[0_8px_14px_-16px_rgba(15,23,42,0.38)] [border-color:var(--preview-border)] [background:var(--preview-popover)]">
               <p className="text-xs font-semibold text-muted-foreground">Composición cromática visible</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">

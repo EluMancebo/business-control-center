@@ -584,10 +584,10 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
           <section className="mt-4 rounded-xl border border-border/55 p-3 shadow-[0_10px_22px_-18px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-foreground">Preview runtime local</p>
+                <p className="text-sm font-semibold text-foreground">Diagnóstico local</p>
                 <p className="text-xs text-muted-foreground">ON/OFF por pestaña. Sin persistencia global.</p>
                 <p className="text-[11px] text-muted-foreground">
-                  ON aplica output técnico final en la preview. OFF muestra runtime actual del documento.
+                  El preview principal siempre usa output técnico final. ON añade capas auxiliares de diagnóstico.
                 </p>
               </div>
               <button
@@ -803,7 +803,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
 
             {showLabPreview ? (
               <div className="min-w-0 xl:col-start-2">
-                <BrandThemePreviewSurface previewEnabled={previewEnabled} harmony={previewHarmony} accentStyle={previewAccentStyle} typographyPreset={previewTypography} showCompositionPanel={canUsePaletteEngine} modeLabel={resolvedMode} paletteLabel={preset.label} presetRoleLabel="La seed manda identidad. Preset modula superficies y atmósfera." presetModulationPercent={PRESET_MODULATION_PERCENT} previewVariables={previewEnabled ? previewVariables : {}} resolvedTokens={effectiveTokens} />
+                <BrandThemePreviewSurface previewEnabled={previewEnabled} harmony={previewHarmony} accentStyle={previewAccentStyle} typographyPreset={previewTypography} showCompositionPanel={canUsePaletteEngine} modeLabel={resolvedMode} paletteLabel={preset.label} presetRoleLabel="La seed manda identidad. Preset modula superficies y atmósfera." presetModulationPercent={PRESET_MODULATION_PERCENT} previewVariables={previewVariables} resolvedTokens={effectiveTokens} />
               </div>
             ) : null}
           </div>
@@ -890,7 +890,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
             <section className="rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
               <h3 className="text-sm font-semibold text-foreground">Output técnico final (tokens)</h3>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Cadena: Input base -> Transformación -> Output técnico -> Preview diagnóstica.
+                Cadena: Input base {"->"} Transformación {"->"} Output técnico {"->"} Preview diagnóstica.
               </p>
               <div className="mt-2 rounded-md border border-border/55 bg-background/75 p-2 shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)]">
                 <p className="text-[11px] font-semibold text-foreground">Transformación activa</p>
@@ -900,8 +900,8 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                   {PRESET_MODULATION_PERCENT}%.
                 </p>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  Resolución tokens: {tokenResolutionSourceLabel}. Preview runtime local:{" "}
-                  {previewEnabled ? "ON (output técnico final)" : "OFF (runtime documento)"}.
+                  Resolución tokens: {tokenResolutionSourceLabel}. Diagnóstico local:{" "}
+                  {previewEnabled ? "ON (capas auxiliares visibles)" : "OFF (solo salida final)"}.
                 </p>
               </div>
               <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
