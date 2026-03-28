@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
@@ -11,6 +11,7 @@ import type { SessionPayload } from "@/lib/auth/serverSession";
 import BrandHydrator from "@/components/brand/BrandHydrator";
 import { isBrandThemeSemanticRuntimeEnabled } from "@/lib/brand-theme/runtime/flag";
 import { resolvePanelBrandHydratorScope } from "./brandHydratorScope";
+import { getTallerPanelVisualCssVars } from "@/lib/panel/tallerVisualContract";
 
 function getStudioTitle(pathname: string) {
   if (pathname.startsWith("/panel/web-control/")) {
@@ -148,6 +149,11 @@ export default function PanelShell({
   const studioTitle = useMemo(() => getStudioTitle(pathname), [pathname]);
   const studioHubHref = useMemo(() => getStudioHubHref(pathname), [pathname]);
   const isTallerStudio = useMemo(() => pathname.startsWith("/panel/taller/"), [pathname]);
+  const isTallerHub = useMemo(() => pathname === "/panel/taller", [pathname]);
+  const tallerVisualVars = useMemo(
+    () => (isTallerHub ? (getTallerPanelVisualCssVars() as CSSProperties) : undefined),
+    [isTallerHub]
+  );
 
   // Shell policy: Capa 1 (admin/studio) y Capa 2 (panel cliente) usan scopes separados.
   // Excepcion controlada: /panel/taller/brand puede usar scope system cuando runtime semantico system esta ON.
@@ -385,7 +391,7 @@ export default function PanelShell({
     >
       <BrandHydrator scope={brandScope} businessSlug={brandBusinessSlug} />
 
-      <div className="mx-auto flex min-h-screen max-w-7xl">
+      <div className="flex min-h-screen w-full">
         <div className="hidden sm:block">
           <Sidebar isAdmin={computedIsAdmin} capabilities={caps} />
         </div>
@@ -444,7 +450,17 @@ export default function PanelShell({
 
           <Topbar onOpenMenu={() => setMobileOpen(true)} />
 
-          <main className="flex-1 p-4 sm:p-6">
+          <main
+            style={tallerVisualVars}
+            className={[
+              "flex-1 p-4 sm:p-6",
+              isTallerHub
+                ? "[background:var(--taller-background-subtle)]"
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
             <div className="mx-auto w-full">{children}</div>
           </main>
         </div>

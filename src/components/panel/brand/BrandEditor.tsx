@@ -232,6 +232,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const [extractedPalette, setExtractedPalette] = useState<ExtractedPaletteResult | null>(null);
   const [extractError, setExtractError] = useState("");
   const [extracting, setExtracting] = useState(false);
+  const [savePresetNotice, setSavePresetNotice] = useState("");
 
   const scopeUsesBusinessSlug = scope === "panel" || scope === "web";
   const canUsePaletteEngine = scope === "system";
@@ -361,6 +362,13 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     variables["--font-sans"] = TYPOGRAPHY_FONT_STACK[effectiveTokens.typographyPreset];
     return variables;
   }, [effectiveTokens]);
+  const tokenResolutionSourceLabel = resolvedTokensFromSeed
+    ? "palette-seed"
+    : "brand-fallback";
+  const accentResolutionLabel =
+    resolvedSeedWithMeta?.accentSource === "explicit-blend"
+      ? "manual + harmony blend"
+      : "derived by harmony";
 
   useEffect(() => {
     if (skipWebWithoutSlug) return;
@@ -519,6 +527,9 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     setPaletteSeedNeutral("");
     resetPreviewState();
   }
+  function savePresetStub() {
+    setSavePresetNotice("Preset preparado. Guardado real pendiente de integración.");
+  }
   async function runExtraction() {
     if (!sourceImageUrl) return setExtractError("Selecciona un asset o pega una URL antes de extraer.");
     setExtracting(true);
@@ -575,6 +586,9 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
               <div>
                 <p className="text-sm font-semibold text-foreground">Preview runtime local</p>
                 <p className="text-xs text-muted-foreground">ON/OFF por pestaña. Sin persistencia global.</p>
+                <p className="text-[11px] text-muted-foreground">
+                  ON aplica output técnico final en la preview. OFF muestra runtime actual del documento.
+                </p>
               </div>
               <button
                 type="button"
@@ -854,7 +868,10 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
         {canUsePaletteEngine ? (
           <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(220px,0.85fr)_minmax(0,1.45fr)_minmax(240px,0.95fr)]">
             <section className="rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
-              <h3 className="text-sm font-semibold text-foreground">Seed activa</h3>
+              <h3 className="text-sm font-semibold text-foreground">Input base (seed resuelta)</h3>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Source: {PALETTE_SOURCE_LABELS[paletteSeedSource]} · Accent: {accentResolutionLabel}.
+              </p>
               <div className="mt-2 grid gap-2">
                 {resolvedPaletteSeed ? (
                   [{ label: "Primary", value: resolvedPaletteSeed.primary }, { label: "Accent", value: resolvedPaletteSeed.accent }, { label: "Neutral", value: resolvedPaletteSeed.neutral }].map((item) => (
@@ -871,8 +888,23 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
             </section>
 
             <section className="rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
-              <h3 className="text-sm font-semibold text-foreground">Detalles técnicos</h3>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              <h3 className="text-sm font-semibold text-foreground">Output técnico final (tokens)</h3>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Cadena: Input base -> Transformación -> Output técnico -> Preview diagnóstica.
+              </p>
+              <div className="mt-2 rounded-md border border-border/55 bg-background/75 p-2 shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)]">
+                <p className="text-[11px] font-semibold text-foreground">Transformación activa</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Mode: {resolvedMode} · Preset: {preset.label} · Harmony: {HARMONY_LABELS[previewHarmony]} ·
+                  Accent style: {ACCENT_STYLE_LABELS[previewAccentStyle]} · Preset modulation:{" "}
+                  {PRESET_MODULATION_PERCENT}%.
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Resolución tokens: {tokenResolutionSourceLabel}. Preview runtime local:{" "}
+                  {previewEnabled ? "ON (output técnico final)" : "OFF (runtime documento)"}.
+                </p>
+              </div>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                 {technicalTokens.map((token) => (
                   <div key={token.label} className="rounded-md border border-border/55 bg-background/75 p-2 shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)]">
                     <div className="flex items-center gap-2">
@@ -888,10 +920,24 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
             <section className="rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
               <h3 className="text-sm font-semibold text-foreground">D. Acciones laboratorio</h3>
               <div className="mt-3 grid min-w-0 gap-2">
+                <button
+                  type="button"
+                  onClick={savePresetStub}
+                  className="h-10 w-full min-w-0 rounded-lg border border-primary/45 bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-[0_8px_16px_-14px_rgba(37,99,235,0.55)] transition hover:-translate-y-px hover:opacity-95"
+                >
+                  Guardar preset
+                </button>
                 <button type="button" onClick={resetPreviewState} className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:-translate-y-px hover:bg-muted">Reset preview</button>
                 <button type="button" onClick={resetLab} className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:-translate-y-px hover:bg-muted">Reset general</button>
                 <button type="button" onClick={() => update(fallback)} className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:-translate-y-px hover:bg-muted">Reset scope</button>
               </div>
+              {savePresetNotice ? (
+                <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">{savePresetNotice}</p>
+              ) : (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Ajusta paleta, valida contexto visual y guarda preset.
+                </p>
+              )}
               <details className="mt-3 rounded-md border border-border/55 bg-background/70 p-2 shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)]">
                 <summary className="cursor-pointer text-xs font-semibold text-foreground">E. Detalles secundarios</summary>
                 <p className="mt-2 text-xs text-muted-foreground">Preset activo: {preset.label}. Modulación aplicada: {PRESET_MODULATION_PERCENT}%.</p>

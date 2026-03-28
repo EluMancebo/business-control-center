@@ -24,6 +24,32 @@
   --border: rgba(15, 23, 42, 0.14);
   --ring: rgba(15, 23, 42, 0.35);
 
+  /* Panel surface system */
+  --panel-background: var(--background);
+  --panel-surface-1: var(--background);
+  --panel-surface-2: var(--card);
+  --panel-surface-3: var(--muted);
+  --panel-card: var(--card);
+  --panel-border: var(--border);
+  --panel-topbar: var(--panel-surface-1);
+  --panel-sidebar: var(--panel-surface-2);
+
+  --panel-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 18px -16px rgba(15, 23, 42, 0.22);
+  --panel-shadow-2: 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 12px 28px -20px rgba(15, 23, 42, 0.26);
+  --panel-shadow-3: 0 3px 10px rgba(15, 23, 42, 0.08),
+    0 24px 48px -32px rgba(15, 23, 42, 0.34);
+
+  --panel-badge-muted-bg: var(--muted);
+  --panel-badge-muted-fg: var(--muted-foreground);
+  --panel-badge-success-bg: #dcfce7;
+  --panel-badge-success-fg: #166534;
+  --panel-badge-warning-bg: #fef3c7;
+  --panel-badge-warning-fg: #92400e;
+  --panel-badge-destructive-bg: #fee2e2;
+  --panel-badge-destructive-fg: #b91c1c;
+
   /* Pair tokens (light/dark) */
   --bg-light: #ffffff;
   --fg-light: #171717;
@@ -202,6 +228,43 @@ html[data-brand-mode="light"] {
   --primary-foreground: var(--primary-fg-light);
   --border: var(--border-light);
   --ring: var(--ring-light);
+
+  --panel-background: color-mix(in oklab, var(--background) 90%, #ffffff);
+  --panel-surface-1: color-mix(
+    in oklab,
+    var(--panel-background) 95%,
+    var(--accent-soft, var(--muted))
+  );
+  --panel-surface-2: color-mix(
+    in oklab,
+    var(--panel-background) 88%,
+    var(--accent-soft, var(--muted))
+  );
+  --panel-surface-3: color-mix(
+    in oklab,
+    var(--panel-background) 80%,
+    var(--accent-soft, var(--muted))
+  );
+  --panel-card: color-mix(in oklab, #ffffff 86%, var(--panel-surface-1));
+  --panel-border: color-mix(in oklab, var(--border) 72%, transparent);
+  --panel-topbar: color-mix(in oklab, var(--panel-surface-1) 92%, #ffffff);
+  --panel-sidebar: var(--panel-surface-2);
+
+  --panel-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.03),
+    0 8px 18px -16px rgba(15, 23, 42, 0.18);
+  --panel-shadow-2: 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 12px 26px -20px rgba(15, 23, 42, 0.24);
+  --panel-shadow-3: 0 2px 8px rgba(15, 23, 42, 0.06),
+    0 24px 42px -30px rgba(15, 23, 42, 0.28);
+
+  --panel-badge-muted-bg: color-mix(in oklab, var(--muted) 90%, white);
+  --panel-badge-muted-fg: var(--text-subtle, var(--muted-foreground));
+  --panel-badge-success-bg: #dcfce7;
+  --panel-badge-success-fg: #166534;
+  --panel-badge-warning-bg: #fef3c7;
+  --panel-badge-warning-fg: #92400e;
+  --panel-badge-destructive-bg: #fee2e2;
+  --panel-badge-destructive-fg: #b91c1c;
 }
 
 html[data-brand-mode="dark"] {
@@ -215,6 +278,43 @@ html[data-brand-mode="dark"] {
   --primary-foreground: var(--primary-fg-dark);
   --border: var(--border-dark);
   --ring: var(--ring-dark);
+
+  --panel-background: color-mix(in oklab, var(--background) 92%, #020617);
+  --panel-surface-1: color-mix(
+    in oklab,
+    var(--panel-background) 90%,
+    var(--accent-soft, var(--muted))
+  );
+  --panel-surface-2: color-mix(
+    in oklab,
+    var(--panel-background) 82%,
+    var(--accent-soft, var(--muted))
+  );
+  --panel-surface-3: color-mix(
+    in oklab,
+    var(--panel-background) 74%,
+    var(--accent-soft, var(--muted))
+  );
+  --panel-card: color-mix(in oklab, var(--panel-surface-1) 86%, #111827);
+  --panel-border: color-mix(in oklab, var(--border) 80%, transparent);
+  --panel-topbar: color-mix(in oklab, var(--panel-surface-1) 92%, #020617);
+  --panel-sidebar: var(--panel-surface-2);
+
+  --panel-shadow-1: 0 1px 2px rgba(2, 6, 23, 0.34),
+    0 10px 20px -14px rgba(2, 6, 23, 0.58);
+  --panel-shadow-2: 0 2px 6px rgba(2, 6, 23, 0.4),
+    0 16px 34px -22px rgba(2, 6, 23, 0.7);
+  --panel-shadow-3: 0 4px 12px rgba(2, 6, 23, 0.46),
+    0 24px 48px -28px rgba(2, 6, 23, 0.78);
+
+  --panel-badge-muted-bg: color-mix(in oklab, var(--muted) 88%, #111827);
+  --panel-badge-muted-fg: var(--text-subtle, var(--muted-foreground));
+  --panel-badge-success-bg: #14532d;
+  --panel-badge-success-fg: #dcfce7;
+  --panel-badge-warning-bg: #78350f;
+  --panel-badge-warning-fg: #fef3c7;
+  --panel-badge-destructive-bg: #7f1d1d;
+  --panel-badge-destructive-fg: #fee2e2;
 }
 
 /* System (por defecto): arranca como light y responde al media query */
@@ -230,6 +330,43 @@ html[data-brand-mode="system"] {
   --primary-foreground: var(--primary-fg-light);
   --border: var(--border-light);
   --ring: var(--ring-light);
+
+  --panel-background: color-mix(in oklab, var(--background) 90%, #ffffff);
+  --panel-surface-1: color-mix(
+    in oklab,
+    var(--panel-background) 95%,
+    var(--accent-soft, var(--muted))
+  );
+  --panel-surface-2: color-mix(
+    in oklab,
+    var(--panel-background) 88%,
+    var(--accent-soft, var(--muted))
+  );
+  --panel-surface-3: color-mix(
+    in oklab,
+    var(--panel-background) 80%,
+    var(--accent-soft, var(--muted))
+  );
+  --panel-card: color-mix(in oklab, #ffffff 86%, var(--panel-surface-1));
+  --panel-border: color-mix(in oklab, var(--border) 72%, transparent);
+  --panel-topbar: color-mix(in oklab, var(--panel-surface-1) 92%, #ffffff);
+  --panel-sidebar: var(--panel-surface-2);
+
+  --panel-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.03),
+    0 8px 18px -16px rgba(15, 23, 42, 0.18);
+  --panel-shadow-2: 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 12px 26px -20px rgba(15, 23, 42, 0.24);
+  --panel-shadow-3: 0 2px 8px rgba(15, 23, 42, 0.06),
+    0 24px 42px -30px rgba(15, 23, 42, 0.28);
+
+  --panel-badge-muted-bg: color-mix(in oklab, var(--muted) 90%, white);
+  --panel-badge-muted-fg: var(--text-subtle, var(--muted-foreground));
+  --panel-badge-success-bg: #dcfce7;
+  --panel-badge-success-fg: #166534;
+  --panel-badge-warning-bg: #fef3c7;
+  --panel-badge-warning-fg: #92400e;
+  --panel-badge-destructive-bg: #fee2e2;
+  --panel-badge-destructive-fg: #b91c1c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -245,6 +382,43 @@ html[data-brand-mode="system"] {
     --primary-foreground: var(--primary-fg-dark);
     --border: var(--border-dark);
     --ring: var(--ring-dark);
+
+    --panel-background: color-mix(in oklab, var(--background) 92%, #020617);
+    --panel-surface-1: color-mix(
+      in oklab,
+      var(--panel-background) 90%,
+      var(--accent-soft, var(--muted))
+    );
+    --panel-surface-2: color-mix(
+      in oklab,
+      var(--panel-background) 82%,
+      var(--accent-soft, var(--muted))
+    );
+    --panel-surface-3: color-mix(
+      in oklab,
+      var(--panel-background) 74%,
+      var(--accent-soft, var(--muted))
+    );
+    --panel-card: color-mix(in oklab, var(--panel-surface-1) 86%, #111827);
+    --panel-border: color-mix(in oklab, var(--border) 80%, transparent);
+    --panel-topbar: color-mix(in oklab, var(--panel-surface-1) 92%, #020617);
+    --panel-sidebar: var(--panel-surface-2);
+
+    --panel-shadow-1: 0 1px 2px rgba(2, 6, 23, 0.34),
+      0 10px 20px -14px rgba(2, 6, 23, 0.58);
+    --panel-shadow-2: 0 2px 6px rgba(2, 6, 23, 0.4),
+      0 16px 34px -22px rgba(2, 6, 23, 0.7);
+    --panel-shadow-3: 0 4px 12px rgba(2, 6, 23, 0.46),
+      0 24px 48px -28px rgba(2, 6, 23, 0.78);
+
+    --panel-badge-muted-bg: color-mix(in oklab, var(--muted) 88%, #111827);
+    --panel-badge-muted-fg: var(--text-subtle, var(--muted-foreground));
+    --panel-badge-success-bg: #14532d;
+    --panel-badge-success-fg: #dcfce7;
+    --panel-badge-warning-bg: #78350f;
+    --panel-badge-warning-fg: #fef3c7;
+    --panel-badge-destructive-bg: #7f1d1d;
+    --panel-badge-destructive-fg: #fee2e2;
   }
 }
 

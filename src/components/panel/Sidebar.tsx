@@ -373,7 +373,7 @@ export default function Sidebar({
   const publicHref = getPublicHrefFromSlug(activeSlug);
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-border p-4 shadow-sm backdrop-blur [background:var(--surface-2,var(--card))]">
+    <aside className="flex h-full w-64 flex-col border-r border-border p-4 shadow-[var(--panel-shadow-1)] backdrop-blur [background:var(--surface-2,var(--card))]">
       <div className="mx-auto flex h-full w-full max-w-57 flex-col">
         <div className="mb-6">
           <div className="flex items-center gap-3">
@@ -541,7 +541,7 @@ export default function Sidebar({
                 target="_blank"
                 rel="noreferrer"
                 variant="primary"
-                className="w-full text-xs shadow-sm"
+                className="w-full text-xs shadow-sm transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-px focus-visible:ring-2 [--tw-ring-color:var(--ring)]"
                 title={activeSlug ? `Abrir /${activeSlug}` : "Abrir web pública (falta slug)"}
               >
                 Ver web pública ↗
@@ -553,7 +553,7 @@ export default function Sidebar({
                   href="/panel/web-control/hero"
                   onClick={onNavigate}
                   variant="secondary"
-                  className="w-full text-xs shadow-sm"
+                  className="w-full text-xs shadow-sm transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-px focus-visible:ring-2 [--tw-ring-color:var(--ring)]"
                 >
                   Editar web pública
                 </PanelButton>

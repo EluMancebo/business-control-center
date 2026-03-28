@@ -74,7 +74,7 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const publicHref = getPublicHrefFromSlug(activeSlug);
 
   return (
-    <header className="sticky top-0 z-10 border-b border-border shadow-sm backdrop-blur [background:var(--surface-3,var(--card))]">
+    <header className="sticky top-0 z-10 border-b border-border shadow-[var(--panel-shadow-1)] backdrop-blur [background:var(--surface-3,var(--card))]">
       <div className="flex items-center justify-between px-4 py-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <PanelButton
@@ -125,7 +125,7 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
             variant="secondary"
             target="_blank"
             rel="noreferrer"
-            className="hidden shadow-sm sm:inline-flex"
+            className="hidden shadow-sm transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-px focus-visible:ring-2 [--tw-ring-color:var(--ring)] sm:inline-flex"
             title={activeSlug ? `Abrir /${activeSlug}` : "Abrir web pública (falta slug)"}
           >
             Ver web
@@ -136,14 +136,16 @@ export default function Topbar({ onOpenMenu }: { onOpenMenu?: () => void }) {
             variant="secondary"
             target="_blank"
             rel="noreferrer"
-            className="px-2.5 shadow-sm sm:hidden"
+            className="px-2.5 shadow-sm transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-px focus-visible:ring-2 [--tw-ring-color:var(--ring)] sm:hidden"
             aria-label="Ver web"
             title={activeSlug ? `Abrir /${activeSlug}` : "Ver web"}
           >
             <ExternalLinkIcon />
           </PanelButton>
 
-          <LogoutButton />
+          <div className="[&_button]:transition-[transform,box-shadow,opacity] [&_button]:duration-200 [&_button]:ease-out [&_button]:hover:-translate-y-px [&_button]:focus-visible:outline-none [&_button]:focus-visible:ring-2 [&_button]:[--tw-ring-color:var(--ring)]">
+            <LogoutButton />
+          </div>
         </div>
       </div>
     </header>

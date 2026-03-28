@@ -116,4 +116,5 @@ Que el sistema permita:
 - consistencia entre interfaces
 - escalado por módulos
 - control seguro del branding
-- experiencia operativa real para negocio local    
+- experiencia operativa real para negocio local 
+

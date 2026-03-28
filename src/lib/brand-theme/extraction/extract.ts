@@ -13,8 +13,10 @@ type HSL = { h: number; s: number; l: number };
 const DEFAULT_MAX_DIMENSION = 96;
 const DEFAULT_QUANTIZATION_STEP = 24;
 const DEFAULT_MIN_ALPHA = 96;
-const DEFAULT_MAX_CANDIDATES = 8;
-const WEIGHT_DAMPING_EXPONENT = 0.72;
+const DEFAULT_MAX_CANDIDATES = 10;
+const WEIGHT_DAMPING_EXPONENT = 0.58;
+const MIN_PRIMARY_ACCENT_DISTANCE = 0.26;
+const MIN_NEUTRAL_DISTANCE = 0.14;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -132,6 +134,45 @@ function hueDistance(a: number, b: number): number {
   return Math.min(diff, 360 - diff);
 }
 
+function hexToHsl(input: string): HSL | null {
+  const rgb = hexToRgb(input);
+  if (!rgb) return null;
+  return rgbToHsl(rgb);
+}
+
+function getPerceptualDistance(a: HSL, b: HSL): number {
+  const hueScore = hueDistance(a.h, b.h) / 180;
+  const saturationScore = Math.abs(a.s - b.s) / 100;
+  const lightnessScore = Math.abs(a.l - b.l) / 100;
+  return clamp(hueScore * 0.58 + saturationScore * 0.27 + lightnessScore * 0.15, 0, 1);
+}
+
+function getCandidateDistance(candidate: ExtractedColorCandidate, target: HSL): number {
+  return getPerceptualDistance(
+    { h: candidate.hue, s: candidate.saturation, l: candidate.lightness },
+    target
+  );
+}
+
+function getMinDistanceToTargets(candidate: ExtractedColorCandidate, targets: HSL[]): number {
+  if (targets.length === 0) return 1;
+  return targets.reduce((minDistance, target) => {
+    const distance = getCandidateDistance(candidate, target);
+    return Math.min(minDistance, distance);
+  }, 1);
+}
+
+function pickFirstDistinctCandidate(
+  scored: Array<{ candidate: ExtractedColorCandidate; score: number }>,
+  targets: HSL[],
+  minDistance: number
+): ExtractedColorCandidate | null {
+  return (
+    scored.find((item) => getMinDistanceToTargets(item.candidate, targets) >= minDistance)
+      ?.candidate ?? scored[0]?.candidate ?? null
+  );
+}
+
 function deriveAccentFallback(primary: string): string {
   const primaryRgb = hexToRgb(primary);
   const primaryHsl = primaryRgb ? rgbToHsl(primaryRgb) : null;
@@ -208,13 +249,17 @@ function pickPrimary(candidates: ExtractedColorCandidate[]): string {
 }
 
 function pickAccent(candidates: ExtractedColorCandidate[], primary: string): string {
-  const primaryRgb = hexToRgb(primary);
-  const primaryHsl = primaryRgb ? rgbToHsl(primaryRgb) : null;
+  const primaryHsl = hexToHsl(primary);
+  const dominant = candidates[0];
+  const dominantHsl = dominant
+    ? { h: dominant.hue, s: dominant.saturation, l: dominant.lightness }
+    : null;
 
   if (!primaryHsl || candidates.length === 0) {
     return deriveAccentFallback(primary);
   }
 
+  const anchors = dominantHsl ? [primaryHsl, dominantHsl] : [primaryHsl];
   const scored = candidates
     .filter(
       (candidate) =>
@@ -224,36 +269,75 @@ function pickAccent(candidates: ExtractedColorCandidate[], primary: string): str
         candidate.lightness <= 88
     )
     .map((candidate) => {
-      const distance = hueDistance(candidate.hue, primaryHsl.h);
       const weightScore = getWeightInfluence(candidate.weight);
-      const saturationScore = 0.45 + clamp(candidate.saturation / 100, 0, 1);
-      const distanceScore = 0.38 + distance / 180;
+      const saturationScore = clamp(candidate.saturation / 100, 0, 1);
+      const distanceScore = getMinDistanceToTargets(candidate, anchors);
       const balancedLightness = getBalancedLightnessScore(candidate.lightness);
       const darkPenalty = candidate.lightness < 22 ? 0.34 : 1;
-      const warmBoost = getWarmAccentBoost(candidate);
+      const vividBoost =
+        candidate.saturation >= 58 && distanceScore >= 0.3 ? 1.16 : 1;
+      const minorityBoost =
+        candidate.weight <= 0.2 && distanceScore >= 0.36 ? 1.2 : 1;
       const score =
-        weightScore * saturationScore * distanceScore * balancedLightness * darkPenalty * warmBoost;
-      return { candidate, score };
+        (weightScore * 0.28 +
+          saturationScore * 0.34 +
+          distanceScore * 0.28 +
+          balancedLightness * 0.1) *
+        darkPenalty *
+        vividBoost *
+        minorityBoost *
+        getWarmAccentBoost(candidate);
+      return { candidate, score: clamp(score, 0, 2.4) };
     })
     .sort((a, b) => b.score - a.score);
 
-  return scored[0]?.candidate.hex ?? deriveAccentFallback(primary);
+  const picked = pickFirstDistinctCandidate(scored, [primaryHsl], MIN_PRIMARY_ACCENT_DISTANCE);
+  return picked?.hex ?? deriveAccentFallback(primary);
 }
 
-function pickNeutral(candidates: ExtractedColorCandidate[], primary: string): string {
-  const neutralCandidate = candidates
-    .filter((candidate) => candidate.saturation <= 24 && candidate.lightness >= 14 && candidate.lightness <= 90)
+function getNeutralLightnessScore(lightness: number): number {
+  const preferred = 66;
+  const normalizedDistance = Math.abs(lightness - preferred) / preferred;
+  return clamp(1 - normalizedDistance * 0.85, 0.2, 1);
+}
+
+function pickNeutral(
+  candidates: ExtractedColorCandidate[],
+  primary: string,
+  accent: string
+): string {
+  const primaryHsl = hexToHsl(primary);
+  const accentHsl = hexToHsl(accent);
+  const anchors = [primaryHsl, accentHsl].filter((value): value is HSL => Boolean(value));
+
+  const scored = candidates
+    .filter(
+      (candidate) =>
+        candidate.hex !== primary &&
+        candidate.hex !== accent &&
+        candidate.saturation <= 40 &&
+        candidate.lightness >= 14 &&
+        candidate.lightness <= 92
+    )
     .map((candidate) => {
       const weightScore = getWeightInfluence(candidate.weight);
-      const lowSaturationScore = clamp(1 - candidate.saturation / 28, 0.18, 1.05);
-      const balancedLightness = getBalancedLightnessScore(candidate.lightness);
+      const lowSaturationScore = clamp(1 - candidate.saturation / 42, 0.16, 1.08);
+      const neutralLightnessScore = getNeutralLightnessScore(candidate.lightness);
+      const distanceScore = getMinDistanceToTargets(candidate, anchors);
+      const mutedBoost = candidate.saturation <= 26 ? 1.08 : 0.9;
       return {
         candidate,
-        score: weightScore * lowSaturationScore * balancedLightness,
+        score:
+          (weightScore * 0.34 +
+            lowSaturationScore * 0.38 +
+            neutralLightnessScore * 0.18 +
+            distanceScore * 0.1) *
+          mutedBoost,
       };
     })
-    .sort((a, b) => b.score - a.score)[0]?.candidate;
+    .sort((a, b) => b.score - a.score);
 
+  const neutralCandidate = pickFirstDistinctCandidate(scored, anchors, MIN_NEUTRAL_DISTANCE);
   if (neutralCandidate) return neutralCandidate.hex;
   return deriveNeutralFallback(primary);
 }
@@ -306,7 +390,7 @@ export function buildPaletteProposalFromCandidates(
 ): ExtractedPaletteProposal {
   const primary = pickPrimary(candidates);
   const accent = pickAccent(candidates, primary);
-  const neutral = pickNeutral(candidates, primary);
+  const neutral = pickNeutral(candidates, primary, accent);
 
   return {
     source: inferSource(source),
