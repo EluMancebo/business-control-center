@@ -151,10 +151,15 @@ export default function BrandThemePreviewSurface({
   const [previewMode, setPreviewMode] = useState<PreviewMode>("hero");
   const showDiagnosticLayer = previewEnabled;
   const showDiagnosticCompositionPanel = showCompositionPanel && showDiagnosticLayer;
+  const compactDiagnosticHeader = showDiagnosticCompositionPanel;
   const previewSemanticVars = {
     ...(previewVariables as Record<string, string>),
     ...PREVIEW_SURFACE_SEMANTIC_VARS,
   } as CSSProperties;
+  const contextMetaChipClass = [
+    "rounded-full border [border-color:var(--preview-border)] [background:var(--preview-popover)]",
+    compactDiagnosticHeader ? "px-1.5 py-px" : "px-2 py-0.5",
+  ].join(" ");
 
   const signalSwatches: SignalSwatch[] = [
     { label: "Primary", value: resolvedTokens.primary },
@@ -224,16 +229,23 @@ export default function BrandThemePreviewSurface({
         </div>
       </header>
 
-      <div className="mb-3 rounded-lg border px-3 py-2 text-[11px] text-muted-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.45)] [border-color:var(--preview-border)] [background:var(--preview-popover)]">
-        <p>{presetRoleLabel ?? "Preset modula superficies y atmósfera sin reemplazar la seed."}</p>
-        <p className="mt-0.5">
-          Intensidad visible del preset:{" "}
-          <span className="font-semibold text-foreground">{presetModulationPercent}%</span>
-        </p>
-      </div>
+      {!showDiagnosticLayer ? (
+        <div className="mb-3 rounded-lg border px-3 py-2 text-[11px] text-muted-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.45)] [border-color:var(--preview-border)] [background:var(--preview-popover)]">
+          <p>{presetRoleLabel ?? "Preset modula superficies y atmósfera sin reemplazar la seed."}</p>
+          <p className="mt-0.5">
+            Intensidad visible del preset:{" "}
+            <span className="font-semibold text-foreground">{presetModulationPercent}%</span>
+          </p>
+        </div>
+      ) : null}
 
       {showDiagnosticLayer ? (
-        <section className="mb-3 rounded-lg border p-3 [border-color:var(--preview-border)] [background:var(--preview-popover)]">
+        <section
+          className={[
+            "rounded-lg border p-3 [border-color:var(--preview-border)] [background:var(--preview-popover)]",
+            showDiagnosticCompositionPanel ? "mb-2" : "mb-3",
+          ].join(" ")}
+        >
           <p className="text-[11px] font-semibold text-foreground">Escala de superficies (diagnóstico)</p>
           <div className="mt-2 grid gap-2 sm:grid-cols-5">
             {PREVIEW_SURFACE_SCALE.map((item) => (
@@ -254,24 +266,34 @@ export default function BrandThemePreviewSurface({
       ) : null}
 
       <div className="overflow-hidden rounded-xl border shadow-[0_14px_30px_-22px_rgba(15,23,42,0.55),inset_0_1px_0_rgba(255,255,255,0.14)] [border-color:var(--preview-border)] [background:var(--preview-background)]">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2 [border-color:var(--preview-border)] [background:var(--preview-surface)]">
+        <div
+          className={[
+            "flex flex-wrap items-center justify-between border-b [border-color:var(--preview-border)] [background:var(--preview-surface)]",
+            compactDiagnosticHeader ? "gap-1.5 px-3 py-1.5" : "gap-2 px-4 py-2",
+          ].join(" ")}
+        >
           <p className="text-xs font-semibold text-foreground">Contexto: {previewMode.toUpperCase()}</p>
-          <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-            <span className="rounded-full border px-2 py-0.5 [border-color:var(--preview-border)] [background:var(--preview-popover)]">Contraste</span>
-            <span className="rounded-full border px-2 py-0.5 [border-color:var(--preview-border)] [background:var(--preview-popover)]">Jerarquía</span>
-            <span className="rounded-full border px-2 py-0.5 [border-color:var(--preview-border)] [background:var(--preview-popover)]">Acción</span>
+          <div
+            className={[
+              "flex flex-wrap items-center text-muted-foreground",
+              compactDiagnosticHeader ? "gap-1 text-[10px]" : "gap-2 text-[11px]",
+            ].join(" ")}
+          >
+            <span className={contextMetaChipClass}>Contraste</span>
+            <span className={contextMetaChipClass}>Jerarquía</span>
+            <span className={contextMetaChipClass}>Acción</span>
           </div>
         </div>
 
         <div
           className={[
-            "grid gap-4 p-4",
+            compactDiagnosticHeader ? "grid gap-3 px-4 pb-4 pt-3" : "grid gap-4 p-4",
             showDiagnosticCompositionPanel
-              ? "xl:grid-cols-[minmax(0,1.8fr)_minmax(180px,0.55fr)]"
+              ? "lg:grid-cols-[minmax(0,1.92fr)_minmax(184px,0.52fr)]"
               : "grid-cols-1",
           ].join(" ")}
         >
-          <div className={["grid min-w-0 gap-4", showDiagnosticCompositionPanel ? "min-h-[500px]" : "min-h-[420px]"].join(" ")}>
+          <div className={["grid min-w-0 gap-4", showDiagnosticCompositionPanel ? "min-h-[438px]" : "min-h-[420px]"].join(" ")}>
             {previewMode === "hero" ? (
               <article className="rounded-lg border shadow-[0_12px_26px_-18px_rgba(15,23,42,0.45)] [border-color:var(--preview-border)] [background:linear-gradient(150deg,var(--accent-soft),var(--preview-background))]">
                 <div className="border-b p-4 [border-color:var(--preview-border)]">
@@ -405,7 +427,7 @@ export default function BrandThemePreviewSurface({
           </div>
 
           {showDiagnosticCompositionPanel ? (
-            <aside className="min-w-0 rounded-lg border p-2.5 shadow-[0_8px_14px_-16px_rgba(15,23,42,0.38)] [border-color:var(--preview-border)] [background:var(--preview-popover)]">
+            <aside className="min-w-0 self-start rounded-lg border p-2.5 shadow-[0_8px_14px_-16px_rgba(15,23,42,0.38)] [border-color:var(--preview-border)] [background:var(--preview-popover)]">
               <p className="text-xs font-semibold text-muted-foreground">Composición cromática visible</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
                 {signalSwatches.map((item) => (
