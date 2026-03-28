@@ -40,6 +40,13 @@ export type TallerPanelVisualTokensV1 = {
   popoverForeground: string;
 };
 
+export type TallerSurfaceLevel = "background" | "surface" | "card" | "panel" | "popover";
+
+export type TallerSurfaceScaleEntry = {
+  level: TallerSurfaceLevel;
+  token: string;
+};
+
 export function resolveTallerPanelVisualTokensV1(): TallerPanelVisualTokensV1 {
   // Escalera tonal local de Taller (light-first):
   // background < surface < surfaceRaised/card < surfaceHigh/panel/popover
@@ -49,9 +56,9 @@ export function resolveTallerPanelVisualTokensV1(): TallerPanelVisualTokensV1 {
   const surfaceRaised =
     "color-mix(in oklab, var(--panel-surface-2) 68%, var(--panel-surface-3))";
   const surfaceHigh = "color-mix(in oklab, var(--panel-surface-3) 88%, var(--panel-border))";
-  const card = "color-mix(in oklab, var(--panel-surface-2) 44%, var(--panel-surface-3))";
-  const panel = "color-mix(in oklab, var(--panel-surface-3) 82%, var(--panel-border))";
-  const popover = "color-mix(in oklab, var(--panel-surface-3) 68%, var(--panel-border))";
+  const card = "color-mix(in oklab, var(--panel-surface-2) 58%, var(--panel-surface-3))";
+  const panel = "color-mix(in oklab, var(--panel-surface-3) 88%, var(--panel-border))";
+  const popover = "color-mix(in oklab, var(--panel-surface-3) 62%, var(--panel-border))";
 
   return {
     background,
@@ -95,6 +102,25 @@ export function resolveTallerPanelVisualTokensV1(): TallerPanelVisualTokensV1 {
     popover,
     popoverForeground: "var(--foreground)",
   };
+}
+
+export function getTallerPanelSurfaceScaleDiagnostics(
+  tokens: Pick<TallerPanelVisualTokensV1, TallerSurfaceLevel> = resolveTallerPanelVisualTokensV1()
+): TallerSurfaceScaleEntry[] {
+  return [
+    { level: "background", token: tokens.background },
+    { level: "surface", token: tokens.surface },
+    { level: "card", token: tokens.card },
+    { level: "panel", token: tokens.panel },
+    { level: "popover", token: tokens.popover },
+  ];
+}
+
+export function hasDistinctTallerPanelSurfaceLevels(
+  tokens: Pick<TallerPanelVisualTokensV1, TallerSurfaceLevel> = resolveTallerPanelVisualTokensV1()
+): boolean {
+  const uniqueTokens = new Set(getTallerPanelSurfaceScaleDiagnostics(tokens).map((entry) => entry.token));
+  return uniqueTokens.size === 5;
 }
 
 export function getTallerPanelVisualCssVars(): Record<`--taller-${string}`, string> {
