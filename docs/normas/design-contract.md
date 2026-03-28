@@ -78,18 +78,32 @@ Siempre deben consumir tokens del sistema, incluyendo:
 - `--link`
 - `--link-hover`
 
+Referencia obligatoria:
+- la escalera semántica oficial de superficies (`background/surface/card/panel/popover`)
+  se define en `docs/normas/bcc-visual-contract-v1.md`.
+- `surface-1/2/3` siguen existiendo como base técnica, pero la lectura de producto se hace
+  con niveles semánticos.
+
 ---
 
 ## 4. Sistema de superficies
 
-### Surface 1
-Fondo principal del panel.
+Escalera oficial:
+- `background`
+- `surface`
+- `card`
+- `panel`
+- `popover`
 
-### Surface 2
-Contenedores y cards.
+Relación con tokens base existentes:
+- `surface-1`: base de `background`
+- `surface-2`: banda de `surface`
+- `surface-3`: banda de `panel/popover` (según elevación)
+- `card`: capa intermedia entre `surface` y `panel`
 
-### Surface 3
-Elementos elevados: toolbars, cabeceras, bloques de control.
+Regla:
+- la jerarquía de profundidad se construye primero con tono.
+- borde y sombra solo apoyan, no reemplazan la jerarquía tonal.
 
 ---
 

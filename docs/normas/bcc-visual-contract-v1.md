@@ -1,235 +1,199 @@
-# BCC Semantic Operational Contract (v1)
+# BCC Visual Contract (v1)
 
-Estado: aprobado para uso operativo inmediato en Capa 1 y Capa 2.
-Alcance: UI interna del panel y laboratorios de branding, sin modificar el modelo de producto.
-
----
-
-## A) Proposito
-
-BCC usa semantica visual para separar:
-- intencion de uso de UI (superficie, accion, estado, legibilidad)
-- fuente cromatica (preset, palette seed, modo)
-
-Esto evita:
-- acoplar componentes a colores directos
-- deriva visual entre modulos
-- roturas al cambiar paleta o modo
-
-Regla base:
-- color directo describe "como se ve hoy"
-- token semantico describe "para que sirve"
+Estado: oficial para uso operativo en Capa 1, Capa 2 y previews de Brand Lab.
+Objetivo: fijar la semantica de superficies y profundidad visual sin crear un sistema paralelo.
 
 ---
 
-## B) Capas del sistema semantico
+## 1) Alcance y alineamiento documental
 
-1. Fuente visual
-- preset fijo (`bcc`, `ocean`, `sunset`, `mono`) o seed de paleta (`manual`, `logo`, `hero`)
+Este contrato complementa y extiende:
+- `docs/normas/semantic-operational-contract.md` (semantica y gobernanza de tokens)
+- `docs/normas/design-contract.md` (reglas de diseno, layout y consistencia)
 
-2. Palette seed (Fase 1)
-- entrada minima: `primary`, opcional `accent`, opcional `neutral`
-- normalizacion hex y derivaciones controladas
-
-3. Core tokens
-- conjunto minimo base por modo (`light`/`dark`)
-- foco en contraste, superficies y bordes
-
-4. Semantic tokens
-- tokens derivados para CTA, acentos, badges, overlays, links, superficies elevadas
-
-5. Primitives
-- `PanelCard`, `PanelButton`, `PanelActionBar`
-
-6. UI real
-- `PageHeader`, `Topbar`, `Sidebar` y pantallas de negocio
+Regla de alineamiento:
+- `semantic-operational-contract`: define la arquitectura semantica general.
+- `design-contract`: define reglas de UI y uso de componentes.
+- `bcc-visual-contract-v1`: define especificamente la escalera de superficies, profundidad y modulacion visual.
 
 ---
 
-## C) Lista oficial inicial de tokens
+## 2) Cadena operativa oficial (fuente de verdad)
 
-### C.1 Obligatorios (base operativa)
+En Brand Lab y flujos relacionados, la lectura oficial es:
+1. Input base: `paletteSeedInput` (`primary`, `accent`, `neutral`, `source`)
+2. Transformacion: `mode`, `preset`, `harmony`, `accentStyle`, `typography`
+3. Output tecnico final: tokens resueltos (`effectiveTokens`)
+4. Preview diagnostica: lectura auxiliar local (nunca verdad paralela)
 
-`background`, `foreground`, `card`, `cardForeground`, `muted`, `mutedForeground`, `primary`, `primaryForeground`, `border`, `ring`
-
-Uso obligatorio:
-- toda nueva primitive
-- contenedores base
-- botones principales/secundarios
-
-### C.2 Extendidos (ya operativos en brand-theme)
-
-`secondary`, `secondaryForeground`, `accent`, `accentForeground`, `accentSoft`, `accentSoftForeground`, `accentStrong`, `accentStrongForeground`, `surface2`, `surface3`, `textSubtle`, `textInverse`, `ctaPrimary`, `ctaPrimaryForeground`, `ctaPrimaryHover`, `ctaSecondary`, `ctaSecondaryForeground`, `ctaSecondaryHover`, `badgeBg`, `badgeFg`, `heroOverlay`, `heroOverlayStrong`, `link`, `linkHover`
-
-Uso recomendado:
-- shells, toolbars, badges, previews, bloques de estado visual
-
-### C.3 Futuros opcionales (aun no oficiales)
-
-Solo se podran crear si hay necesidad transversal real:
-- `success`, `warning`, `danger` (con foreground y soft)
-- `focusStrong` (accesibilidad avanzada)
-- `surfaceInverse` (zonas invertidas persistentes)
+Regla operativa:
+- la preview principal representa la salida final del sistema.
+- cualquier capa diagnostica adicional debe estar etiquetada como diagnostico.
+- el diagnostico no sustituye ni contradice el output tecnico final.
 
 ---
 
-## D) Reglas de uso
+## 3) Niveles oficiales de superficie
 
-Permitido:
-- usar tokens semanticos via clases Tailwind mapeadas (`bg-card`, `text-foreground`, `border-border`)
-- usar variables semanticas en brackets cuando no exista utilidad directa (`[background:var(--surface-2)]`)
-- reutilizar primitives antes de crear estilos locales
+Niveles semanticos oficiales:
+1. `background`
+2. `surface`
+3. `card`
+4. `panel`
+5. `popover`
 
-Prohibido:
-- hardcodear colores hex/rgba en componentes de panel salvo casos tecnicos de algoritmo interno
-- crear variantes nuevas por pantalla sin necesidad transversal
-- usar semantica de laboratorios para contaminar shell global
+Intencion funcional:
+- `background`: base estructural del area de trabajo.
+- `surface`: contenedor principal de contenido operativo.
+- `card`: bloques de contenido y unidades funcionales dentro de `surface`.
+- `panel`: bloques mas asentados o de control dentro del flujo.
+- `popover`: primer plano elevado (menus, popups, overlays de lectura local).
 
-Cuando usar token vs clase directa:
-- clase utilitaria si existe mapeo oficial (`bg-card`, `text-muted-foreground`)
-- variable custom solo si el token no tiene alias utilitario en `@theme`
-
-Cuando crear token nuevo:
-- minimo 3 usos reales en modulos distintos
-- no debe solaparse con un token existente
-- debe tener nombre funcional, no estetico
-- requiere actualizar este contrato y el contrato de diseno
-
----
-
-## E) Mapeo por componente
-
-### `PanelCard`
-- base: `card`, `cardForeground`, `border`
-- opcional contexto: `surface2` para contenedor secundario
-
-### `PanelButton`
-- `primary`: `primary` + `primaryForeground`
-- `secondary`: `background` + `foreground` + `border` (hover hacia `muted`)
-- `ghost`: texto sutil (`mutedForeground`) con hover controlado
-
-### `PanelActionBar`
-- superficie recomendada: `card`/`surface2`
-- borde: `border`
-- elementos internos deben usar `PanelButton` cuando sean acciones
-
-### `PageHeader`
-- titulo: `foreground`
-- descripcion: `mutedForeground`
-- acciones agrupadas en `PanelActionBar`
-
-### `Topbar`
-- fondo: `card` con transparencia controlada
-- separacion: `border`
-- acciones: `PanelButton` (sin botones ad hoc nuevos)
-
-### `Sidebar`
-- contenedor: `card`/`surface2` + `border`
-- item activo: `background` + `border` + `foreground`
-- item inactivo: `mutedForeground` con hover hacia `foreground`
-- bloque accesos: `PanelButton`
-
-### Futuros `PanelField` y `PanelBadge`
-
-`PanelField`:
-- input fondo `background`
-- borde `border`
-- foco `ring`
-- helper/error en escala semantica, no color directo
-
-`PanelBadge`:
-- default: `badgeBg` + `badgeFg`
-- variantes futuras (`success/warning/danger`) solo si se oficializan tokens
+Regla estructural:
+- mayor altura visual = tono ligeramente mas asentado.
+- las capas altas no pueden ser mas blancas que su contenedor en light.
+- en dark, las capas altas no pueden colapsar hacia gris plano sin separacion.
 
 ---
 
-## F) Intensidad de branding por superficie/capa
+## 4) Relacion con tokens base ya existentes
 
-Capa 1 (Studio/Taller):
+Este contrato no rompe tokens legacy; los ordena semanticamente.
+
+Correspondencia operativa:
+- `background` -> `--background` (base)
+- `surface` -> banda de `--surface-2` / `surface2` segun contexto
+- `card` -> `--card` (o banda equivalente local entre `surface` y `panel`)
+- `panel` -> banda de `--surface-3` / `surface3`
+- `popover` -> superficie mas alta derivada localmente desde `surface3`/`border` sin saltos bruscos
+
+Notas:
+- `surface-1/2/3` se mantienen como infraestructura tecnica.
+- la API semantica para lectura de producto es `background/surface/card/panel/popover`.
+- `border` y `shadow` son apoyo, no construyen jerarquia por si solos.
+
+---
+
+## 5) Ley perceptiva light / dark
+
+Calibracion perceptiva objetivo:
+
+Light:
+- `background`: L ~ 0.965
+- `surface`: L ~ 0.940
+- `card`: L ~ 0.910
+- `panel`: L ~ 0.875
+- `popover`: L ~ 0.845
+
+Dark:
+- `background`: L ~ 0.145
+- `surface`: L ~ 0.185
+- `card`: L ~ 0.225
+- `panel`: L ~ 0.265
+- `popover`: L ~ 0.305
+
+Reglas:
+- no es obligatorio OKLCH puro mientras la distancia perceptiva se conserve.
+- evitar compresion excesiva entre `card/panel/popover`.
+- evitar saltos agresivos que ensucien la UI.
+
+---
+
+## 6) Modulación por preset y harmony
+
+Preset puede modular:
+- atmosfera general
+- temperatura cromatica
+- peso visual de superficies
+- matiz ambiental de la escalera
+
+Preset no puede romper:
+- legibilidad base
+- orden de alturas
+- separacion minima entre niveles
+
+Harmony puede modular:
+- identidad cromatica
+- relacion entre `primary/accent/link`
+- tono de acentos y atmosfera de marca
+
+Harmony no puede:
+- reescribir la escalera estructural de superficies
+- invertir jerarquia `background -> surface -> card -> panel -> popover`
+
+---
+
+## 7) Rol de `primary`
+
+`primary` debe liderar:
+- CTA principal
+- tabs/segmentos activos
+- estados `selected`
+- enlaces o acciones de prioridad
+- foco (`ring`) y jerarquia de accion
+
+`primary` no debe:
+- dominar por defecto las superficies estructurales
+- reemplazar la escalera tonal de profundidad
+- convertir contenedores base en bloques de marca saturados
+
+---
+
+## 8) Aplicacion por capa del producto
+
+Capa 1 (Studio / Taller):
 - intensidad media
-- shell estable y legible
-- laboratorios pueden absorber mas identidad dentro de su superficie local
+- puede expresar atmosfera de preset dentro de superficie local
+- no contamina shell global
 
 Capa 2 (Panel cliente):
 - intensidad media-baja
-- prioridad operativa y consistencia
-- branding no debe degradar legibilidad ni densidad de trabajo
+- prioridad operativa y legibilidad
+- profundidad clara con tono, no con borde duro
 
-Capa 3 (Web publica):
-- intensidad alta permitida
-- mayor expresividad visual, respetando accesibilidad
+Previews / laboratorios:
+- la vista principal muestra salida final del sistema
+- el diagnostico es auxiliar y explicitamente etiquetado
+- nunca debe parecer otra fuente de verdad
 
-Laboratorios y previews:
-- pueden explorar variaciones fuertes
-- nunca deben contaminar topbar/sidebar/chrome global
-- preview runtime siempre local y reversible
-
----
-
-## G) Reglas para Codex
-
-Antes de tocar UI o branding, Codex debe:
-1. leer los archivos reales implicados
-2. identificar si existe primitive reutilizable
-3. aplicar cambio minimo en capa correcta
-4. evitar mezclar scopes (`studio`, `panel`, `web`, `system`)
-5. no introducir persistencia extra para previews
-
-Orden de decision obligatorio:
-1. token existente
-2. primitive existente
-3. ajuste pequeno en primitive existente
-4. nueva primitive (solo si hay repeticion transversal)
-5. nuevo token (solo con justificacion transversal)
+Shell global:
+- estabilidad prioritaria
+- variaciones de identidad controladas
+- sin deriva por experimentacion de laboratorio
 
 ---
 
-## H) Anti-patrones
+## 9) Sombras y bordes
 
-- hardcodear `#...` en componentes del panel para "arreglos rapidos"
-- crear botones/cards locales que dupliquen primitives
-- resolver cada pantalla con clases diferentes para el mismo patron
-- usar preview de brand para alterar shell global
-- mezclar decisiones de `Brand` laboratorio con `Apariencia` operativa del shell
-- introducir animaciones no contractuales en bloques operativos sin pasar por motion contract
+Sombras:
+- soporte secundario de separacion
+- suaves, cortas, de baja intensidad
+- no sustituyen la ley tonal
 
----
-
-## I) Politica de extension
-
-### Crear un nuevo token
-
-Solo si:
-- hay necesidad recurrente en al menos 3 contextos
-- no se cubre con composicion de tokens existentes
-- se define contrato de uso y no solo ejemplo visual
-
-Pasos:
-1. propuesta en PR con casos concretos
-2. actualizacion de `src/lib/brand-theme/types.ts` y resolucion
-3. actualizacion de este contrato
-4. migracion progresiva sin refactor masivo
-
-### Crear una nueva primitive
-
-Solo si:
-- existe repeticion clara en modulos distintos
-- aporta API pequena y estable
-- evita duplicacion real de estilos/estructura
-
-### Excepcion local
-
-Permitida solo cuando:
-- la necesidad es puntual y no transversal
-- se documenta en comentario corto de contexto
-- no rompe semantica base ni impone nuevo patron global
+Bordes:
+- discretos (`borderSubtle` por defecto)
+- apoyo de lectura, no mecanismo principal de profundidad
+- prohibido endurecer bordes para compensar jerarquia mal calibrada
 
 ---
 
-## Checklist de uso rapido para siguientes tickets
+## 10) Anti-patrones oficiales
 
-- Se usan tokens semanticos existentes.
-- Se reutilizan primitives existentes.
-- No se mezcla laboratorio con shell global.
-- No se agrega persistencia para preview.
-- Si se extiende semantica, se actualiza este contrato en la misma PR.
+- usar misma etiqueta semantica para fuentes distintas sin explicitarlo
+- comprimir `card/panel/popover` hasta perder lectura de altura
+- usar color de marca directo como base estructural sin control
+- tratar preview local como fuente de verdad operativa
+- corregir pantallas "a ojo" sin ajustar contrato
+- resolver profundidad con borde duro en lugar de tono + sombra suave
+
+---
+
+## 11) Checklist de validacion rapida
+
+- la cadena `input -> transformacion -> output -> diagnostico` es legible para el usuario.
+- la preview principal coincide con la salida final.
+- la capa diagnostica esta etiquetada y es opcional.
+- `background/surface/card/panel/popover` se distinguen en light y dark.
+- `harmony` no rompe escalera estructural.
+- `primary` se percibe en acciones, no en toda la estructura.
+

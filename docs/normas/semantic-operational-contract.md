@@ -5,6 +5,16 @@ Alcance: UI interna del panel y laboratorios de branding, sin modificar el model
 
 ---
 
+## A0) Referencia de superficies
+
+La definicion oficial de profundidad visual y escalera de superficies vive en:
+- `docs/normas/bcc-visual-contract-v1.md`
+
+Este contrato mantiene la semantica global y gobernanza de tokens.
+El contrato visual fija la calibracion perceptiva `background/surface/card/panel/popover`.
+
+---
+
 ## A) Proposito
 
 BCC usa semantica visual para separar:
