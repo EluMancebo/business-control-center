@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { Brand, BrandMode, BrandPaletteKey } from "@/lib/brand/types";
 import { BRAND_PALETTES } from "@/lib/brand/presets";
 import {
@@ -570,18 +570,15 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     canUsePaletteEngine && paletteSeedSource !== "manual";
 
   return (
-    <section
-      className="w-full max-w-none"
-      style={(!showLabPreview ? previewVariables : undefined) as CSSProperties}
-    >
-      <div className="rounded-2xl border border-border/55 bg-card/95 p-4 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.45)] sm:p-6">
+    <section className="w-full max-w-none">
+      <div className="rounded-2xl border border-border/35 p-4 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--background)_92%,var(--surface-2,var(--card)))] dark:[background:var(--background)] sm:p-6">
         <header>
           <h1 className="text-xl font-semibold">{scope === "system" ? "Brand Lab (Taller / Capa 1)" : "Apariencia"}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{scope === "system" ? "Laboratorio visual para decisiones cromáticas con preview local aislada." : "Editor de apariencia por scope."}</p>
         </header>
 
         {showLabPreview ? (
-          <section className="mt-4 rounded-xl border border-border/55 p-3 shadow-[0_10px_22px_-18px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
+          <section className="mt-4 rounded-xl border border-border/40 p-3 shadow-[0_10px_22px_-18px_rgba(15,23,42,0.45)] [background:var(--background)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-foreground">Diagnóstico local</p>
@@ -625,7 +622,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
           >
             <div className="grid min-w-0 gap-3">
               {showLabPreview && canUsePaletteEngine ? (
-            <section className="flex h-full flex-col rounded-xl border border-border/55 p-4 shadow-[0_14px_28px_-22px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
+            <section className="flex h-full flex-col rounded-xl border border-border/40 p-4 shadow-[0_14px_28px_-22px_rgba(15,23,42,0.45)] [background:var(--background)]">
               <h2 className="text-base font-semibold text-foreground">A. Fuente visual</h2>
               <p className="mt-1 text-xs text-muted-foreground">Estado: {paletteSeedSource === "manual" ? "Manual" : sourceImageUrl ? "Fuente activa" : "Sin fuente seleccionada"}.</p>
               <div className="mt-3 grid gap-2">
@@ -719,7 +716,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
             </section>
               ) : null}
 
-              <section className="rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)] sm:p-5">
+              <section className="rounded-xl border border-border/42 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_68%,var(--background))] dark:border-border/45 dark:[background:color-mix(in_oklab,var(--background)_89%,var(--surface-2,var(--card)))] sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
                   <h2 className="text-base font-semibold text-foreground">B. Composición y contexto</h2>
                   <p className="text-[11px] text-muted-foreground sm:text-right">
@@ -732,7 +729,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                     <select
                       value={brand.mode}
                       onChange={(e) => update({ ...brand, mode: e.target.value as BrandMode })}
-                      className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
+                      className="h-10 w-full min-w-0 rounded-lg border border-border/40 px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--background)_88%,var(--surface-3,var(--card)))] dark:border-border/45 dark:[background:color-mix(in_oklab,var(--background)_84%,var(--surface-2,var(--card)))]"
                     >
                       {MODES.map((item) => (
                         <option key={item.key} value={item.key}>
@@ -746,7 +743,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                     <select
                       value={brand.palette}
                       onChange={(e) => update({ ...brand, palette: e.target.value as BrandPaletteKey })}
-                      className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
+                      className="h-10 w-full min-w-0 rounded-lg border border-border/40 px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--background)_88%,var(--surface-3,var(--card)))] dark:border-border/45 dark:[background:color-mix(in_oklab,var(--background)_84%,var(--surface-2,var(--card)))]"
                     >
                       {BRAND_PALETTES.map((item) => (
                         <option key={item.key} value={item.key}>
@@ -760,7 +757,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                     <select
                       value={previewHarmony}
                       onChange={(e) => setPreviewHarmony(e.target.value as BrandHarmonyStrategy)}
-                      className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
+                      className="h-10 w-full min-w-0 rounded-lg border border-border/40 px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--background)_88%,var(--surface-3,var(--card)))] dark:border-border/45 dark:[background:color-mix(in_oklab,var(--background)_84%,var(--surface-2,var(--card)))]"
                     >
                       {BRAND_THEME_HARMONY_OPTIONS.map((item) => (
                         <option key={item} value={item}>
@@ -774,7 +771,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                     <select
                       value={previewAccentStyle}
                       onChange={(e) => setPreviewAccentStyle(e.target.value as BrandAccentStyle)}
-                      className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
+                      className="h-10 w-full min-w-0 rounded-lg border border-border/40 px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--background)_88%,var(--surface-3,var(--card)))] dark:border-border/45 dark:[background:color-mix(in_oklab,var(--background)_84%,var(--surface-2,var(--card)))]"
                     >
                       {BRAND_THEME_ACCENT_STYLE_OPTIONS.map((item) => (
                         <option key={item} value={item}>
@@ -788,7 +785,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                     <select
                       value={previewTypography}
                       onChange={(e) => setPreviewTypography(e.target.value as BrandTypographyPreset)}
-                      className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]"
+                      className="h-10 w-full min-w-0 rounded-lg border border-border/40 px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [background:color-mix(in_oklab,var(--background)_88%,var(--surface-3,var(--card)))] dark:border-border/45 dark:[background:color-mix(in_oklab,var(--background)_84%,var(--surface-2,var(--card)))]"
                     >
                       {BRAND_THEME_TYPOGRAPHY_OPTIONS.map((item) => (
                         <option key={item} value={item}>

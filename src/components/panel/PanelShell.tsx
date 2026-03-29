@@ -311,7 +311,7 @@ export default function PanelShell({
             ? "bcc-studio-slide-out"
             : "";
     const studioRootClass =
-      "fixed inset-0 z-100 bg-background text-foreground [background:var(--surface-2,var(--background))]";
+      "fixed inset-0 z-100 bg-background text-foreground [background:var(--background)] dark:[background:var(--surface-2,var(--background))]";
     const studioTopbarClass =
       "border-b border-border shadow-sm backdrop-blur [background:var(--surface-3,var(--card))]";
     const studioSecondaryButtonClass =

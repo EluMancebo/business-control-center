@@ -13,7 +13,7 @@ export default async function TallerLayout({ children }: { children: React.React
   }
 
   return (
-    <div className="min-h-full bg-background text-foreground [background:var(--surface-2,var(--background))]">
+    <div className="min-h-full bg-background text-foreground [background:var(--background)] dark:[background:var(--surface-2,var(--background))]">
       {children}
     </div>
   );

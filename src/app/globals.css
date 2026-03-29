@@ -116,13 +116,13 @@ html[data-brand-palette="bcc"] {
 
 /* 2) Ocean */
 html[data-brand-palette="ocean"] {
-  --bg-light: #f8fafc;
+  --bg-light: #f5f9fd;
   --fg-light: #0f172a;
 
-  --card-light: #ffffff;
+  --card-light: #edf5fc;
   --card-fg-light: #0f172a;
 
-  --muted-light: #e2e8f0;
+  --muted-light: #d6e5f7;
   --muted-fg-light: #334155;
 
   --primary-light: #0369a1;
@@ -149,13 +149,13 @@ html[data-brand-palette="ocean"] {
 
 /* 3) Sunset */
 html[data-brand-palette="sunset"] {
-  --bg-light: #fff7ed;
+  --bg-light: #fff7ee;
   --fg-light: #1f2937;
 
-  --card-light: #ffffff;
+  --card-light: #fff0e1;
   --card-fg-light: #1f2937;
 
-  --muted-light: #ffedd5;
+  --muted-light: #ffdcbc;
   --muted-fg-light: #7c2d12;
 
   --primary-light: #ea580c;
@@ -229,29 +229,31 @@ html[data-brand-mode="light"] {
   --border: var(--border-light);
   --ring: var(--ring-light);
 
-  --panel-background: color-mix(in oklab, var(--background) 90%, #ffffff);
+  --panel-background: color-mix(in oklab, var(--background) 96%, #ffffff);
   --panel-surface-1: color-mix(
     in oklab,
-    var(--panel-background) 95%,
+    var(--panel-background) 90%,
     var(--accent-soft, var(--muted))
   );
   --panel-surface-2: color-mix(
     in oklab,
-    var(--panel-background) 88%,
+    var(--panel-background) 78%,
     var(--accent-soft, var(--muted))
   );
   --panel-surface-3: color-mix(
     in oklab,
-    var(--panel-background) 80%,
+    var(--panel-background) 64%,
     var(--accent-soft, var(--muted))
   );
   --panel-card: color-mix(in oklab, #ffffff 86%, var(--panel-surface-1));
   --panel-border: color-mix(in oklab, var(--border) 72%, transparent);
   --panel-topbar: color-mix(in oklab, var(--panel-surface-1) 92%, #ffffff);
   --panel-sidebar: var(--panel-surface-2);
+  --surface-2: var(--panel-surface-2);
+  --surface-3: var(--panel-surface-3);
 
   --panel-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.03),
-    0 8px 18px -16px rgba(15, 23, 42, 0.18);
+    0 14px 30px -20px rgba(15, 23, 42, 0.24);
   --panel-shadow-2: 0 1px 2px rgba(15, 23, 42, 0.04),
     0 12px 26px -20px rgba(15, 23, 42, 0.24);
   --panel-shadow-3: 0 2px 8px rgba(15, 23, 42, 0.06),
@@ -299,6 +301,8 @@ html[data-brand-mode="dark"] {
   --panel-border: color-mix(in oklab, var(--border) 80%, transparent);
   --panel-topbar: color-mix(in oklab, var(--panel-surface-1) 92%, #020617);
   --panel-sidebar: var(--panel-surface-2);
+  --surface-2: color-mix(in oklab, var(--panel-surface-2) 92%, var(--panel-surface-1));
+  --surface-3: color-mix(in oklab, var(--panel-surface-3) 94%, var(--panel-surface-2));
 
   --panel-shadow-1: 0 1px 2px rgba(2, 6, 23, 0.34),
     0 10px 20px -14px rgba(2, 6, 23, 0.58);
@@ -331,29 +335,31 @@ html[data-brand-mode="system"] {
   --border: var(--border-light);
   --ring: var(--ring-light);
 
-  --panel-background: color-mix(in oklab, var(--background) 90%, #ffffff);
+  --panel-background: color-mix(in oklab, var(--background) 96%, #ffffff);
   --panel-surface-1: color-mix(
     in oklab,
-    var(--panel-background) 95%,
+    var(--panel-background) 90%,
     var(--accent-soft, var(--muted))
   );
   --panel-surface-2: color-mix(
     in oklab,
-    var(--panel-background) 88%,
+    var(--panel-background) 78%,
     var(--accent-soft, var(--muted))
   );
   --panel-surface-3: color-mix(
     in oklab,
-    var(--panel-background) 80%,
+    var(--panel-background) 64%,
     var(--accent-soft, var(--muted))
   );
   --panel-card: color-mix(in oklab, #ffffff 86%, var(--panel-surface-1));
   --panel-border: color-mix(in oklab, var(--border) 72%, transparent);
   --panel-topbar: color-mix(in oklab, var(--panel-surface-1) 92%, #ffffff);
   --panel-sidebar: var(--panel-surface-2);
+  --surface-2: var(--panel-surface-2);
+  --surface-3: var(--panel-surface-3);
 
   --panel-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.03),
-    0 8px 18px -16px rgba(15, 23, 42, 0.18);
+    0 14px 30px -20px rgba(15, 23, 42, 0.24);
   --panel-shadow-2: 0 1px 2px rgba(15, 23, 42, 0.04),
     0 12px 26px -20px rgba(15, 23, 42, 0.24);
   --panel-shadow-3: 0 2px 8px rgba(15, 23, 42, 0.06),
@@ -403,6 +409,8 @@ html[data-brand-mode="system"] {
     --panel-border: color-mix(in oklab, var(--border) 80%, transparent);
     --panel-topbar: color-mix(in oklab, var(--panel-surface-1) 92%, #020617);
     --panel-sidebar: var(--panel-surface-2);
+    --surface-2: color-mix(in oklab, var(--panel-surface-2) 92%, var(--panel-surface-1));
+    --surface-3: color-mix(in oklab, var(--panel-surface-3) 94%, var(--panel-surface-2));
 
     --panel-shadow-1: 0 1px 2px rgba(2, 6, 23, 0.34),
       0 10px 20px -14px rgba(2, 6, 23, 0.58);

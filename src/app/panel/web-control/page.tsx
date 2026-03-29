@@ -17,7 +17,7 @@ export default function WebControlIndexPage() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-xl border border-border p-4 text-card-foreground sm:p-6 [background:var(--surface-2,var(--card))] [color:var(--card-foreground,var(--foreground))]">
+      <section className="rounded-xl border border-border p-4 text-card-foreground sm:p-6 [background:color-mix(in_oklab,var(--background)_94%,var(--card)_6%)] [color:var(--card-foreground,var(--foreground))] dark:[background:var(--surface-2,var(--card))]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-lg font-semibold tracking-tight">Web Control</h1>
@@ -37,7 +37,7 @@ export default function WebControlIndexPage() {
           <Link
             key={it.href}
             href={it.href}
-            className="rounded-xl border border-border p-4 text-card-foreground transition-colors [background:var(--surface-2,var(--card))] [color:var(--card-foreground,var(--foreground))] hover:[background:var(--surface-3,var(--muted))]"
+            className="rounded-xl border border-border p-4 text-card-foreground transition-colors [background:var(--card)] [color:var(--card-foreground,var(--foreground))] hover:[background:var(--surface-2,var(--muted))] dark:[background:var(--surface-2,var(--card))] dark:hover:[background:var(--surface-3,var(--muted))]"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="text-sm font-semibold">{it.label}</div>

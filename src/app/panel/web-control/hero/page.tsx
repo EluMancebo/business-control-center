@@ -438,7 +438,7 @@ export default function HeroControlPage() {
         <div className="grid h-full grid-cols-1 lg:grid-cols-[420px_1fr]">
           <aside
             className={[
-              "h-full overflow-hidden border-r border-border [background:var(--surface-2,var(--background))]",
+              "h-full overflow-hidden border-r border-border [background:var(--background)] dark:[background:var(--surface-2,var(--background))]",
               "lg:block",
               tab === "edit" ? "block" : "hidden lg:block",
             ].join(" ")}
@@ -688,7 +688,7 @@ export default function HeroControlPage() {
 
           <section
             className={[
-              "h-full overflow-hidden [background:var(--surface-2,var(--background))]",
+              "h-full overflow-hidden [background:var(--background)] dark:[background:var(--surface-2,var(--background))]",
               "lg:block",
               tab === "preview" ? "block" : "hidden lg:block",
             ].join(" ")}
