@@ -136,13 +136,47 @@ export function parseMediaStatus(statusParam: string): AssetStatus {
   return statusParam === "archived" ? "archived" : "active";
 }
 
-export function buildSystemMediaListQuery(statusParam: string, tag: string): AssetListQuery {
+export function parseAssetPipelineStatusParam(
+  value: string
+): AssetPipelineStatus | undefined {
+  const normalized = String(value || "").trim();
+  if (!normalized) return undefined;
+  if (ASSET_PIPELINE_STATUSES.includes(normalized as AssetPipelineStatus)) {
+    return normalized as AssetPipelineStatus;
+  }
+  return undefined;
+}
+
+export function parseAssetVariantKeyParam(value: string): AssetVariantKey | undefined {
+  const normalized = String(value || "").trim();
+  if (!normalized) return undefined;
+  if (ASSET_VARIANT_KEYS.includes(normalized as AssetVariantKey)) {
+    return normalized as AssetVariantKey;
+  }
+  return undefined;
+}
+
+export function buildSystemMediaListQuery(input: {
+  statusParam: string;
+  tag?: string;
+  allowedIn?: string;
+  pipelineStatus?: string;
+  variantKey?: string;
+}): AssetListQuery {
+  const tag = String(input.tag || "").trim();
+  const allowedIn = String(input.allowedIn || "").trim();
+  const pipelineStatus = parseAssetPipelineStatusParam(input.pipelineStatus || "");
+  const variantKey = parseAssetVariantKeyParam(input.variantKey || "");
+
   const query: AssetListQuery = {
     businessId: null,
     scope: "system",
-    status: parseMediaStatus(statusParam),
+    status: parseMediaStatus(input.statusParam),
   };
   if (tag) query.tags = tag;
+  if (allowedIn) query.allowedIn = allowedIn;
+  if (pipelineStatus) query.pipelineStatus = pipelineStatus;
+  if (variantKey) query.variantKey = variantKey;
   return query;
 }
 

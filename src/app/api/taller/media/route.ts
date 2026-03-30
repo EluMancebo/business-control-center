@@ -47,9 +47,18 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const tag = (searchParams.get("tag") || "").trim();
+  const allowedIn = (searchParams.get("allowedIn") || "").trim();
   const statusParam = (searchParams.get("status") || "active").trim();
+  const pipelineStatus = (searchParams.get("pipelineStatus") || "").trim();
+  const variantKey = (searchParams.get("variantKey") || "").trim();
 
-  const query = buildSystemMediaListQuery(statusParam, tag);
+  const query = buildSystemMediaListQuery({
+    statusParam,
+    tag,
+    allowedIn,
+    pipelineStatus,
+    variantKey,
+  });
   const items = (await listSystemAssetsRepository(query)).map((item) => normalizeAssetItem(item));
   return NextResponse.json({ ok: true, items });
 }
