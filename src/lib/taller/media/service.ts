@@ -42,13 +42,14 @@ function toNumber(value: unknown): number {
 }
 
 function toStringValue(value: unknown, fallback = ""): string {
-  if (typeof value !== "string") return fallback;
-  return value;
+  if (typeof value === "string") return value;
+  if (value === null || value === undefined) return fallback;
+  return String(value);
 }
 
 function toNullableString(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const normalized = value.trim();
+  if (value === null || value === undefined) return null;
+  const normalized = String(value).trim();
   return normalized ? normalized : null;
 }
 
@@ -81,7 +82,15 @@ function toPipelineStage(value: unknown): AssetPipelineStage {
   return "done";
 }
 
-function normalizeAssetItem(value: unknown): AssetItem {
+function toOptionalDateString(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString();
+  }
+  return undefined;
+}
+
+export function normalizeAssetItem(value: unknown): AssetItem {
   const item = (value && typeof value === "object" ? value : {}) as Record<string, unknown>;
 
   return {
@@ -108,8 +117,8 @@ function normalizeAssetItem(value: unknown): AssetItem {
     pipelineStage: toPipelineStage(item.pipelineStage),
     pipelineError: toStringValue(item.pipelineError, ""),
     status: item.status === "archived" ? "archived" : "active",
-    createdAt: typeof item.createdAt === "string" ? item.createdAt : undefined,
-    updatedAt: typeof item.updatedAt === "string" ? item.updatedAt : undefined,
+    createdAt: toOptionalDateString(item.createdAt),
+    updatedAt: toOptionalDateString(item.updatedAt),
   };
 }
 

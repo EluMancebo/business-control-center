@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Asset } from "@/models/Asset";
 import { getSessionFromToken } from "@/lib/auth/session";
+import { normalizeAssetItem } from "@/lib/taller/media/service";
 
 type AssetQuery = {
   scope: "system" | "tenant";
@@ -32,7 +33,9 @@ export async function GET(req: NextRequest) {
   if (tag) query.tags = tag;
   if (allowedIn) query.allowedIn = allowedIn;
 
-  const items = await Asset.find(query).sort({ createdAt: -1 }).limit(200).lean();
+  const items = (await Asset.find(query).sort({ createdAt: -1 }).limit(200).lean()).map((item) =>
+    normalizeAssetItem(item)
+  );
 
   return NextResponse.json({ ok: true, items });
 }

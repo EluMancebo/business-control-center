@@ -12,6 +12,7 @@ import {
 import {
   buildSystemAssetStorageKey,
   buildSystemMediaListQuery,
+  normalizeAssetItem,
   resolveAssetKindFromMime,
   splitMediaListValue,
 } from "@/lib/taller/media/service";
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
   const statusParam = (searchParams.get("status") || "active").trim();
 
   const query = buildSystemMediaListQuery(statusParam, tag);
-  const items = await listSystemAssetsRepository(query);
+  const items = (await listSystemAssetsRepository(query)).map((item) => normalizeAssetItem(item));
   return NextResponse.json({ ok: true, items });
 }
 
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
       status: "active",
     });
 
-    return NextResponse.json({ ok: true, item: created });
+    return NextResponse.json({ ok: true, item: normalizeAssetItem(created) });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Upload failed";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
@@ -160,7 +161,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Asset not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ ok: true, item: updated });
+    return NextResponse.json({ ok: true, item: normalizeAssetItem(updated) });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Update failed";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
@@ -196,7 +197,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Asset not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ ok: true, item: deleted });
+    return NextResponse.json({ ok: true, item: normalizeAssetItem(deleted) });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Delete failed";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
