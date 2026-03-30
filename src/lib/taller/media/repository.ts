@@ -1,16 +1,64 @@
 import { Asset } from "@/models/Asset";
 import type {
   AssetCreateInput,
+  AssetPipelineStage,
+  AssetPipelineStatus,
+  AssetVariantKey,
   AssetListQuery,
   AssetUpdateMetadataInput,
 } from "./types";
+
+const DEFAULT_VARIANT_KEY: AssetVariantKey = "original";
+const DEFAULT_PIPELINE_STATUS: AssetPipelineStatus = "ready";
+const DEFAULT_PIPELINE_STAGE: AssetPipelineStage = "done";
+
+function toDimension(value: number | undefined): number {
+  if (typeof value !== "number" || Number.isNaN(value)) return 0;
+  return value;
+}
+
+function toSourceAssetId(value: string | null | undefined): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized ? normalized : null;
+}
+
+function toPipelineError(value: string | undefined): string {
+  if (typeof value !== "string") return "";
+  return value;
+}
+
+function getInitialPipelineDefaults(kind: AssetCreateInput["kind"]): {
+  pipelineStatus: AssetPipelineStatus;
+  pipelineStage: AssetPipelineStage;
+} {
+  if (kind === "image") {
+    return { pipelineStatus: "queued", pipelineStage: "ingest" };
+  }
+
+  return {
+    pipelineStatus: DEFAULT_PIPELINE_STATUS,
+    pipelineStage: DEFAULT_PIPELINE_STAGE,
+  };
+}
 
 export async function listSystemAssetsRepository(query: AssetListQuery) {
   return Asset.find(query).sort({ createdAt: -1 }).limit(200).lean();
 }
 
 export async function createSystemAssetRepository(input: AssetCreateInput) {
-  return Asset.create(input);
+  const initialPipeline = getInitialPipelineDefaults(input.kind);
+
+  return Asset.create({
+    ...input,
+    width: toDimension(input.width),
+    height: toDimension(input.height),
+    sourceAssetId: toSourceAssetId(input.sourceAssetId),
+    variantKey: input.variantKey ?? DEFAULT_VARIANT_KEY,
+    pipelineStatus: input.pipelineStatus ?? initialPipeline.pipelineStatus,
+    pipelineStage: input.pipelineStage ?? initialPipeline.pipelineStage,
+    pipelineError: toPipelineError(input.pipelineError),
+  });
 }
 
 export async function findSystemAssetByIdRepository(id: string) {

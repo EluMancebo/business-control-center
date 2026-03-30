@@ -27,6 +27,25 @@ const AssetSchema = new Schema(
     width: { type: Number, default: 0 },
     height: { type: Number, default: 0 },
 
+    // pipeline / derivados (Bloque A v2)
+    sourceAssetId: { type: Schema.Types.ObjectId, ref: "Asset", default: null },
+    variantKey: {
+      type: String,
+      enum: ["original", "optimized", "vectorized-svg"],
+      default: "original",
+    },
+    pipelineStatus: {
+      type: String,
+      enum: ["queued", "processing", "ready", "failed", "skipped"],
+      default: "ready",
+    },
+    pipelineStage: {
+      type: String,
+      enum: ["ingest", "analyze", "derive", "vectorize", "done"],
+      default: "done",
+    },
+    pipelineError: { type: String, default: "" },
+
     status: { type: String, enum: ["active", "archived"], default: "active" },
   },
   { timestamps: true }

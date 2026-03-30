@@ -1,16 +1,117 @@
-import type { AssetItem, AssetKind, AssetListQuery, AssetStatus } from "./types";
+import type {
+  AssetItem,
+  AssetKind,
+  AssetListQuery,
+  AssetPipelineStage,
+  AssetPipelineStatus,
+  AssetStatus,
+  AssetVariantKey,
+} from "./types";
 
 type MediaListResponse = {
   ok: boolean;
-  items?: AssetItem[];
+  items?: unknown[];
   error?: string;
 };
 
 type MediaItemResponse = {
   ok: boolean;
-  item?: AssetItem;
+  item?: unknown;
   error?: string;
 };
+
+const ASSET_VARIANT_KEYS: AssetVariantKey[] = ["original", "optimized", "vectorized-svg"];
+const ASSET_PIPELINE_STATUSES: AssetPipelineStatus[] = [
+  "queued",
+  "processing",
+  "ready",
+  "failed",
+  "skipped",
+];
+const ASSET_PIPELINE_STAGES: AssetPipelineStage[] = [
+  "ingest",
+  "analyze",
+  "derive",
+  "vectorize",
+  "done",
+];
+
+function toNumber(value: unknown): number {
+  if (typeof value !== "number" || Number.isNaN(value)) return 0;
+  return value;
+}
+
+function toStringValue(value: unknown, fallback = ""): string {
+  if (typeof value !== "string") return fallback;
+  return value;
+}
+
+function toNullableString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized ? normalized : null;
+}
+
+function toStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+function toVariantKey(value: unknown): AssetVariantKey {
+  if (typeof value === "string" && ASSET_VARIANT_KEYS.includes(value as AssetVariantKey)) {
+    return value as AssetVariantKey;
+  }
+  return "original";
+}
+
+function toPipelineStatus(value: unknown): AssetPipelineStatus {
+  if (
+    typeof value === "string" &&
+    ASSET_PIPELINE_STATUSES.includes(value as AssetPipelineStatus)
+  ) {
+    return value as AssetPipelineStatus;
+  }
+  return "ready";
+}
+
+function toPipelineStage(value: unknown): AssetPipelineStage {
+  if (typeof value === "string" && ASSET_PIPELINE_STAGES.includes(value as AssetPipelineStage)) {
+    return value as AssetPipelineStage;
+  }
+  return "done";
+}
+
+function normalizeAssetItem(value: unknown): AssetItem {
+  const item = (value && typeof value === "object" ? value : {}) as Record<string, unknown>;
+
+  return {
+    _id: toStringValue(item._id),
+    businessId: toNullableString(item.businessId),
+    scope: item.scope === "tenant" ? "tenant" : "system",
+    kind:
+      item.kind === "svg" || item.kind === "video" || item.kind === "image"
+        ? item.kind
+        : "image",
+    bucket: toStringValue(item.bucket, "vercel-blob"),
+    key: toStringValue(item.key),
+    url: toStringValue(item.url),
+    label: toStringValue(item.label),
+    tags: toStringArray(item.tags),
+    allowedIn: toStringArray(item.allowedIn),
+    mime: toStringValue(item.mime),
+    bytes: toNumber(item.bytes),
+    width: toNumber(item.width),
+    height: toNumber(item.height),
+    sourceAssetId: toNullableString(item.sourceAssetId),
+    variantKey: toVariantKey(item.variantKey),
+    pipelineStatus: toPipelineStatus(item.pipelineStatus),
+    pipelineStage: toPipelineStage(item.pipelineStage),
+    pipelineError: toStringValue(item.pipelineError, ""),
+    status: item.status === "archived" ? "archived" : "active",
+    createdAt: typeof item.createdAt === "string" ? item.createdAt : undefined,
+    updatedAt: typeof item.updatedAt === "string" ? item.updatedAt : undefined,
+  };
+}
 
 export function splitMediaListValue(value: unknown): string[] {
   const raw = String(value || "").trim();
@@ -74,7 +175,7 @@ export async function fetchSystemMediaClient(tagFilter: string): Promise<AssetIt
   const json = (await res.json().catch(() => null)) as MediaListResponse | null;
   if (!res.ok || !json?.ok) throw new Error(json?.error || "Error loading assets");
 
-  return json.items ?? [];
+  return (json.items ?? []).map((item) => normalizeAssetItem(item));
 }
 
 export async function uploadSystemMediaClient(args: {
@@ -97,7 +198,7 @@ export async function uploadSystemMediaClient(args: {
   const json = (await res.json().catch(() => null)) as MediaItemResponse | null;
   if (!res.ok || !json?.ok || !json.item) throw new Error(json?.error || "Upload failed");
 
-  return json.item;
+  return normalizeAssetItem(json.item);
 }
 
 export async function updateSystemMediaMetadataClient(args: {
@@ -125,7 +226,7 @@ export async function updateSystemMediaMetadataClient(args: {
   const json = (await res.json().catch(() => null)) as MediaItemResponse | null;
   if (!res.ok || !json?.ok || !json.item) throw new Error(json?.error || "Update failed");
 
-  return json.item;
+  return normalizeAssetItem(json.item);
 }
 
 export async function deleteSystemMediaClient(id: string): Promise<void> {

@@ -1,9 +1,26 @@
 export type AssetScope = "system" | "tenant";
 export type AssetKind = "image" | "svg" | "video";
 export type AssetStatus = "active" | "archived";
+export type AssetVariantKey = "original" | "optimized" | "vectorized-svg";
+export type AssetPipelineStatus = "queued" | "processing" | "ready" | "failed" | "skipped";
+export type AssetPipelineStage = "ingest" | "analyze" | "derive" | "vectorize" | "done";
+export type AssetBusinessId = string | null;
+
+type SystemAssetOwnership = {
+  scope: "system";
+  businessId: null;
+};
+
+type TenantAssetOwnership = {
+  scope: "tenant";
+  businessId: string;
+};
+
+export type AssetOwnership = SystemAssetOwnership | TenantAssetOwnership;
 
 export type AssetItem = {
   _id: string;
+  businessId: AssetBusinessId;
   scope: AssetScope;
   kind: AssetKind;
   bucket: string;
@@ -14,20 +31,29 @@ export type AssetItem = {
   allowedIn: string[];
   mime: string;
   bytes: number;
+  width: number;
+  height: number;
+  sourceAssetId: string | null;
+  variantKey: AssetVariantKey;
+  pipelineStatus: AssetPipelineStatus;
+  pipelineStage: AssetPipelineStage;
+  pipelineError: string;
   status: AssetStatus;
   createdAt?: string;
+  updatedAt?: string;
 };
 
 export type AssetListQuery = {
-  businessId: null;
-  scope: "system";
+  businessId: AssetBusinessId;
+  scope: AssetScope;
   status: AssetStatus;
   tags?: string;
+  allowedIn?: string;
+  variantKey?: AssetVariantKey;
+  pipelineStatus?: AssetPipelineStatus;
 };
 
-export type AssetCreateInput = {
-  businessId: null;
-  scope: "system";
+export type AssetCreateInput = AssetOwnership & {
   kind: AssetKind;
   bucket: "vercel-blob";
   key: string;
@@ -37,6 +63,13 @@ export type AssetCreateInput = {
   allowedIn: string[];
   mime: string;
   bytes: number;
+  width?: number;
+  height?: number;
+  sourceAssetId?: string | null;
+  variantKey?: AssetVariantKey;
+  pipelineStatus?: AssetPipelineStatus;
+  pipelineStage?: AssetPipelineStage;
+  pipelineError?: string;
   status: "active";
 };
 
