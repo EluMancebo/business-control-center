@@ -39,11 +39,25 @@ const VISUAL_CATEGORY_OPTIONS = [
 const STYLE_OPTIONS = ["minimal", "corporate", "editorial", "premium", "playful"] as const;
 const COLOR_OPTIONS = ["light", "dark", "monochrome", "colorful"] as const;
 const INTENTION_OPTIONS = ["hero", "footer", "brand", "marketing", "social"] as const;
+const OWNERSHIP_SCOPE_OPTIONS = ["system", "tenant"] as const;
+const OWNERSHIP_VISIBILITY_OPTIONS = ["shared", "private"] as const;
+const OWNERSHIP_SECTOR_OPTIONS = [
+  "general",
+  "barberia",
+  "peluqueria",
+  "dental",
+  "taller",
+  "estetica",
+  "inmobiliaria",
+] as const;
 
 type VisualCategory = (typeof VISUAL_CATEGORY_OPTIONS)[number];
 type TaxonomyStyle = (typeof STYLE_OPTIONS)[number];
 type TaxonomyColor = (typeof COLOR_OPTIONS)[number];
 type TaxonomyIntention = (typeof INTENTION_OPTIONS)[number];
+type OwnershipScope = (typeof OWNERSHIP_SCOPE_OPTIONS)[number];
+type OwnershipVisibility = (typeof OWNERSHIP_VISIBILITY_OPTIONS)[number];
+type OwnershipSector = (typeof OWNERSHIP_SECTOR_OPTIONS)[number];
 
 function splitTagInput(value: string): string[] {
   return String(value || "")
@@ -66,12 +80,19 @@ function buildGuidedTags(args: {
   styles: TaxonomyStyle[];
   colors: TaxonomyColor[];
   intentions: TaxonomyIntention[];
+  scope: OwnershipScope;
+  visibility: OwnershipVisibility;
+  sector: OwnershipSector;
 }): string[] {
+  // Taxonomía guiada provisional (Sprint UX): mantenemos compatibilidad serializando en tags.
   return [
     `visual:${args.visualCategory}`,
     ...args.styles.map((value) => `style:${value}`),
     ...args.colors.map((value) => `color:${value}`),
     ...args.intentions.map((value) => `intent:${value}`),
+    `scope:${args.scope}`,
+    `visibility:${args.visibility}`,
+    `sector:${args.sector}`,
   ];
 }
 
@@ -81,6 +102,9 @@ function mergeUploadTags(args: {
   styles: TaxonomyStyle[];
   colors: TaxonomyColor[];
   intentions: TaxonomyIntention[];
+  scope: OwnershipScope;
+  visibility: OwnershipVisibility;
+  sector: OwnershipSector;
 }): string {
   const free = splitTagInput(args.freeTagsInput);
   const guided = buildGuidedTags({
@@ -88,6 +112,9 @@ function mergeUploadTags(args: {
     styles: args.styles,
     colors: args.colors,
     intentions: args.intentions,
+    scope: args.scope,
+    visibility: args.visibility,
+    sector: args.sector,
   });
   return Array.from(new Set([...free, ...guided])).join(", ");
 }
@@ -123,6 +150,9 @@ export default function TallerMediaPage() {
   const [styleSelection, setStyleSelection] = useState<TaxonomyStyle[]>([]);
   const [colorSelection, setColorSelection] = useState<TaxonomyColor[]>([]);
   const [intentionSelection, setIntentionSelection] = useState<TaxonomyIntention[]>([]);
+  const [uploadScope, setUploadScope] = useState<OwnershipScope>("system");
+  const [uploadVisibility, setUploadVisibility] = useState<OwnershipVisibility>("shared");
+  const [uploadSector, setUploadSector] = useState<OwnershipSector>("general");
 
   async function load() {
     setLoading(true);
@@ -224,6 +254,9 @@ export default function TallerMediaPage() {
         styles: styleSelection,
         colors: colorSelection,
         intentions: intentionSelection,
+        scope: uploadScope,
+        visibility: uploadVisibility,
+        sector: uploadSector,
       });
 
       const created = await uploadSystemMediaClient({
@@ -243,6 +276,9 @@ export default function TallerMediaPage() {
       setStyleSelection([]);
       setColorSelection([]);
       setIntentionSelection([]);
+      setUploadScope("system");
+      setUploadVisibility("shared");
+      setUploadSector("general");
       setNotice("Asset subido correctamente ✓");
       if (closeSheetAfterSave) setIsUploadSheetOpen(false);
     } catch (e: unknown) {
@@ -382,6 +418,7 @@ export default function TallerMediaPage() {
     "inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-semibold transition-colors duration-180 [background:var(--cta-primary)] [color:var(--cta-primary-foreground)] hover:[background:var(--cta-primary-hover)] disabled:opacity-60";
   const quietButtonClass =
     "inline-flex h-9 items-center justify-center rounded-lg border border-border px-3 text-xs font-semibold transition-colors duration-180 [background:var(--cta-secondary)] [color:var(--cta-secondary-foreground)] hover:[background:var(--cta-secondary-hover)] disabled:opacity-60";
+  const fileInputClass = `${inputClass} h-auto border-2 border-dashed border-border/75 py-3 [background:var(--surface-2,var(--background))]`;
 
   return (
     <div className="mx-auto w-full max-w-[1180px] space-y-6 px-3 pb-4 sm:px-4 lg:px-0">
@@ -536,7 +573,7 @@ export default function TallerMediaPage() {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <section className="hidden rounded-2xl border border-border/70 p-5 shadow-[0_18px_36px_-28px_rgba(15,23,42,0.5)] [background:var(--surface-2,var(--card))] lg:block">
+        <section className="hidden rounded-2xl border border-border/85 p-5 shadow-[0_24px_44px_-30px_rgba(15,23,42,0.58)] ring-1 ring-border/35 [background:var(--surface-2,var(--card))] lg:block">
           <div className="text-sm font-semibold">Subir nuevo asset</div>
           <p className="mt-1 text-sm text-muted-foreground">
             Alta guiada para libreria del sistema (Capa 1), con taxonomía controlada.
@@ -552,7 +589,7 @@ export default function TallerMediaPage() {
                     id="taller-media-file-desktop"
                     ref={fileRef}
                     type="file"
-                    className={`${inputClass} h-auto border-dashed py-2.5`}
+                    className={fileInputClass}
                     accept="image/*,video/*,.svg"
                   />
                 </label>
@@ -695,7 +732,66 @@ export default function TallerMediaPage() {
             </div>
 
             <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
-              <p className="text-xs font-semibold text-foreground">Bloque 4 · Restricción de uso (`allowedIn`)</p>
+              <p className="text-xs font-semibold text-foreground">Bloque 4 · Ownership / alcance</p>
+              <div className="mt-2 grid gap-3">
+                <label className="grid gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">Scope</span>
+                  <select
+                    value={uploadScope}
+                    onChange={(e) => setUploadScope(e.target.value as OwnershipScope)}
+                    className={selectClass}
+                  >
+                    {OWNERSHIP_SCOPE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">Visibility / reuse policy</span>
+                  <select
+                    value={uploadVisibility}
+                    onChange={(e) =>
+                      setUploadVisibility(e.target.value as OwnershipVisibility)
+                    }
+                    className={selectClass}
+                  >
+                    {OWNERSHIP_VISIBILITY_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">Sector</span>
+                  <select
+                    value={uploadSector}
+                    onChange={(e) => setUploadSector(e.target.value as OwnershipSector)}
+                    className={selectClass}
+                  >
+                    {OWNERSHIP_SECTOR_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">Business / client (siguiente fase)</span>
+                  <select disabled className={`${selectClass} opacity-60`} value="">
+                    <option value="">No conectado aún</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+              <p className="text-xs font-semibold text-foreground">Bloque 5 · Restricción de uso (`allowedIn`)</p>
               <p className="mt-1 text-[11px] text-muted-foreground">
                 Si no seleccionas nada, el asset queda en uso libre.
               </p>
@@ -887,7 +983,7 @@ export default function TallerMediaPage() {
                         id="taller-media-file-mobile"
                         ref={mobileFileRef}
                         type="file"
-                        className={`${inputClass} h-auto border-dashed py-2.5`}
+                        className={fileInputClass}
                         accept="image/*,video/*,.svg"
                       />
                     </label>
@@ -1030,7 +1126,66 @@ export default function TallerMediaPage() {
                 </div>
 
                 <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
-                  <p className="text-xs font-semibold text-foreground">Bloque 4 · Restricción de uso (`allowedIn`)</p>
+                  <p className="text-xs font-semibold text-foreground">Bloque 4 · Ownership / alcance</p>
+                  <div className="mt-2 grid gap-3">
+                    <label className="grid gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">Scope</span>
+                      <select
+                        value={uploadScope}
+                        onChange={(e) => setUploadScope(e.target.value as OwnershipScope)}
+                        className={selectClass}
+                      >
+                        {OWNERSHIP_SCOPE_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="grid gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">Visibility / reuse policy</span>
+                      <select
+                        value={uploadVisibility}
+                        onChange={(e) =>
+                          setUploadVisibility(e.target.value as OwnershipVisibility)
+                        }
+                        className={selectClass}
+                      >
+                        {OWNERSHIP_VISIBILITY_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="grid gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">Sector</span>
+                      <select
+                        value={uploadSector}
+                        onChange={(e) => setUploadSector(e.target.value as OwnershipSector)}
+                        className={selectClass}
+                      >
+                        {OWNERSHIP_SECTOR_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="grid gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">Business / client (siguiente fase)</span>
+                      <select disabled className={`${selectClass} opacity-60`} value="">
+                        <option value="">No conectado aún</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+                  <p className="text-xs font-semibold text-foreground">Bloque 5 · Restricción de uso (`allowedIn`)</p>
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     Si no seleccionas nada, el asset queda en uso libre.
                   </p>
