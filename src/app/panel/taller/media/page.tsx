@@ -15,6 +15,83 @@ type KindFilter = "all" | AssetItem["kind"];
 type ScopeFilter = "all" | AssetItem["scope"];
 type RestrictionFilter = "all" | "restricted" | "open";
 
+const ALLOWED_IN_OPTIONS = [
+  "hero.background",
+  "hero.logo",
+  "hero.media",
+  "navbar.logo",
+  "footer.logo",
+  "footer.background",
+  "card.media",
+  "popup.media",
+  "banner.media",
+  "social.media",
+  "pdf.media",
+] as const;
+
+const VISUAL_CATEGORY_OPTIONS = [
+  "logo",
+  "texture",
+  "photo",
+  "icon",
+  "illustration",
+] as const;
+const STYLE_OPTIONS = ["minimal", "corporate", "editorial", "premium", "playful"] as const;
+const COLOR_OPTIONS = ["light", "dark", "monochrome", "colorful"] as const;
+const INTENTION_OPTIONS = ["hero", "footer", "brand", "marketing", "social"] as const;
+
+type VisualCategory = (typeof VISUAL_CATEGORY_OPTIONS)[number];
+type TaxonomyStyle = (typeof STYLE_OPTIONS)[number];
+type TaxonomyColor = (typeof COLOR_OPTIONS)[number];
+type TaxonomyIntention = (typeof INTENTION_OPTIONS)[number];
+
+function splitTagInput(value: string): string[] {
+  return String(value || "")
+    .split(/[,\s]+/g)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .slice(0, 30);
+}
+
+function toggleSelection<T extends string>(current: T[], value: T, max: number): T[] {
+  if (current.includes(value)) {
+    return current.filter((item) => item !== value);
+  }
+  if (current.length >= max) return current;
+  return [...current, value];
+}
+
+function buildGuidedTags(args: {
+  visualCategory: VisualCategory;
+  styles: TaxonomyStyle[];
+  colors: TaxonomyColor[];
+  intentions: TaxonomyIntention[];
+}): string[] {
+  return [
+    `visual:${args.visualCategory}`,
+    ...args.styles.map((value) => `style:${value}`),
+    ...args.colors.map((value) => `color:${value}`),
+    ...args.intentions.map((value) => `intent:${value}`),
+  ];
+}
+
+function mergeUploadTags(args: {
+  freeTagsInput: string;
+  visualCategory: VisualCategory;
+  styles: TaxonomyStyle[];
+  colors: TaxonomyColor[];
+  intentions: TaxonomyIntention[];
+}): string {
+  const free = splitTagInput(args.freeTagsInput);
+  const guided = buildGuidedTags({
+    visualCategory: args.visualCategory,
+    styles: args.styles,
+    colors: args.colors,
+    intentions: args.intentions,
+  });
+  return Array.from(new Set([...free, ...guided])).join(", ");
+}
+
 export default function TallerMediaPage() {
   const [items, setItems] = useState<AssetItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +118,11 @@ export default function TallerMediaPage() {
   const mobileFileRef = useRef<HTMLInputElement | null>(null);
   const [label, setLabel] = useState("");
   const [tags, setTags] = useState("");
-  const [allowedIn, setAllowedIn] = useState("");
+  const [allowedInSelection, setAllowedInSelection] = useState<string[]>([]);
+  const [visualCategory, setVisualCategory] = useState<VisualCategory>("photo");
+  const [styleSelection, setStyleSelection] = useState<TaxonomyStyle[]>([]);
+  const [colorSelection, setColorSelection] = useState<TaxonomyColor[]>([]);
+  const [intentionSelection, setIntentionSelection] = useState<TaxonomyIntention[]>([]);
 
   async function load() {
     setLoading(true);
@@ -137,11 +218,19 @@ export default function TallerMediaPage() {
       const file = fileRef.current?.files?.[0] ?? mobileFileRef.current?.files?.[0];
       if (!file) throw new Error("Selecciona un archivo.");
 
+      const mergedTags = mergeUploadTags({
+        freeTagsInput: tags,
+        visualCategory,
+        styles: styleSelection,
+        colors: colorSelection,
+        intentions: intentionSelection,
+      });
+
       const created = await uploadSystemMediaClient({
         file,
         label,
-        tags,
-        allowedIn,
+        tags: mergedTags,
+        allowedIn: allowedInSelection.join(", "),
       });
       setItems((prev) => [created, ...prev]);
 
@@ -149,7 +238,11 @@ export default function TallerMediaPage() {
       if (mobileFileRef.current) mobileFileRef.current.value = "";
       setLabel("");
       setTags("");
-      setAllowedIn("");
+      setAllowedInSelection([]);
+      setVisualCategory("photo");
+      setStyleSelection([]);
+      setColorSelection([]);
+      setIntentionSelection([]);
       setNotice("Asset subido correctamente ✓");
       if (closeSheetAfterSave) setIsUploadSheetOpen(false);
     } catch (e: unknown) {
@@ -443,53 +536,197 @@ export default function TallerMediaPage() {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <section className="hidden rounded-xl border border-border p-5 shadow-sm [background:var(--surface-2,var(--card))] lg:block">
+        <section className="hidden rounded-2xl border border-border/70 p-5 shadow-[0_18px_36px_-28px_rgba(15,23,42,0.5)] [background:var(--surface-2,var(--card))] lg:block">
           <div className="text-sm font-semibold">Subir nuevo asset</div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Alta rapida para libreria del sistema (Capa 1).
+            Alta guiada para libreria del sistema (Capa 1), con taxonomía controlada.
           </p>
 
           <form onSubmit={onUpload} className="mt-4 grid gap-3">
-            <label className="grid gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Archivo</span>
-              <input
-                id="taller-media-file-desktop"
-                ref={fileRef}
-                type="file"
-                className={`${inputClass} h-auto py-2`}
-                accept="image/*,video/*,.svg"
-              />
-            </label>
+            <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+              <p className="text-xs font-semibold text-foreground">Bloque 1 · Asset base</p>
+              <div className="mt-2 grid gap-3">
+                <label className="grid gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">Archivo</span>
+                  <input
+                    id="taller-media-file-desktop"
+                    ref={fileRef}
+                    type="file"
+                    className={`${inputClass} h-auto border-dashed py-2.5`}
+                    accept="image/*,video/*,.svg"
+                  />
+                </label>
 
-            <label className="grid gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Label (opcional)</span>
-              <input
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                className={inputClass}
-                placeholder="Ej: Footer silueta"
-              />
-            </label>
+                <label className="grid gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">Label (opcional)</span>
+                  <input
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    className={inputClass}
+                    placeholder="Ej: Footer silueta"
+                  />
+                </label>
+              </div>
+            </div>
 
-            <label className="grid gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Tags (opcional)</span>
-              <input
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                className={inputClass}
-                placeholder="hero:background footer:shape"
-              />
-            </label>
+            <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+              <p className="text-xs font-semibold text-foreground">Bloque 2 · Clasificación base</p>
+              <div className="mt-2 grid gap-3">
+                <label className="grid gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">Categoría visual</span>
+                  <select
+                    value={visualCategory}
+                    onChange={(e) => setVisualCategory(e.target.value as VisualCategory)}
+                    className={selectClass}
+                  >
+                    {VISUAL_CATEGORY_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-            <label className="grid gap-1">
-              <span className="text-xs font-medium text-muted-foreground">AllowedIn (opcional)</span>
-              <input
-                value={allowedIn}
-                onChange={(e) => setAllowedIn(e.target.value)}
-                className={inputClass}
-                placeholder="hero.background footer.pattern"
-              />
-            </label>
+                <label className="grid gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">Tags libres (opcional)</span>
+                  <input
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                    className={inputClass}
+                    placeholder="hero:background footer:shape"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+              <p className="text-xs font-semibold text-foreground">Bloque 3 · Perfil visual</p>
+              <div className="mt-2 grid gap-3">
+                <div className="grid gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">Estilo (máx. 2)</span>
+                  <div className="flex flex-wrap gap-2">
+                    {STYLE_OPTIONS.map((option) => {
+                      const selected = styleSelection.includes(option);
+                      const disabled = styleSelection.length >= 2 && !selected;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() =>
+                            setStyleSelection((prev) => toggleSelection(prev, option, 2))
+                          }
+                          disabled={disabled}
+                          aria-pressed={selected}
+                          className={[
+                            "rounded-full border px-2 py-1 text-xs transition-colors",
+                            selected
+                              ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
+                              : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                            disabled ? "opacity-50" : "",
+                          ].join(" ")}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">Color (máx. 2)</span>
+                  <div className="flex flex-wrap gap-2">
+                    {COLOR_OPTIONS.map((option) => {
+                      const selected = colorSelection.includes(option);
+                      const disabled = colorSelection.length >= 2 && !selected;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() =>
+                            setColorSelection((prev) => toggleSelection(prev, option, 2))
+                          }
+                          disabled={disabled}
+                          aria-pressed={selected}
+                          className={[
+                            "rounded-full border px-2 py-1 text-xs transition-colors",
+                            selected
+                              ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
+                              : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                            disabled ? "opacity-50" : "",
+                          ].join(" ")}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">Intención (máx. 3)</span>
+                  <div className="flex flex-wrap gap-2">
+                    {INTENTION_OPTIONS.map((option) => {
+                      const selected = intentionSelection.includes(option);
+                      const disabled = intentionSelection.length >= 3 && !selected;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() =>
+                            setIntentionSelection((prev) => toggleSelection(prev, option, 3))
+                          }
+                          disabled={disabled}
+                          aria-pressed={selected}
+                          className={[
+                            "rounded-full border px-2 py-1 text-xs transition-colors",
+                            selected
+                              ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
+                              : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                            disabled ? "opacity-50" : "",
+                          ].join(" ")}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+              <p className="text-xs font-semibold text-foreground">Bloque 4 · Restricción de uso (`allowedIn`)</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Si no seleccionas nada, el asset queda en uso libre.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {ALLOWED_IN_OPTIONS.map((option) => {
+                  const selected = allowedInSelection.includes(option);
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() =>
+                        setAllowedInSelection((prev) =>
+                          prev.includes(option)
+                            ? prev.filter((value) => value !== option)
+                            : [...prev, option]
+                        )
+                      }
+                      aria-pressed={selected}
+                      className={[
+                        "rounded-full border px-2 py-1 text-xs transition-colors",
+                        selected
+                          ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
+                          : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                      ].join(" ")}
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             <button disabled={busy} className={primaryButtonClass}>
               {busy ? "Subiendo..." : "Subir asset"}
@@ -641,46 +878,190 @@ export default function TallerMediaPage() {
 
             <div className="max-h-[calc(88vh-64px)] overflow-y-auto p-4">
               <form onSubmit={onUpload} className="grid gap-3">
-                <label className="grid gap-1">
-                  <span className="text-xs font-medium text-muted-foreground">Archivo</span>
-                  <input
-                    id="taller-media-file-mobile"
-                    ref={mobileFileRef}
-                    type="file"
-                    className={`${inputClass} h-auto py-2`}
-                    accept="image/*,video/*,.svg"
-                  />
-                </label>
+                <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+                  <p className="text-xs font-semibold text-foreground">Bloque 1 · Asset base</p>
+                  <div className="mt-2 grid gap-3">
+                    <label className="grid gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">Archivo</span>
+                      <input
+                        id="taller-media-file-mobile"
+                        ref={mobileFileRef}
+                        type="file"
+                        className={`${inputClass} h-auto border-dashed py-2.5`}
+                        accept="image/*,video/*,.svg"
+                      />
+                    </label>
 
-                <label className="grid gap-1">
-                  <span className="text-xs font-medium text-muted-foreground">Label (opcional)</span>
-                  <input
-                    value={label}
-                    onChange={(e) => setLabel(e.target.value)}
-                    className={inputClass}
-                    placeholder="Ej: Hero ilustracion"
-                  />
-                </label>
+                    <label className="grid gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">Label (opcional)</span>
+                      <input
+                        value={label}
+                        onChange={(e) => setLabel(e.target.value)}
+                        className={inputClass}
+                        placeholder="Ej: Hero ilustracion"
+                      />
+                    </label>
+                  </div>
+                </div>
 
-                <label className="grid gap-1">
-                  <span className="text-xs font-medium text-muted-foreground">Tags (opcional)</span>
-                  <input
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                    className={inputClass}
-                    placeholder="hero:background"
-                  />
-                </label>
+                <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+                  <p className="text-xs font-semibold text-foreground">Bloque 2 · Clasificación base</p>
+                  <div className="mt-2 grid gap-3">
+                    <label className="grid gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">Categoría visual</span>
+                      <select
+                        value={visualCategory}
+                        onChange={(e) => setVisualCategory(e.target.value as VisualCategory)}
+                        className={selectClass}
+                      >
+                        {VISUAL_CATEGORY_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
 
-                <label className="grid gap-1">
-                  <span className="text-xs font-medium text-muted-foreground">AllowedIn (opcional)</span>
-                  <input
-                    value={allowedIn}
-                    onChange={(e) => setAllowedIn(e.target.value)}
-                    className={inputClass}
-                    placeholder="hero.background"
-                  />
-                </label>
+                    <label className="grid gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">Tags libres (opcional)</span>
+                      <input
+                        value={tags}
+                        onChange={(e) => setTags(e.target.value)}
+                        className={inputClass}
+                        placeholder="hero:background"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+                  <p className="text-xs font-semibold text-foreground">Bloque 3 · Perfil visual</p>
+                  <div className="mt-2 grid gap-3">
+                    <div className="grid gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">Estilo (máx. 2)</span>
+                      <div className="flex flex-wrap gap-2">
+                        {STYLE_OPTIONS.map((option) => {
+                          const selected = styleSelection.includes(option);
+                          const disabled = styleSelection.length >= 2 && !selected;
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() =>
+                                setStyleSelection((prev) => toggleSelection(prev, option, 2))
+                              }
+                              disabled={disabled}
+                              aria-pressed={selected}
+                              className={[
+                                "rounded-full border px-2 py-1 text-xs transition-colors",
+                                selected
+                                  ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
+                                  : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                                disabled ? "opacity-50" : "",
+                              ].join(" ")}
+                            >
+                              {option}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">Color (máx. 2)</span>
+                      <div className="flex flex-wrap gap-2">
+                        {COLOR_OPTIONS.map((option) => {
+                          const selected = colorSelection.includes(option);
+                          const disabled = colorSelection.length >= 2 && !selected;
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() =>
+                                setColorSelection((prev) => toggleSelection(prev, option, 2))
+                              }
+                              disabled={disabled}
+                              aria-pressed={selected}
+                              className={[
+                                "rounded-full border px-2 py-1 text-xs transition-colors",
+                                selected
+                                  ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
+                                  : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                                disabled ? "opacity-50" : "",
+                              ].join(" ")}
+                            >
+                              {option}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">Intención (máx. 3)</span>
+                      <div className="flex flex-wrap gap-2">
+                        {INTENTION_OPTIONS.map((option) => {
+                          const selected = intentionSelection.includes(option);
+                          const disabled = intentionSelection.length >= 3 && !selected;
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() =>
+                                setIntentionSelection((prev) => toggleSelection(prev, option, 3))
+                              }
+                              disabled={disabled}
+                              aria-pressed={selected}
+                              className={[
+                                "rounded-full border px-2 py-1 text-xs transition-colors",
+                                selected
+                                  ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
+                                  : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                                disabled ? "opacity-50" : "",
+                              ].join(" ")}
+                            >
+                              {option}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+                  <p className="text-xs font-semibold text-foreground">Bloque 4 · Restricción de uso (`allowedIn`)</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Si no seleccionas nada, el asset queda en uso libre.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {ALLOWED_IN_OPTIONS.map((option) => {
+                      const selected = allowedInSelection.includes(option);
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() =>
+                            setAllowedInSelection((prev) =>
+                              prev.includes(option)
+                                ? prev.filter((value) => value !== option)
+                                : [...prev, option]
+                            )
+                          }
+                          aria-pressed={selected}
+                          className={[
+                            "rounded-full border px-2 py-1 text-xs transition-colors",
+                            selected
+                              ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
+                              : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                          ].join(" ")}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
                 <button disabled={busy} className={primaryButtonClass}>
                   {busy ? "Subiendo..." : "Guardar asset"}
