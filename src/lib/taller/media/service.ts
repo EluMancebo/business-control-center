@@ -59,25 +59,25 @@ function toStringArray(value: unknown): string[] {
 }
 
 function toVariantKey(value: unknown): AssetVariantKey {
-  if (typeof value === "string" && ASSET_VARIANT_KEYS.includes(value as AssetVariantKey)) {
-    return value as AssetVariantKey;
+  const normalized = String(value ?? "").trim();
+  if (ASSET_VARIANT_KEYS.includes(normalized as AssetVariantKey)) {
+    return normalized as AssetVariantKey;
   }
   return "original";
 }
 
 function toPipelineStatus(value: unknown): AssetPipelineStatus {
-  if (
-    typeof value === "string" &&
-    ASSET_PIPELINE_STATUSES.includes(value as AssetPipelineStatus)
-  ) {
-    return value as AssetPipelineStatus;
+  const normalized = String(value ?? "").trim();
+  if (ASSET_PIPELINE_STATUSES.includes(normalized as AssetPipelineStatus)) {
+    return normalized as AssetPipelineStatus;
   }
   return "ready";
 }
 
 function toPipelineStage(value: unknown): AssetPipelineStage {
-  if (typeof value === "string" && ASSET_PIPELINE_STAGES.includes(value as AssetPipelineStage)) {
-    return value as AssetPipelineStage;
+  const normalized = String(value ?? "").trim();
+  if (ASSET_PIPELINE_STAGES.includes(normalized as AssetPipelineStage)) {
+    return normalized as AssetPipelineStage;
   }
   return "done";
 }
