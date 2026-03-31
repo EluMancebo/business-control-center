@@ -119,6 +119,118 @@ function mergeUploadTags(args: {
   return Array.from(new Set([...free, ...guided])).join(", ");
 }
 
+function parseGuidedTags(tags: string[]): {
+  freeTags: string[];
+  visualCategory: VisualCategory;
+  styles: TaxonomyStyle[];
+  colors: TaxonomyColor[];
+  intentions: TaxonomyIntention[];
+  scope: OwnershipScope;
+  visibility: OwnershipVisibility;
+  sector: OwnershipSector;
+} {
+  const parsed = {
+    freeTags: [] as string[],
+    visualCategory: "photo" as VisualCategory,
+    styles: [] as TaxonomyStyle[],
+    colors: [] as TaxonomyColor[],
+    intentions: [] as TaxonomyIntention[],
+    scope: "system" as OwnershipScope,
+    visibility: "shared" as OwnershipVisibility,
+    sector: "general" as OwnershipSector,
+  };
+
+  tags.forEach((rawTag) => {
+    const tag = rawTag.trim();
+    if (!tag) return;
+
+    if (tag.startsWith("visual:")) {
+      const value = tag.slice("visual:".length).trim();
+      if (VISUAL_CATEGORY_OPTIONS.includes(value as VisualCategory)) {
+        parsed.visualCategory = value as VisualCategory;
+        return;
+      }
+    }
+
+    if (tag.startsWith("style:")) {
+      const value = tag.slice("style:".length).trim();
+      if (STYLE_OPTIONS.includes(value as TaxonomyStyle)) {
+        if (!parsed.styles.includes(value as TaxonomyStyle)) {
+          parsed.styles.push(value as TaxonomyStyle);
+        }
+        return;
+      }
+    }
+
+    if (tag.startsWith("color:")) {
+      const value = tag.slice("color:".length).trim();
+      if (COLOR_OPTIONS.includes(value as TaxonomyColor)) {
+        if (!parsed.colors.includes(value as TaxonomyColor)) {
+          parsed.colors.push(value as TaxonomyColor);
+        }
+        return;
+      }
+    }
+
+    if (tag.startsWith("intent:")) {
+      const value = tag.slice("intent:".length).trim();
+      if (INTENTION_OPTIONS.includes(value as TaxonomyIntention)) {
+        if (!parsed.intentions.includes(value as TaxonomyIntention)) {
+          parsed.intentions.push(value as TaxonomyIntention);
+        }
+        return;
+      }
+    }
+
+    if (tag.startsWith("scope:")) {
+      const value = tag.slice("scope:".length).trim();
+      if (OWNERSHIP_SCOPE_OPTIONS.includes(value as OwnershipScope)) {
+        parsed.scope = value as OwnershipScope;
+        return;
+      }
+    }
+
+    if (tag.startsWith("visibility:")) {
+      const value = tag.slice("visibility:".length).trim();
+      if (OWNERSHIP_VISIBILITY_OPTIONS.includes(value as OwnershipVisibility)) {
+        parsed.visibility = value as OwnershipVisibility;
+        return;
+      }
+    }
+
+    if (tag.startsWith("sector:")) {
+      const value = tag.slice("sector:".length).trim();
+      if (OWNERSHIP_SECTOR_OPTIONS.includes(value as OwnershipSector)) {
+        parsed.sector = value as OwnershipSector;
+        return;
+      }
+    }
+
+    parsed.freeTags.push(tag);
+  });
+
+  return parsed;
+}
+
+function splitAllowedInForEdit(allowedIn: string[]): { known: string[]; extra: string[] } {
+  const known: string[] = [];
+  const extra: string[] = [];
+
+  allowedIn.forEach((rawValue) => {
+    const value = rawValue.trim();
+    if (!value) return;
+
+    if (ALLOWED_IN_OPTIONS.includes(value as (typeof ALLOWED_IN_OPTIONS)[number])) {
+      if (!known.includes(value)) known.push(value);
+      return;
+    }
+
+    if (!extra.includes(value)) extra.push(value);
+  });
+
+  return { known, extra };
+}
+
 export default function TallerMediaPage() {
   const [items, setItems] = useState<AssetItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,8 +248,16 @@ export default function TallerMediaPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState("");
-  const [editTags, setEditTags] = useState("");
-  const [editAllowedIn, setEditAllowedIn] = useState("");
+  const [editFreeTags, setEditFreeTags] = useState("");
+  const [editVisualCategory, setEditVisualCategory] = useState<VisualCategory>("photo");
+  const [editStyleSelection, setEditStyleSelection] = useState<TaxonomyStyle[]>([]);
+  const [editColorSelection, setEditColorSelection] = useState<TaxonomyColor[]>([]);
+  const [editIntentionSelection, setEditIntentionSelection] = useState<TaxonomyIntention[]>([]);
+  const [editScope, setEditScope] = useState<OwnershipScope>("system");
+  const [editVisibility, setEditVisibility] = useState<OwnershipVisibility>("shared");
+  const [editSector, setEditSector] = useState<OwnershipSector>("general");
+  const [editAllowedInSelection, setEditAllowedInSelection] = useState<string[]>([]);
+  const [editAllowedInExtra, setEditAllowedInExtra] = useState<string[]>([]);
 
   const [isUploadSheetOpen, setIsUploadSheetOpen] = useState(false);
 
@@ -289,10 +409,21 @@ export default function TallerMediaPage() {
   }
 
   function startEdit(item: AssetItem) {
+    const parsedTags = parseGuidedTags(item.tags || []);
+    const parsedAllowedIn = splitAllowedInForEdit(item.allowedIn || []);
+
     setEditingId(item._id);
     setEditLabel(item.label);
-    setEditTags((item.tags || []).join(", "));
-    setEditAllowedIn((item.allowedIn || []).join(", "));
+    setEditFreeTags(parsedTags.freeTags.join(", "));
+    setEditVisualCategory(parsedTags.visualCategory);
+    setEditStyleSelection(parsedTags.styles.slice(0, 2));
+    setEditColorSelection(parsedTags.colors.slice(0, 2));
+    setEditIntentionSelection(parsedTags.intentions.slice(0, 3));
+    setEditScope(parsedTags.scope);
+    setEditVisibility(parsedTags.visibility);
+    setEditSector(parsedTags.sector);
+    setEditAllowedInSelection(parsedAllowedIn.known);
+    setEditAllowedInExtra(parsedAllowedIn.extra);
     setError(null);
     setNotice(null);
   }
@@ -300,8 +431,16 @@ export default function TallerMediaPage() {
   function cancelEdit() {
     setEditingId(null);
     setEditLabel("");
-    setEditTags("");
-    setEditAllowedIn("");
+    setEditFreeTags("");
+    setEditVisualCategory("photo");
+    setEditStyleSelection([]);
+    setEditColorSelection([]);
+    setEditIntentionSelection([]);
+    setEditScope("system");
+    setEditVisibility("shared");
+    setEditSector("general");
+    setEditAllowedInSelection([]);
+    setEditAllowedInExtra([]);
   }
 
   async function saveEdit() {
@@ -312,11 +451,22 @@ export default function TallerMediaPage() {
     setNotice(null);
 
     try {
+      const mergedTags = mergeUploadTags({
+        freeTagsInput: editFreeTags,
+        visualCategory: editVisualCategory,
+        styles: editStyleSelection,
+        colors: editColorSelection,
+        intentions: editIntentionSelection,
+        scope: editScope,
+        visibility: editVisibility,
+        sector: editSector,
+      });
+
       await updateSystemMediaMetadataClient({
         id: editingId,
         label: editLabel,
-        tags: editTags,
-        allowedIn: editAllowedIn,
+        tags: mergedTags,
+        allowedIn: [...editAllowedInSelection, ...editAllowedInExtra].join(", "),
       });
       cancelEdit();
       setNotice("Asset actualizado ✓");
@@ -1270,28 +1420,214 @@ export default function TallerMediaPage() {
                 />
               </label>
 
-              <label className="grid gap-1">
-                <span className="text-xs font-medium text-muted-foreground">Tags</span>
-                <input
-                  value={editTags}
-                  onChange={(e) => setEditTags(e.target.value)}
-                  className={inputClass}
-                  placeholder="hero:background, hero:logo"
-                />
-              </label>
+              <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+                <p className="text-xs font-semibold text-foreground">Clasificación</p>
+                <div className="mt-2 grid gap-3">
+                  <label className="grid gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">Categoría visual</span>
+                    <select
+                      value={editVisualCategory}
+                      onChange={(e) => setEditVisualCategory(e.target.value as VisualCategory)}
+                      className={selectClass}
+                    >
+                      {VISUAL_CATEGORY_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-              <label className="grid gap-1">
-                <span className="text-xs font-medium text-muted-foreground">AllowedIn</span>
-                <input
-                  value={editAllowedIn}
-                  onChange={(e) => setEditAllowedIn(e.target.value)}
-                  className={inputClass}
-                  placeholder="hero.background, hero.logo"
-                />
-                <span className="text-xs text-muted-foreground">
-                  Restriccion funcional de uso por slot.
-                </span>
-              </label>
+                  <label className="grid gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">Tags libres (opcional)</span>
+                    <input
+                      value={editFreeTags}
+                      onChange={(e) => setEditFreeTags(e.target.value)}
+                      className={inputClass}
+                      placeholder="hero:background, campaña:abril"
+                    />
+                  </label>
+
+                  <div className="grid gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">Estilo (máx. 2)</span>
+                    <div className="flex flex-wrap gap-2">
+                      {STYLE_OPTIONS.map((option) => {
+                        const selected = editStyleSelection.includes(option);
+                        const disabled = editStyleSelection.length >= 2 && !selected;
+                        return (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() =>
+                              setEditStyleSelection((prev) => toggleSelection(prev, option, 2))
+                            }
+                            disabled={disabled}
+                            aria-pressed={selected}
+                            className={[
+                              "rounded-full border px-2 py-1 text-xs transition-colors",
+                              selected
+                                ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
+                                : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                              disabled ? "opacity-50" : "",
+                            ].join(" ")}
+                          >
+                            {option}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">Color (máx. 2)</span>
+                    <div className="flex flex-wrap gap-2">
+                      {COLOR_OPTIONS.map((option) => {
+                        const selected = editColorSelection.includes(option);
+                        const disabled = editColorSelection.length >= 2 && !selected;
+                        return (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() =>
+                              setEditColorSelection((prev) => toggleSelection(prev, option, 2))
+                            }
+                            disabled={disabled}
+                            aria-pressed={selected}
+                            className={[
+                              "rounded-full border px-2 py-1 text-xs transition-colors",
+                              selected
+                                ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
+                                : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                              disabled ? "opacity-50" : "",
+                            ].join(" ")}
+                          >
+                            {option}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">Intención (máx. 3)</span>
+                    <div className="flex flex-wrap gap-2">
+                      {INTENTION_OPTIONS.map((option) => {
+                        const selected = editIntentionSelection.includes(option);
+                        const disabled = editIntentionSelection.length >= 3 && !selected;
+                        return (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() =>
+                              setEditIntentionSelection((prev) => toggleSelection(prev, option, 3))
+                            }
+                            disabled={disabled}
+                            aria-pressed={selected}
+                            className={[
+                              "rounded-full border px-2 py-1 text-xs transition-colors",
+                              selected
+                                ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
+                                : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                              disabled ? "opacity-50" : "",
+                            ].join(" ")}
+                          >
+                            {option}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+                <p className="text-xs font-semibold text-foreground">Ownership / alcance</p>
+                <div className="mt-2 grid gap-3">
+                  <label className="grid gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">Scope</span>
+                    <select
+                      value={editScope}
+                      onChange={(e) => setEditScope(e.target.value as OwnershipScope)}
+                      className={selectClass}
+                    >
+                      {OWNERSHIP_SCOPE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="grid gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">Visibility / reuse policy</span>
+                    <select
+                      value={editVisibility}
+                      onChange={(e) => setEditVisibility(e.target.value as OwnershipVisibility)}
+                      className={selectClass}
+                    >
+                      {OWNERSHIP_VISIBILITY_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="grid gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">Sector</span>
+                    <select
+                      value={editSector}
+                      onChange={(e) => setEditSector(e.target.value as OwnershipSector)}
+                      className={selectClass}
+                    >
+                      {OWNERSHIP_SECTOR_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+                <p className="text-xs font-semibold text-foreground">Restricción de uso (`allowedIn`)</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Si no seleccionas nada, el asset queda en uso libre.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {ALLOWED_IN_OPTIONS.map((option) => {
+                    const selected = editAllowedInSelection.includes(option);
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() =>
+                          setEditAllowedInSelection((prev) =>
+                            prev.includes(option)
+                              ? prev.filter((value) => value !== option)
+                              : [...prev, option]
+                          )
+                        }
+                        aria-pressed={selected}
+                        className={[
+                          "rounded-full border px-2 py-1 text-xs transition-colors",
+                          selected
+                            ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
+                            : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                        ].join(" ")}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+                {editAllowedInExtra.length > 0 ? (
+                  <p className="mt-2 text-[11px] [color:var(--text-subtle)]">
+                    Se conservan restricciones legacy no catalogadas: {editAllowedInExtra.join(", ")}
+                  </p>
+                ) : null}
+              </div>
             </div>
 
             <div className="sticky bottom-0 border-t border-border px-4 py-3 [background:var(--surface-3,var(--card))]">
