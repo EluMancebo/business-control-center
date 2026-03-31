@@ -518,6 +518,11 @@ export default function TallerMediaPage() {
             <div className="space-y-3">
               {filteredItems.map((item) => {
                 const isRestricted = item.allowedIn.length > 0;
+                const pipelineBadgeClass =
+                  item.pipelineStatus === "failed"
+                    ? "inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))]"
+                    : "inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]";
+
                 return (
                   <article
                     key={item._id}
@@ -546,6 +551,10 @@ export default function TallerMediaPage() {
                             </span>
                             <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
                               {isRestricted ? "restringido" : "uso libre"}
+                            </span>
+                            <span className={pipelineBadgeClass}>pipeline: {item.pipelineStatus}</span>
+                            <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
+                              variant: {item.variantKey}
                             </span>
                           </div>
                         </div>
