@@ -31,7 +31,7 @@ const AssetSchema = new Schema(
     sourceAssetId: { type: Schema.Types.ObjectId, ref: "Asset", default: null },
     variantKey: {
       type: String,
-      enum: ["original", "optimized", "vectorized-svg"],
+      enum: ["original", "thumbnail", "optimized", "vectorized-svg"],
       default: "original",
     },
     pipelineStatus: {

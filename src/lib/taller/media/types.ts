@@ -1,7 +1,7 @@
 export type AssetScope = "system" | "tenant";
 export type AssetKind = "image" | "svg" | "video";
 export type AssetStatus = "active" | "archived";
-export type AssetVariantKey = "original" | "optimized" | "vectorized-svg";
+export type AssetVariantKey = "original" | "thumbnail" | "optimized" | "vectorized-svg";
 export type AssetPipelineStatus = "queued" | "processing" | "ready" | "failed" | "skipped";
 export type AssetPipelineStage = "ingest" | "analyze" | "derive" | "vectorize" | "done";
 export type AssetBusinessId = string | null;
@@ -77,6 +77,15 @@ export type AssetUpdateMetadataInput = {
   label: string;
   tags: string[];
   allowedIn: string[];
+};
+
+export type ProcessedAssetResult = {
+  sourceAssetId: string;
+  pipelineStatus: AssetPipelineStatus;
+  pipelineStage: AssetPipelineStage;
+  pipelineError: string;
+  generatedVariantKeys: AssetVariantKey[];
+  vectorizable: boolean;
 };
 
 // Nuevos tipos para taxonomía y políticas de media

@@ -26,6 +26,7 @@ export type MediaAsset = {
   };
   variants?: {
     original?: string;
+    thumbnail?: string;
     optimized?: string;
     svg?: string;
   };

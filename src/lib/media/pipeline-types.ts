@@ -1,6 +1,7 @@
 import type {
   AssetPipelineStage,
   AssetPipelineStatus,
+  ProcessedAssetResult as CanonicalProcessedAssetResult,
   AssetVariantKey,
 } from "@/lib/taller/media/types";
 
@@ -8,6 +9,7 @@ import type {
 export type PipelineStatus = AssetPipelineStatus;
 export type PipelineStage = AssetPipelineStage;
 export type PipelineVariantKey = AssetVariantKey;
+export type ProcessedAssetResult = CanonicalProcessedAssetResult;
 
 export type VectorizationStatus = "pending" | "vectorizable" | "not-vectorizable" | "processed";
 

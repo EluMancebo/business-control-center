@@ -16,6 +16,7 @@ import {
   resolveAssetKindFromMime,
   splitMediaListValue,
 } from "@/lib/taller/media/service";
+import { processAsset } from "@/lib/taller/media/pipeline";
 
 export const dynamic = "force-dynamic";
 
@@ -118,7 +119,13 @@ export async function POST(req: NextRequest) {
       status: "active",
     });
 
-    return NextResponse.json({ ok: true, item: normalizeAssetItem(created) });
+    const createdItem = normalizeAssetItem(created);
+    await processAsset(createdItem);
+
+    const refreshed = await findSystemAssetByIdRepository(createdItem._id);
+    const responseItem = normalizeAssetItem(refreshed ?? created);
+
+    return NextResponse.json({ ok: true, item: responseItem });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Upload failed";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });

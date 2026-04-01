@@ -20,7 +20,12 @@ type MediaItemResponse = {
   error?: string;
 };
 
-const ASSET_VARIANT_KEYS: AssetVariantKey[] = ["original", "optimized", "vectorized-svg"];
+const ASSET_VARIANT_KEYS: AssetVariantKey[] = [
+  "original",
+  "thumbnail",
+  "optimized",
+  "vectorized-svg",
+];
 const ASSET_PIPELINE_STATUSES: AssetPipelineStatus[] = [
   "queued",
   "processing",
