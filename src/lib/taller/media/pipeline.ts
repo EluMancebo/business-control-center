@@ -10,6 +10,7 @@ const THUMBNAIL_WIDTH = 300;
 const OPTIMIZED_MAX_WIDTH = 1600;
 const TRANSPARENCY_ALPHA_THRESHOLD = 24;
 const MAX_VECTOR_COLOR_COUNT = 16;
+type DerivedVariantKey = Exclude<AssetVariantKey, "original">;
 
 function getBlobReadWriteToken() {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
@@ -59,6 +60,16 @@ function pixelToCssColor(r: number, g: number, b: number, a: number): string {
 
 function quantizeChannel(value: number): number {
   return Math.round(value / 32) * 32;
+}
+
+function isRootUsableAsset(asset: AssetItem): boolean {
+  const hasParent = Boolean(String(asset.sourceAssetId || "").trim());
+  if (hasParent) return false;
+  return (
+    asset.variantKey !== "thumbnail" &&
+    asset.variantKey !== "optimized" &&
+    asset.variantKey !== "vectorized-svg"
+  );
 }
 
 async function detectVectorizableRaster(args: {
@@ -143,6 +154,239 @@ async function createApproximateVectorSvg(raster: Buffer): Promise<{
   return { svg: Buffer.from(svgText, "utf8"), width, height };
 }
 
+export async function processAssetVariant(
+  asset: AssetItem,
+  variantKey: DerivedVariantKey
+): Promise<ProcessedAssetResult> {
+  const sourceAssetId = toSafeSourceId(asset._id);
+  const generatedVariantKeys: AssetVariantKey[] = [];
+
+  if (!isRootUsableAsset(asset)) {
+    return {
+      sourceAssetId,
+      pipelineStatus: "skipped",
+      pipelineStage: "done",
+      pipelineError: "Source asset must be root/original",
+      generatedVariantKeys,
+      vectorizable: false,
+    };
+  }
+
+  if (asset.scope !== "system" || asset.businessId !== null) {
+    return {
+      sourceAssetId,
+      pipelineStatus: "skipped",
+      pipelineStage: "done",
+      pipelineError: "Only system assets are supported",
+      generatedVariantKeys,
+      vectorizable: false,
+    };
+  }
+
+  if (asset.kind !== "image") {
+    return {
+      sourceAssetId,
+      pipelineStatus: "skipped",
+      pipelineStage: "done",
+      pipelineError: "Only image assets can generate derived variants",
+      generatedVariantKeys,
+      vectorizable: false,
+    };
+  }
+
+  try {
+    await updateSystemAssetPipelineRepository(sourceAssetId, {
+      pipelineStatus: "processing",
+      pipelineStage: "analyze",
+      pipelineError: "",
+    });
+
+    const originalRaster = await fetchBinary(asset.url);
+    const originalMeta = await sharp(originalRaster).metadata();
+    const originalWidth = Number(originalMeta.width || 0);
+    const originalHeight = Number(originalMeta.height || 0);
+    const hasAlpha = Boolean(originalMeta.hasAlpha);
+
+    await updateSystemAssetPipelineRepository(sourceAssetId, {
+      width: originalWidth,
+      height: originalHeight,
+      pipelineStatus: "processing",
+      pipelineStage: variantKey === "vectorized-svg" ? "vectorize" : "derive",
+      pipelineError: "",
+    });
+
+    if (variantKey === "thumbnail") {
+      const thumbnailOutput = await sharp(originalRaster)
+        .rotate()
+        .resize({ width: THUMBNAIL_WIDTH, fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 72 })
+        .toBuffer({ resolveWithObject: true });
+
+      const thumbnailBlob = await put(
+        buildDerivedStorageKey(asset.key, "thumbnail", "webp"),
+        new Blob([bufferToArrayBuffer(thumbnailOutput.data)], { type: "image/webp" }),
+        {
+          token: getBlobReadWriteToken(),
+          access: "public",
+          contentType: "image/webp",
+        }
+      );
+
+      await upsertSystemAssetVariantRepository({
+        businessId: null,
+        scope: "system",
+        kind: "image",
+        bucket: "vercel-blob",
+        key: thumbnailBlob.pathname,
+        url: thumbnailBlob.url,
+        label: `${asset.label} · thumbnail`,
+        tags: asset.tags,
+        allowedIn: asset.allowedIn,
+        mime: "image/webp",
+        bytes: thumbnailOutput.data.byteLength,
+        width: Number(thumbnailOutput.info.width || 0),
+        height: Number(thumbnailOutput.info.height || 0),
+        sourceAssetId,
+        variantKey: "thumbnail",
+        pipelineStatus: "ready",
+        pipelineStage: "done",
+        pipelineError: "",
+        status: "active",
+      });
+      generatedVariantKeys.push("thumbnail");
+    } else if (variantKey === "optimized") {
+      const optimizedOutput = await sharp(originalRaster)
+        .rotate()
+        .resize({ width: OPTIMIZED_MAX_WIDTH, fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 84 })
+        .toBuffer({ resolveWithObject: true });
+
+      const optimizedBlob = await put(
+        buildDerivedStorageKey(asset.key, "optimized", "webp"),
+        new Blob([bufferToArrayBuffer(optimizedOutput.data)], { type: "image/webp" }),
+        {
+          token: getBlobReadWriteToken(),
+          access: "public",
+          contentType: "image/webp",
+        }
+      );
+
+      await upsertSystemAssetVariantRepository({
+        businessId: null,
+        scope: "system",
+        kind: "image",
+        bucket: "vercel-blob",
+        key: optimizedBlob.pathname,
+        url: optimizedBlob.url,
+        label: `${asset.label} · optimized`,
+        tags: asset.tags,
+        allowedIn: asset.allowedIn,
+        mime: "image/webp",
+        bytes: optimizedOutput.data.byteLength,
+        width: Number(optimizedOutput.info.width || 0),
+        height: Number(optimizedOutput.info.height || 0),
+        sourceAssetId,
+        variantKey: "optimized",
+        pipelineStatus: "ready",
+        pipelineStage: "done",
+        pipelineError: "",
+        status: "active",
+      });
+      generatedVariantKeys.push("optimized");
+    } else {
+      const vectorizable = await detectVectorizableRaster({
+        raster: originalRaster,
+        width: originalWidth,
+        height: originalHeight,
+        hasAlpha,
+      });
+
+      if (!vectorizable) {
+        await updateSystemAssetPipelineRepository(sourceAssetId, {
+          pipelineStatus: "ready",
+          pipelineStage: "done",
+          pipelineError: "",
+        });
+
+        return {
+          sourceAssetId,
+          pipelineStatus: "skipped",
+          pipelineStage: "done",
+          pipelineError: "Asset is not vectorizable",
+          generatedVariantKeys,
+          vectorizable: false,
+        };
+      }
+
+      const vectorized = await createApproximateVectorSvg(originalRaster);
+      const svgBlob = await put(
+        buildDerivedStorageKey(asset.key, "vectorized-svg", "svg"),
+        new Blob([bufferToArrayBuffer(vectorized.svg)], { type: "image/svg+xml" }),
+        {
+          token: getBlobReadWriteToken(),
+          access: "public",
+          contentType: "image/svg+xml",
+        }
+      );
+
+      await upsertSystemAssetVariantRepository({
+        businessId: null,
+        scope: "system",
+        kind: "svg",
+        bucket: "vercel-blob",
+        key: svgBlob.pathname,
+        url: svgBlob.url,
+        label: `${asset.label} · vectorized`,
+        tags: asset.tags,
+        allowedIn: asset.allowedIn,
+        mime: "image/svg+xml",
+        bytes: vectorized.svg.byteLength,
+        width: vectorized.width,
+        height: vectorized.height,
+        sourceAssetId,
+        variantKey: "vectorized-svg",
+        pipelineStatus: "ready",
+        pipelineStage: "done",
+        pipelineError: "",
+        status: "active",
+      });
+      generatedVariantKeys.push("vectorized-svg");
+    }
+
+    await updateSystemAssetPipelineRepository(sourceAssetId, {
+      pipelineStatus: "ready",
+      pipelineStage: "done",
+      pipelineError: "",
+    });
+
+    return {
+      sourceAssetId,
+      pipelineStatus: "ready",
+      pipelineStage: "done",
+      pipelineError: "",
+      generatedVariantKeys,
+      vectorizable: true,
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Pipeline processing failed";
+
+    await updateSystemAssetPipelineRepository(sourceAssetId, {
+      pipelineStatus: "failed",
+      pipelineStage: "done",
+      pipelineError: message,
+    });
+
+    return {
+      sourceAssetId,
+      pipelineStatus: "failed",
+      pipelineStage: "done",
+      pipelineError: message,
+      generatedVariantKeys,
+      vectorizable: false,
+    };
+  }
+}
+
 export async function processAsset(asset: AssetItem): Promise<ProcessedAssetResult> {
   const sourceAssetId = toSafeSourceId(asset._id);
   const generatedVariantKeys: AssetVariantKey[] = [];
@@ -197,7 +441,6 @@ export async function processAsset(asset: AssetItem): Promise<ProcessedAssetResu
     const originalMeta = await sharp(originalRaster).metadata();
     const originalWidth = Number(originalMeta.width || 0);
     const originalHeight = Number(originalMeta.height || 0);
-    const hasAlpha = Boolean(originalMeta.hasAlpha);
 
     await updateSystemAssetPipelineRepository(sourceAssetId, {
       width: originalWidth,
@@ -206,140 +449,8 @@ export async function processAsset(asset: AssetItem): Promise<ProcessedAssetResu
       pipelineStage: "analyze",
       pipelineError: "",
     });
-
-    await updateSystemAssetPipelineRepository(sourceAssetId, {
-      pipelineStatus: "processing",
-      pipelineStage: "derive",
-      pipelineError: "",
-    });
-
-    const thumbnailOutput = await sharp(originalRaster)
-      .rotate()
-      .resize({ width: THUMBNAIL_WIDTH, fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 72 })
-      .toBuffer({ resolveWithObject: true });
-
-    const thumbnailBlob = await put(
-      buildDerivedStorageKey(asset.key, "thumbnail", "webp"),
-      new Blob([bufferToArrayBuffer(thumbnailOutput.data)], { type: "image/webp" }),
-      {
-        token: getBlobReadWriteToken(),
-        access: "public",
-        contentType: "image/webp",
-      }
-    );
-
-    await upsertSystemAssetVariantRepository({
-      businessId: null,
-      scope: "system",
-      kind: "image",
-      bucket: "vercel-blob",
-      key: thumbnailBlob.pathname,
-      url: thumbnailBlob.url,
-      label: `${asset.label} · thumbnail`,
-      tags: asset.tags,
-      allowedIn: asset.allowedIn,
-      mime: "image/webp",
-      bytes: thumbnailOutput.data.byteLength,
-      width: Number(thumbnailOutput.info.width || 0),
-      height: Number(thumbnailOutput.info.height || 0),
-      sourceAssetId,
-      variantKey: "thumbnail",
-      pipelineStatus: "ready",
-      pipelineStage: "done",
-      pipelineError: "",
-      status: "active",
-    });
-    generatedVariantKeys.push("thumbnail");
-
-    const optimizedOutput = await sharp(originalRaster)
-      .rotate()
-      .resize({ width: OPTIMIZED_MAX_WIDTH, fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 84 })
-      .toBuffer({ resolveWithObject: true });
-
-    const optimizedBlob = await put(
-      buildDerivedStorageKey(asset.key, "optimized", "webp"),
-      new Blob([bufferToArrayBuffer(optimizedOutput.data)], { type: "image/webp" }),
-      {
-        token: getBlobReadWriteToken(),
-        access: "public",
-        contentType: "image/webp",
-      }
-    );
-
-    await upsertSystemAssetVariantRepository({
-      businessId: null,
-      scope: "system",
-      kind: "image",
-      bucket: "vercel-blob",
-      key: optimizedBlob.pathname,
-      url: optimizedBlob.url,
-      label: `${asset.label} · optimized`,
-      tags: asset.tags,
-      allowedIn: asset.allowedIn,
-      mime: "image/webp",
-      bytes: optimizedOutput.data.byteLength,
-      width: Number(optimizedOutput.info.width || 0),
-      height: Number(optimizedOutput.info.height || 0),
-      sourceAssetId,
-      variantKey: "optimized",
-      pipelineStatus: "ready",
-      pipelineStage: "done",
-      pipelineError: "",
-      status: "active",
-    });
-    generatedVariantKeys.push("optimized");
-
-    const vectorizable = await detectVectorizableRaster({
-      raster: originalRaster,
-      width: originalWidth,
-      height: originalHeight,
-      hasAlpha,
-    });
-
-    if (vectorizable) {
-      await updateSystemAssetPipelineRepository(sourceAssetId, {
-        pipelineStatus: "processing",
-        pipelineStage: "vectorize",
-        pipelineError: "",
-      });
-
-      const vectorized = await createApproximateVectorSvg(originalRaster);
-      const svgBlob = await put(
-        buildDerivedStorageKey(asset.key, "vectorized-svg", "svg"),
-        new Blob([bufferToArrayBuffer(vectorized.svg)], { type: "image/svg+xml" }),
-        {
-          token: getBlobReadWriteToken(),
-          access: "public",
-          contentType: "image/svg+xml",
-        }
-      );
-
-      await upsertSystemAssetVariantRepository({
-        businessId: null,
-        scope: "system",
-        kind: "svg",
-        bucket: "vercel-blob",
-        key: svgBlob.pathname,
-        url: svgBlob.url,
-        label: `${asset.label} · vectorized`,
-        tags: asset.tags,
-        allowedIn: asset.allowedIn,
-        mime: "image/svg+xml",
-        bytes: vectorized.svg.byteLength,
-        width: vectorized.width,
-        height: vectorized.height,
-        sourceAssetId,
-        variantKey: "vectorized-svg",
-        pipelineStatus: "ready",
-        pipelineStage: "done",
-        pipelineError: "",
-        status: "active",
-      });
-      generatedVariantKeys.push("vectorized-svg");
-    }
-
+    // Modelo manual-selectivo: en upload automático solo dejamos ingest + analyze.
+    // La generación de derivados se dispara exclusivamente vía processAssetVariant(...).
     await updateSystemAssetPipelineRepository(sourceAssetId, {
       pipelineStatus: "ready",
       pipelineStage: "done",
@@ -352,7 +463,7 @@ export async function processAsset(asset: AssetItem): Promise<ProcessedAssetResu
       pipelineStage: "done",
       pipelineError: "",
       generatedVariantKeys,
-      vectorizable,
+      vectorizable: false,
     };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Pipeline processing failed";

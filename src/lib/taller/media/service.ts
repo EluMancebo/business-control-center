@@ -20,6 +20,12 @@ type MediaItemResponse = {
   error?: string;
 };
 
+type MediaVariantRequestResponse = {
+  ok: boolean;
+  message?: string;
+  error?: string;
+};
+
 const ASSET_VARIANT_KEYS: AssetVariantKey[] = [
   "original",
   "thumbnail",
@@ -287,4 +293,28 @@ export async function deleteSystemMediaClient(id: string): Promise<void> {
 
   const json = (await res.json().catch(() => null)) as MediaItemResponse | null;
   if (!res.ok || !json?.ok) throw new Error(json?.error || "Delete failed");
+}
+
+export async function requestSystemAssetVariantClient(args: {
+  sourceAssetId: string;
+  variantKey: Exclude<AssetVariantKey, "original">;
+}): Promise<string> {
+  const sourceAssetId = args.sourceAssetId.trim();
+  if (!sourceAssetId) throw new Error("Missing source asset id");
+
+  const res = await fetch("/api/taller/media/variants", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sourceAssetId,
+      variantKey: args.variantKey,
+    }),
+  });
+
+  const json = (await res.json().catch(() => null)) as MediaVariantRequestResponse | null;
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error || "No se pudo solicitar la variante");
+  }
+
+  return toStringValue(json.message, "Solicitud de variante enviada.");
 }

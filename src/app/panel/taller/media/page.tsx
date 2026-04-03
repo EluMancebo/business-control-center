@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import PageHeader from "@/components/panel/PageHeader";
+import PanelButton from "@/components/panel/ui/PanelButton";
+import PanelCard from "@/components/panel/ui/PanelCard";
 import type { AssetItem } from "@/lib/taller/media/types";
 import {
   deleteSystemMediaClient,
   fetchSystemMediaClient,
   formatBytes,
+  requestSystemAssetVariantClient,
   updateSystemMediaMetadataClient,
   uploadSystemMediaClient,
 } from "@/lib/taller/media/service";
@@ -58,6 +61,66 @@ type TaxonomyIntention = (typeof INTENTION_OPTIONS)[number];
 type OwnershipScope = (typeof OWNERSHIP_SCOPE_OPTIONS)[number];
 type OwnershipVisibility = (typeof OWNERSHIP_VISIBILITY_OPTIONS)[number];
 type OwnershipSector = (typeof OWNERSHIP_SECTOR_OPTIONS)[number];
+type ManualVariantKey = Exclude<AssetItem["variantKey"], "original">;
+
+type AssetGroup = {
+  original: AssetItem;
+  variantsByKey: Partial<Record<ManualVariantKey, AssetItem>>;
+  extraVariants: AssetItem[];
+};
+
+type UploadFeedbackState = "idle" | "uploading" | "success" | "error";
+type VariantFeedbackTone = "idle" | "processing" | "success" | "error";
+type VariantFeedback = {
+  tone: VariantFeedbackTone;
+  title: string;
+  detail: string;
+};
+
+const MIN_UPLOAD_FEEDBACK_MS = 450;
+
+const MANUAL_VARIANT_SLOTS: Array<{
+  key: ManualVariantKey;
+  title: string;
+  actionLabel: string;
+}> = [
+  { key: "thumbnail", title: "thumbnail", actionLabel: "Generar thumbnail" },
+  { key: "optimized", title: "optimized", actionLabel: "Generar optimized" },
+  { key: "vectorized-svg", title: "SVG", actionLabel: "Generar SVG" },
+];
+
+const UPLOAD_FEEDBACK_META: Record<
+  Exclude<UploadFeedbackState, "idle">,
+  {
+    label: string;
+    description: string;
+    chipClass: string;
+    barClass: string;
+  }
+> = {
+  // Operational-state color exceptions: brand-independent status readability.
+  uploading: {
+    label: "Subiendo asset base...",
+    description: "Guardando archivo en la librería del sistema.",
+    chipClass:
+      "border border-border/70 [background:var(--surface-2,var(--card))] [color:var(--text-subtle)]",
+    barClass: "[background:var(--text-subtle)] opacity-70 animate-pulse",
+  },
+  success: {
+    label: "Asset base guardado.",
+    description: 'Puedes generar variantes desde "Ver variantes".',
+    chipClass:
+      "border border-border/70 [background:var(--surface-2,var(--card))] [color:var(--foreground)]",
+    barClass: "[background:var(--text-subtle)] opacity-80",
+  },
+  error: {
+    label: "Error al subir.",
+    description: "Revisa el archivo e inténtalo de nuevo.",
+    chipClass:
+      "border border-border/70 [background:var(--surface-2,var(--card))] [color:var(--foreground)]",
+    barClass: "[background:var(--text-subtle)] opacity-80",
+  },
+};
 
 function splitTagInput(value: string): string[] {
   return String(value || "")
@@ -231,11 +294,22 @@ function splitAllowedInForEdit(allowedIn: string[]): { known: string[]; extra: s
   return { known, extra };
 }
 
+function isOriginalAsset(item: AssetItem): boolean {
+  if (item.sourceAssetId !== null) return false;
+  return (
+    item.variantKey !== "thumbnail" &&
+    item.variantKey !== "optimized" &&
+    item.variantKey !== "vectorized-svg"
+  );
+}
+
 export default function TallerMediaPage() {
   const [items, setItems] = useState<AssetItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [rowBusyId, setRowBusyId] = useState<string | null>(null);
+  const [variantBusyKey, setVariantBusyKey] = useState<string | null>(null);
+  const [uploadFeedbackState, setUploadFeedbackState] = useState<UploadFeedbackState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -244,6 +318,10 @@ export default function TallerMediaPage() {
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const [scopeFilter, setScopeFilter] = useState<ScopeFilter>("all");
   const [restrictionFilter, setRestrictionFilter] = useState<RestrictionFilter>("all");
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [expandedVariantsByAssetId, setExpandedVariantsByAssetId] = useState<
+    Record<string, true>
+  >({});
   const [thumbFallbackById, setThumbFallbackById] = useState<Record<string, true>>({});
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -260,9 +338,16 @@ export default function TallerMediaPage() {
   const [editAllowedInExtra, setEditAllowedInExtra] = useState<string[]>([]);
 
   const [isUploadSheetOpen, setIsUploadSheetOpen] = useState(false);
+  const [desktopSelectedFileName, setDesktopSelectedFileName] = useState("");
+  const [mobileSelectedFileName, setMobileSelectedFileName] = useState("");
+  const [variantFeedbackByAssetId, setVariantFeedbackByAssetId] = useState<
+    Record<string, VariantFeedback>
+  >({});
 
   const fileRef = useRef<HTMLInputElement | null>(null);
   const mobileFileRef = useRef<HTMLInputElement | null>(null);
+  const uploadResetTimerRef = useRef<number | null>(null);
+  const uploadCloseSheetTimerRef = useRef<number | null>(null);
   const [label, setLabel] = useState("");
   const [tags, setTags] = useState("");
   const [allowedInSelection, setAllowedInSelection] = useState<string[]>([]);
@@ -273,6 +358,17 @@ export default function TallerMediaPage() {
   const [uploadScope, setUploadScope] = useState<OwnershipScope>("system");
   const [uploadVisibility, setUploadVisibility] = useState<OwnershipVisibility>("shared");
   const [uploadSector, setUploadSector] = useState<OwnershipSector>("general");
+
+  function clearUploadFeedbackTimers() {
+    if (uploadResetTimerRef.current) {
+      window.clearTimeout(uploadResetTimerRef.current);
+      uploadResetTimerRef.current = null;
+    }
+    if (uploadCloseSheetTimerRef.current) {
+      window.clearTimeout(uploadCloseSheetTimerRef.current);
+      uploadCloseSheetTimerRef.current = null;
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -301,6 +397,17 @@ export default function TallerMediaPage() {
       document.body.style.overflow = prevOverflow;
     };
   }, [editingId, isUploadSheetOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (uploadResetTimerRef.current) {
+        window.clearTimeout(uploadResetTimerRef.current);
+      }
+      if (uploadCloseSheetTimerRef.current) {
+        window.clearTimeout(uploadCloseSheetTimerRef.current);
+      }
+    };
+  }, []);
 
   const tagStats = useMemo(() => {
     const counter = new Map<string, number>();
@@ -342,6 +449,63 @@ export default function TallerMediaPage() {
     });
   }, [items, searchFilter, tagFilter, kindFilter, scopeFilter, restrictionFilter]);
 
+  const groupedAssets = useMemo<AssetGroup[]>(() => {
+    const originals = filteredItems.filter((item) => isOriginalAsset(item));
+    const variantsBySource = new Map<string, AssetItem[]>();
+
+    filteredItems.forEach((item) => {
+      if (!item.sourceAssetId) return;
+      const current = variantsBySource.get(item.sourceAssetId) ?? [];
+      current.push(item);
+      variantsBySource.set(item.sourceAssetId, current);
+    });
+
+    const consumedVariantIds = new Set<string>();
+    const groups = originals.map((original) => {
+      const variantsByKey: Partial<Record<ManualVariantKey, AssetItem>> = {};
+      const extraVariants: AssetItem[] = [];
+
+      (variantsBySource.get(original._id) ?? []).forEach((variant) => {
+        if (
+          variant.variantKey === "thumbnail" ||
+          variant.variantKey === "optimized" ||
+          variant.variantKey === "vectorized-svg"
+        ) {
+          if (!variantsByKey[variant.variantKey]) {
+            variantsByKey[variant.variantKey] = variant;
+          } else {
+            extraVariants.push(variant);
+          }
+          consumedVariantIds.add(variant._id);
+          return;
+        }
+
+        extraVariants.push(variant);
+        consumedVariantIds.add(variant._id);
+      });
+
+      return {
+        original,
+        variantsByKey,
+        extraVariants,
+      };
+    });
+
+    const orphanGroups = filteredItems
+      .filter((item) => {
+        if (isOriginalAsset(item)) return false;
+        if (item.sourceAssetId) return !consumedVariantIds.has(item._id);
+        return true;
+      })
+      .map((item) => ({
+        original: item,
+        variantsByKey: {},
+        extraVariants: [] as AssetItem[],
+      }));
+
+    return [...groups, ...orphanGroups];
+  }, [filteredItems]);
+
   const hasActiveFilters = Boolean(
     searchFilter.trim() ||
       tagFilter.trim() ||
@@ -359,9 +523,12 @@ export default function TallerMediaPage() {
 
   async function onUpload(e: React.FormEvent) {
     e.preventDefault();
+    clearUploadFeedbackTimers();
+    const uploadStartedAt = Date.now();
     setBusy(true);
     setError(null);
     setNotice(null);
+    setUploadFeedbackState("uploading");
     const closeSheetAfterSave = isUploadSheetOpen;
 
     try {
@@ -379,16 +546,25 @@ export default function TallerMediaPage() {
         sector: uploadSector,
       });
 
-      const created = await uploadSystemMediaClient({
+      await uploadSystemMediaClient({
         file,
         label,
         tags: mergedTags,
         allowedIn: allowedInSelection.join(", "),
       });
-      setItems((prev) => [created, ...prev]);
+      await load();
+
+      const elapsedMs = Date.now() - uploadStartedAt;
+      if (elapsedMs < MIN_UPLOAD_FEEDBACK_MS) {
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, MIN_UPLOAD_FEEDBACK_MS - elapsedMs);
+        });
+      }
 
       if (fileRef.current) fileRef.current.value = "";
       if (mobileFileRef.current) mobileFileRef.current.value = "";
+      setDesktopSelectedFileName("");
+      setMobileSelectedFileName("");
       setLabel("");
       setTags("");
       setAllowedInSelection([]);
@@ -399,9 +575,18 @@ export default function TallerMediaPage() {
       setUploadScope("system");
       setUploadVisibility("shared");
       setUploadSector("general");
-      setNotice("Asset subido correctamente ✓");
-      if (closeSheetAfterSave) setIsUploadSheetOpen(false);
+      setUploadFeedbackState("success");
+      setNotice('Asset base subido ✓. Genera derivadas desde "Ver variantes" cuando lo necesites.');
+      if (closeSheetAfterSave) {
+        uploadCloseSheetTimerRef.current = window.setTimeout(() => {
+          setIsUploadSheetOpen(false);
+        }, 900);
+      }
+      uploadResetTimerRef.current = window.setTimeout(() => {
+        setUploadFeedbackState("idle");
+      }, 2800);
     } catch (e: unknown) {
+      setUploadFeedbackState("error");
       setError(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setBusy(false);
@@ -502,6 +687,64 @@ export default function TallerMediaPage() {
     }
   }
 
+  async function generateVariant(original: AssetItem, variantKey: ManualVariantKey) {
+    if (!isOriginalAsset(original)) {
+      setVariantFeedbackByAssetId((prev) => ({
+        ...prev,
+        [original._id]: {
+          tone: "error",
+          title: "No se pudo iniciar la variante.",
+          detail: "Solo se pueden generar variantes desde un asset raíz.",
+        },
+      }));
+      return;
+    }
+
+    const actionKey = `${original._id}:${variantKey}`;
+    setVariantBusyKey(actionKey);
+    setError(null);
+    setNotice(null);
+    setVariantFeedbackByAssetId((prev) => ({
+      ...prev,
+      [original._id]: {
+        tone: "processing",
+        title: "Generando variante...",
+        detail: `Slot en curso: ${
+          MANUAL_VARIANT_SLOTS.find((slot) => slot.key === variantKey)?.title ?? variantKey
+        }.`,
+      },
+    }));
+
+    try {
+      const message = await requestSystemAssetVariantClient({
+        sourceAssetId: original._id,
+        variantKey,
+      });
+      setVariantFeedbackByAssetId((prev) => ({
+        ...prev,
+        [original._id]: {
+          tone: "success",
+          title: "Variante generada.",
+          detail: message,
+        },
+      }));
+      await load();
+    } catch (e: unknown) {
+      const errorMessage =
+        e instanceof Error ? e.message : "No se pudo solicitar la variante";
+      setVariantFeedbackByAssetId((prev) => ({
+        ...prev,
+        [original._id]: {
+          tone: "error",
+          title: "Error al generar variante.",
+          detail: errorMessage,
+        },
+      }));
+    } finally {
+      setVariantBusyKey(null);
+    }
+  }
+
   async function copy(text: string) {
     try {
       await navigator.clipboard.writeText(text);
@@ -511,12 +754,27 @@ export default function TallerMediaPage() {
     }
   }
 
+  function openInNewTab(url: string) {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   function clearFilters() {
     setSearchFilter("");
     setTagFilter("");
     setKindFilter("all");
     setScopeFilter("all");
     setRestrictionFilter("all");
+  }
+
+  function toggleVariantsVisibility(assetId: string) {
+    setExpandedVariantsByAssetId((prev) => {
+      if (prev[assetId]) {
+        const next = { ...prev };
+        delete next[assetId];
+        return next;
+      }
+      return { ...prev, [assetId]: true };
+    });
   }
 
   function markThumbFallback(id: string) {
@@ -562,13 +820,56 @@ export default function TallerMediaPage() {
     "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors duration-180 focus:ring-2 focus:ring-ring";
   const selectClass =
     "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors duration-180 focus:ring-2 focus:ring-ring";
-  const secondaryButtonClass =
-    "inline-flex h-10 items-center justify-center rounded-lg border border-border px-3 text-sm font-semibold transition-colors duration-180 [background:var(--cta-secondary)] [color:var(--cta-secondary-foreground)] hover:[background:var(--cta-secondary-hover)] disabled:opacity-60";
-  const primaryButtonClass =
-    "inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-semibold transition-colors duration-180 [background:var(--cta-primary)] [color:var(--cta-primary-foreground)] hover:[background:var(--cta-primary-hover)] disabled:opacity-60";
-  const quietButtonClass =
-    "inline-flex h-9 items-center justify-center rounded-lg border border-border px-3 text-xs font-semibold transition-colors duration-180 [background:var(--cta-secondary)] [color:var(--cta-secondary-foreground)] hover:[background:var(--cta-secondary-hover)] disabled:opacity-60";
-  const fileInputClass = `${inputClass} h-auto border-2 border-dashed border-border/75 py-3 [background:var(--surface-2,var(--background))]`;
+  const uploadInputClass =
+    "h-10 w-full rounded-lg border border-border/85 px-3 text-sm text-foreground outline-none shadow-none transition-colors duration-180 [background:var(--surface-1,var(--background))] focus:ring-2 focus:ring-ring";
+  const uploadSelectClass = uploadInputClass;
+
+  const uploadFeedbackMeta =
+    uploadFeedbackState === "idle" ? null : UPLOAD_FEEDBACK_META[uploadFeedbackState];
+  const uploadFeedback = (
+    <div className="min-h-[82px] w-full rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+      <div
+        aria-live="polite"
+        className={`transition-opacity duration-200 ${uploadFeedbackMeta ? "opacity-100" : "opacity-0"}`}
+      >
+        <div className="flex w-full items-center">
+          <span
+            className={`inline-flex w-full items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ${
+              uploadFeedbackMeta?.chipClass ??
+              "border border-border/70 [background:var(--surface-2,var(--card))] [color:var(--text-subtle)]"
+            }`}
+          >
+            {uploadFeedbackMeta?.label ?? " "}
+          </span>
+        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          {uploadFeedbackMeta?.description ?? " "}
+        </p>
+        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full [background:var(--surface-2,var(--card))]">
+          <span
+            className={`block h-full rounded-full transition-all duration-300 ${
+              uploadFeedbackMeta
+                ? `w-full ${uploadFeedbackMeta.barClass}`
+                : "w-0 [background:var(--surface-2,var(--card))]"
+            }`}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const globalFeedbackTone = error ? "error" : notice ? "success" : "idle";
+  const globalFeedbackMessage = error ?? notice ?? " ";
+  const globalFeedbackChip =
+    globalFeedbackTone === "error"
+      ? "Error"
+      : globalFeedbackTone === "success"
+        ? "Listo"
+        : "Estado";
+  const globalFeedbackClass =
+    globalFeedbackTone === "idle"
+      ? "opacity-0"
+      : "opacity-100 border border-border [background:var(--surface-2,var(--background))]";
 
   return (
     <div className="mx-auto w-full max-w-[1180px] space-y-6 px-3 pb-4 sm:px-4 lg:px-0">
@@ -577,34 +878,56 @@ export default function TallerMediaPage() {
         description="Gestiona libreria de assets del sistema con filtros, restricciones y metadatos operativos."
         actions={
           <div className="flex items-center gap-2">
-            <button type="button" onClick={load} className={secondaryButtonClass}>
+            <PanelButton type="button" onClick={load} className="h-10">
               Recargar
-            </button>
-            <button
+            </PanelButton>
+            <PanelButton
+              variant="primary"
               type="button"
-              onClick={() => setIsUploadSheetOpen(true)}
-              className={`${primaryButtonClass} lg:hidden`}
+              onClick={() => {
+                clearUploadFeedbackTimers();
+                setUploadFeedbackState("idle");
+                setDesktopSelectedFileName("");
+                setMobileSelectedFileName("");
+                setIsUploadSheetOpen(true);
+              }}
+              className="h-10 lg:hidden"
             >
               Nuevo asset
-            </button>
+            </PanelButton>
           </div>
         }
       />
 
-      {error ? (
-        <div className="rounded-xl border border-border p-3 text-sm shadow-sm [background:var(--surface-2,var(--background))] [color:var(--accent-strong,var(--foreground))]">
-          {error}
+      <div className="min-h-[64px]">
+        <div className={`rounded-xl p-3 text-sm transition-opacity duration-180 ${globalFeedbackClass}`}>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-5 items-center rounded-full border border-border px-2 text-[10px] font-medium [background:var(--surface-2,var(--card))] [color:var(--text-subtle)]">
+              {globalFeedbackChip}
+            </span>
+            <span className="text-xs [color:var(--text-subtle)]">
+              {globalFeedbackMessage}
+            </span>
+          </div>
         </div>
-      ) : null}
-
-      {notice ? (
-        <div className="rounded-xl border border-border p-3 text-sm text-foreground shadow-sm [background:var(--surface-2,var(--background))]">
-          {notice}
-        </div>
-      ) : null}
+      </div>
 
       <section className="rounded-xl border border-border p-5 shadow-sm [background:var(--surface-3,var(--card))]">
-        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_auto]">
+        <div className="flex items-center justify-between lg:hidden">
+          <span className="text-sm font-semibold text-foreground">Filtros</span>
+          <button
+            type="button"
+            onClick={() => setIsMobileFiltersOpen((prev) => !prev)}
+            className="inline-flex h-8 items-center justify-center rounded-md border border-border px-3 text-xs font-semibold transition-colors duration-180 [background:var(--cta-secondary)] [color:var(--cta-secondary-foreground)] hover:[background:var(--cta-secondary-hover)]"
+          >
+            {isMobileFiltersOpen ? "Ocultar filtros" : "Ver filtros"}
+          </button>
+        </div>
+
+        <div
+          className={`${isMobileFiltersOpen ? "mt-3" : "hidden"} space-y-3 lg:mt-0 lg:block lg:space-y-0`}
+        >
+          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_auto]">
           <label className="grid gap-1">
             <span className="text-xs font-medium text-muted-foreground">Buscar por label</span>
             <input
@@ -669,9 +992,9 @@ export default function TallerMediaPage() {
           </label>
 
           <div className="flex items-end">
-            <button type="button" onClick={clearFilters} className={`${secondaryButtonClass} w-full`}>
+            <PanelButton type="button" onClick={clearFilters} className="h-10 w-full">
               Limpiar
-            </button>
+            </PanelButton>
           </div>
         </div>
 
@@ -689,12 +1012,6 @@ export default function TallerMediaPage() {
             ))}
           </div>
         ) : null}
-
-        <div className="mt-4 rounded-lg border border-border px-3 py-2 text-xs shadow-sm [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]">
-          {loading
-            ? "Cargando assets..."
-            : `${filteredItems.length} visibles de ${items.length} activos · filtro de restriccion: ${restrictionFilter}`}
-        </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <span className="text-xs font-medium text-muted-foreground">Uso:</span>
@@ -720,17 +1037,24 @@ export default function TallerMediaPage() {
             Uso libre
           </button>
         </div>
+      </div>
+
+        <div className="mt-4 rounded-lg border border-border px-3 py-2 text-xs shadow-sm [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]">
+          {loading
+            ? "Cargando assets..."
+            : `${filteredItems.length} visibles de ${items.length} activos · filtro de restriccion: ${restrictionFilter}`}
+        </div>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <section className="hidden rounded-2xl border border-border/85 p-5 shadow-[0_24px_44px_-30px_rgba(15,23,42,0.58)] ring-1 ring-border/35 [background:var(--surface-2,var(--card))] lg:block">
+        <PanelCard className="hidden p-5 lg:block">
           <div className="text-sm font-semibold">Subir nuevo asset</div>
           <p className="mt-1 text-sm text-muted-foreground">
             Alta guiada para libreria del sistema (Capa 1), con taxonomía controlada.
           </p>
 
           <form onSubmit={onUpload} className="mt-4 grid gap-3">
-            <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+            <PanelCard variant="task" className="p-3">
               <p className="text-xs font-semibold text-foreground">Bloque 1 · Asset base</p>
               <div className="mt-2 grid gap-3">
                 <label className="grid gap-1">
@@ -739,9 +1063,21 @@ export default function TallerMediaPage() {
                     id="taller-media-file-desktop"
                     ref={fileRef}
                     type="file"
-                    className={fileInputClass}
+                    className="sr-only"
                     accept="image/*,video/*,.svg"
+                    onChange={(e) => setDesktopSelectedFileName(e.target.files?.[0]?.name ?? "")}
                   />
+                  <PanelButton
+                    variant="primary"
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="h-10 w-full justify-center"
+                  >
+                    {desktopSelectedFileName ? "Cambiar archivo" : "Seleccionar archivo"}
+                  </PanelButton>
+                  <span className="min-h-[1rem] text-[11px] [color:var(--text-subtle)]">
+                    {desktopSelectedFileName || "Aún no has seleccionado un archivo."}
+                  </span>
                 </label>
 
                 <label className="grid gap-1">
@@ -749,12 +1085,12 @@ export default function TallerMediaPage() {
                   <input
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
-                    className={inputClass}
+                    className={uploadInputClass}
                     placeholder="Ej: Footer silueta"
                   />
                 </label>
               </div>
-            </div>
+            </PanelCard>
 
             <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
               <p className="text-xs font-semibold text-foreground">Bloque 2 · Clasificación base</p>
@@ -764,7 +1100,7 @@ export default function TallerMediaPage() {
                   <select
                     value={visualCategory}
                     onChange={(e) => setVisualCategory(e.target.value as VisualCategory)}
-                    className={selectClass}
+                    className={uploadSelectClass}
                   >
                     {VISUAL_CATEGORY_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -779,7 +1115,7 @@ export default function TallerMediaPage() {
                   <input
                     value={tags}
                     onChange={(e) => setTags(e.target.value)}
-                    className={inputClass}
+                    className={uploadInputClass}
                     placeholder="hero:background footer:shape"
                   />
                 </label>
@@ -889,7 +1225,7 @@ export default function TallerMediaPage() {
                   <select
                     value={uploadScope}
                     onChange={(e) => setUploadScope(e.target.value as OwnershipScope)}
-                    className={selectClass}
+                    className={uploadSelectClass}
                   >
                     {OWNERSHIP_SCOPE_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -906,7 +1242,7 @@ export default function TallerMediaPage() {
                     onChange={(e) =>
                       setUploadVisibility(e.target.value as OwnershipVisibility)
                     }
-                    className={selectClass}
+                    className={uploadSelectClass}
                   >
                     {OWNERSHIP_VISIBILITY_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -921,7 +1257,7 @@ export default function TallerMediaPage() {
                   <select
                     value={uploadSector}
                     onChange={(e) => setUploadSector(e.target.value as OwnershipSector)}
-                    className={selectClass}
+                    className={uploadSelectClass}
                   >
                     {OWNERSHIP_SECTOR_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -933,7 +1269,7 @@ export default function TallerMediaPage() {
 
                 <label className="grid gap-1">
                   <span className="text-xs font-medium text-muted-foreground">Business / client (siguiente fase)</span>
-                  <select disabled className={`${selectClass} opacity-60`} value="">
+                  <select disabled className={`${uploadSelectClass} opacity-60`} value="">
                     <option value="">No conectado aún</option>
                   </select>
                 </label>
@@ -974,11 +1310,17 @@ export default function TallerMediaPage() {
               </div>
             </div>
 
-            <button disabled={busy} className={primaryButtonClass}>
-              {busy ? "Subiendo..." : "Subir asset"}
-            </button>
+            <PanelButton
+              variant="primary"
+              type="submit"
+              disabled={busy}
+              className="h-10 w-full justify-center"
+            >
+              {busy ? "Subiendo asset base..." : "Subir asset"}
+            </PanelButton>
+            {uploadFeedback}
           </form>
-        </section>
+        </PanelCard>
 
         <section className="space-y-4">
           <div className="flex items-center justify-between">
@@ -998,101 +1340,441 @@ export default function TallerMediaPage() {
                 : "No hay assets todavia. Crea el primero desde Nuevo asset."}
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredItems.map((item) => {
-                const isRestricted = item.allowedIn.length > 0;
+            <div className="space-y-4">
+              {groupedAssets.map((group) => {
+                const original = group.original;
+                const isVariantsExpanded = Boolean(expandedVariantsByAssetId[original._id]);
+                const isRestricted = original.allowedIn.length > 0;
+                const metadataBadgeClass =
+                  "inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] leading-none whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]";
+                const summaryVariantBadgeClass =
+                  "inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] leading-none whitespace-normal break-words [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]";
+                const availableVariantSlots = MANUAL_VARIANT_SLOTS.filter((slot) =>
+                  Boolean(group.variantsByKey[slot.key])
+                );
+                const missingVariantSlots = MANUAL_VARIANT_SLOTS.filter(
+                  (slot) => !group.variantsByKey[slot.key]
+                );
+                const availableVariantKeys = availableVariantSlots.map((slot) => slot.title);
+                const busyVariantParts = variantBusyKey?.split(":") ?? [];
+                const busySourceAssetId = busyVariantParts[0] ?? null;
+                const busyVariantKey = busyVariantParts[1] as ManualVariantKey | undefined;
+                const isVariantBusyForOriginal = busySourceAssetId === original._id;
+                const busyVariantSlot = busyVariantKey
+                  ? MANUAL_VARIANT_SLOTS.find((slot) => slot.key === busyVariantKey)
+                  : undefined;
                 const pipelineBadgeClass =
-                  item.pipelineStatus === "failed"
-                    ? "inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))]"
-                    : "inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]";
+                  original.pipelineStatus === "failed"
+                    ? "inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] leading-none whitespace-normal break-words [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))]"
+                    : metadataBadgeClass;
+                const generatedCount = availableVariantSlots.length + group.extraVariants.length;
+                const variantFeedbackState = variantFeedbackByAssetId[original._id];
+                const feedbackTone: VariantFeedbackTone = isVariantBusyForOriginal
+                  ? "processing"
+                  : variantFeedbackState?.tone ?? "idle";
+                const feedbackChipClass =
+                  feedbackTone === "processing"
+                    ? "border border-border [background:var(--surface-2,var(--card))] [color:var(--text-subtle)]"
+                    : feedbackTone === "success"
+                      ? "border border-border [background:var(--badge-bg,var(--muted))] [color:var(--badge-fg,var(--foreground))] [border-color:var(--badge-bg,var(--border))]"
+                      : feedbackTone === "error"
+                        ? "border border-border [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))]"
+                        : "border border-border [background:var(--surface-2,var(--card))] [color:var(--text-subtle)]";
+                const feedbackTitle = isVariantBusyForOriginal
+                  ? "Generando variante..."
+                  : variantFeedbackState?.title ??
+                    (missingVariantSlots.length > 0
+                      ? "Generación manual de variantes"
+                      : "Variantes completas");
+                const feedbackDetail = isVariantBusyForOriginal
+                  ? `Slot en curso: ${busyVariantSlot?.title ?? "variante"}.`
+                  : variantFeedbackState?.detail ??
+                    (missingVariantSlots.length > 0
+                      ? `Selecciona un slot para generar: ${missingVariantSlots
+                          .map((slot) => slot.title)
+                          .join(", ")}.`
+                      : "Todas las variantes principales están generadas.");
+                const feedbackProgressClass =
+                  feedbackTone === "processing"
+                    ? "w-full animate-pulse [background:var(--text-subtle)] opacity-70"
+                    : feedbackTone === "idle"
+                      ? "w-0 [background:var(--surface-2,var(--card))]"
+                      : "w-full [background:var(--text-subtle)] opacity-80";
+                const variantActionRowClass =
+                  "mt-1.5 grid grid-cols-2 gap-1 sm:flex sm:flex-nowrap sm:gap-1";
+                const variantActionButtonClass =
+                  "h-7 rounded-md px-2 text-[10px] sm:flex-1 sm:min-w-0";
 
                 return (
-                  <article
-                    key={item._id}
-                    className="rounded-xl border border-border p-4 shadow-sm [background:var(--surface-2,var(--card))] sm:p-5"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="h-18 w-18 shrink-0 overflow-hidden rounded-lg border border-border [background:var(--surface-1,var(--background))]">
-                        {renderThumb(item)}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <h3 className="truncate text-sm font-semibold text-foreground">{item.label}</h3>
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                              {formatBytes(item.bytes)} · {item.mime || item.kind}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-1">
-                            <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs [background:var(--badge-bg)] [color:var(--badge-fg)] [border-color:var(--badge-bg)]">
-                              {item.kind}
-                            </span>
-                            <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
-                              {item.scope}
-                            </span>
-                            <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
-                              {isRestricted ? "restringido" : "uso libre"}
-                            </span>
-                            <span className={pipelineBadgeClass}>pipeline: {item.pipelineStatus}</span>
-                            <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
-                              variant: {item.variantKey}
-                            </span>
-                          </div>
+                  <article key={group.original._id}>
+                    <PanelCard className="p-2.5 sm:p-3">
+                    <div className="rounded-xl border border-border/80 p-3 [background:var(--surface-1,var(--background))] sm:p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border [background:var(--surface-2,var(--card))] sm:h-18 sm:w-18">
+                          {renderThumb(original)}
                         </div>
 
-                        <div className="mt-2 truncate text-[11px] [color:var(--text-subtle)]">{item.url}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h3 className="truncate text-sm font-semibold text-foreground">{original.label}</h3>
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                {formatBytes(original.bytes)} · {original.mime || original.kind}
+                              </p>
+                            </div>
 
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {item.tags.length > 0 ? (
-                            item.tags.slice(0, 6).map((tag) => (
-                              <span
-                                key={tag}
-                                className="rounded-full border border-border px-2 py-0.5 text-xs [background:var(--badge-bg)] [color:var(--badge-fg)] [border-color:var(--badge-bg)]"
-                              >
-                                {tag}
+                            <div className="mt-0.5 space-y-1 sm:mt-0">
+                              <div className="flex flex-wrap gap-1">
+                                <span className="inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] leading-none whitespace-normal break-words [background:var(--badge-bg)] [color:var(--badge-fg)] [border-color:var(--badge-bg)]">
+                                  {original.kind}
+                                </span>
+                                <span className={metadataBadgeClass}>{original.scope}</span>
+                                <span className={metadataBadgeClass}>
+                                  {isRestricted ? "restringido" : "uso libre"}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                <span className={pipelineBadgeClass}>
+                                  pipeline: {original.pipelineStatus}
+                                </span>
+                                <span className={metadataBadgeClass}>variant: {original.variantKey}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-2 truncate text-[11px] [color:var(--text-subtle)]">{original.url}</div>
+
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {original.tags.length > 0 ? (
+                              original.tags.slice(0, 6).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] leading-none [background:var(--badge-bg)] [color:var(--badge-fg)] [border-color:var(--badge-bg)]"
+                                >
+                                  {tag}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Sin tags</span>
+                            )}
+                            {original.tags.length > 6 ? (
+                              <span className="text-xs text-muted-foreground">
+                                +{original.tags.length - 6}
                               </span>
-                            ))
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Sin tags</span>
-                          )}
-                          {item.tags.length > 6 ? (
-                            <span className="text-xs text-muted-foreground">+{item.tags.length - 6}</span>
-                          ) : null}
-                        </div>
+                            ) : null}
+                          </div>
 
-                        <div className="mt-1 text-[11px] [color:var(--text-subtle)]">
-                          Destinos permitidos:{" "}
-                          {isRestricted ? item.allowedIn.slice(0, 3).join(", ") : "cualquier slot"}
+                          <div className="mt-1 text-[11px] [color:var(--text-subtle)]">
+                            Destinos permitidos:{" "}
+                            {isRestricted ? original.allowedIn.slice(0, 3).join(", ") : "cualquier slot"}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 space-y-2 border-t border-border/70 pt-2.5">
+                        {isVariantsExpanded ? (
+                          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(240px,320px)_auto] sm:items-center">
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-foreground">
+                                Variantes derivadas ({generatedCount})
+                              </p>
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {availableVariantKeys.length > 0 ? (
+                                  availableVariantKeys.map((variantKey) => (
+                                    <span
+                                      key={`${original._id}-summary-${variantKey}`}
+                                      className={summaryVariantBadgeClass}
+                                    >
+                                      {variantKey}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-[11px] text-muted-foreground">
+                                    Sin variantes generadas
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="min-h-[52px] min-w-0 rounded-md border border-border/70 px-2.5 py-1.5 [background:var(--surface-2,var(--card))]">
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className={`inline-flex h-5 min-w-[124px] items-center justify-center rounded-full px-2 text-[10px] font-medium ${feedbackChipClass}`}
+                                >
+                                  {feedbackTitle}
+                                </span>
+                              </div>
+                              <p className="mt-1 truncate text-[10px] text-muted-foreground">
+                                {feedbackDetail}
+                              </p>
+                              <div className="mt-1 h-0.5 w-full overflow-hidden rounded-full [background:var(--surface-3,var(--muted))]">
+                                <span
+                                  className={`block h-full rounded-full transition-opacity duration-300 ${feedbackProgressClass}`}
+                                />
+                              </div>
+                            </div>
+
+                            <PanelButton
+                              type="button"
+                              onClick={() => toggleVariantsVisibility(original._id)}
+                              className="h-8 rounded-md px-2.5 text-[11px]"
+                            >
+                              Ocultar variantes
+                            </PanelButton>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-foreground">
+                                Variantes derivadas ({generatedCount})
+                              </p>
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {availableVariantKeys.length > 0 ? (
+                                  availableVariantKeys.map((variantKey) => (
+                                    <span
+                                      key={`${original._id}-summary-${variantKey}`}
+                                      className={summaryVariantBadgeClass}
+                                    >
+                                      {variantKey}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-[11px] text-muted-foreground">
+                                    Sin variantes generadas
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <PanelButton
+                              type="button"
+                              onClick={() => toggleVariantsVisibility(original._id)}
+                              className="h-8 rounded-md px-2.5 text-[11px]"
+                            >
+                              Ver variantes
+                            </PanelButton>
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-1.5">
+                          <PanelButton
+                            type="button"
+                            onClick={() => openInNewTab(original.url)}
+                            className="h-8 rounded-md px-2.5 text-[11px]"
+                          >
+                            Ver
+                          </PanelButton>
+                          <PanelButton
+                            type="button"
+                            onClick={() => copy(original.url)}
+                            className="h-8 rounded-md px-2.5 text-[11px]"
+                          >
+                            Copiar URL
+                          </PanelButton>
+                          <PanelButton
+                            type="button"
+                            onClick={() => startEdit(original)}
+                            disabled={rowBusyId === original._id}
+                            className="h-8 rounded-md px-2.5 text-[11px]"
+                          >
+                            Editar
+                          </PanelButton>
+                          <PanelButton
+                            type="button"
+                            onClick={() => removeAsset(original)}
+                            disabled={rowBusyId === original._id}
+                            className="h-8 rounded-md px-2.5 text-[11px] [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))] hover:[background:var(--accent-soft,var(--muted))]"
+                          >
+                            Borrar
+                          </PanelButton>
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <a href={item.url} target="_blank" rel="noreferrer" className={quietButtonClass}>
-                        Ver
-                      </a>
-                      <button type="button" onClick={() => copy(item.url)} className={quietButtonClass}>
-                        Copiar URL
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => startEdit(item)}
-                        disabled={rowBusyId === item._id}
-                        className={quietButtonClass}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeAsset(item)}
-                        disabled={rowBusyId === item._id}
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-border px-3 text-xs font-semibold transition-colors duration-180 [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))] hover:opacity-90 disabled:opacity-60"
-                      >
-                        Borrar
-                      </button>
-                    </div>
+                    {isVariantsExpanded ? (
+                      <div className="mt-2 rounded-lg border border-border/70 p-2 [background:var(--surface-2,var(--card))]">
+                        <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
+                          {MANUAL_VARIANT_SLOTS.map((slot) => {
+                            const variant = group.variantsByKey[slot.key];
+                            const isSlotBusy = isVariantBusyForOriginal && busyVariantKey === slot.key;
+
+                            if (!variant) {
+                              return (
+                                <div
+                                  key={slot.key}
+                                  className="rounded-md border border-dashed border-border p-2.5 [background:var(--surface-1,var(--background))]"
+                                >
+                                  <div className="text-[11px] font-semibold text-foreground">{slot.title}</div>
+                                  <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                    Variante no generada aún.
+                                  </p>
+                                  <PanelButton
+                                    type="button"
+                                    onClick={() => generateVariant(original, slot.key)}
+                                    disabled={isVariantBusyForOriginal}
+                                    className="mt-1.5 h-7 w-full rounded-md px-2 text-[10px]"
+                                  >
+                                    {isSlotBusy ? "Solicitando..." : slot.actionLabel}
+                                  </PanelButton>
+                                </div>
+                              );
+                            }
+
+                            const isVariantRestricted = variant.allowedIn.length > 0;
+                            const compactPipelineBadgeClass =
+                              variant.pipelineStatus === "failed"
+                                ? "inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[10px] leading-4 whitespace-normal break-words [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))]"
+                                : "inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[10px] leading-4 whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]";
+
+                            return (
+                              <div
+                                key={slot.key}
+                                className="rounded-md border border-border p-2 [background:var(--surface-1,var(--background))]"
+                              >
+                                <div className="flex items-start gap-2">
+                                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-border [background:var(--surface-2,var(--card))]">
+                                    {renderThumb(variant)}
+                                  </div>
+
+                                  <div className="min-w-0 flex-1">
+                                    <div className="truncate text-[11px] font-semibold text-foreground">
+                                      {slot.title}
+                                    </div>
+                                    <div className="truncate text-[10px] text-muted-foreground">
+                                      {variant.label}
+                                    </div>
+                                    <div className="mt-1 flex flex-wrap gap-1">
+                                      <span className="inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[9px] leading-3.5 whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
+                                        {variant.kind}
+                                      </span>
+                                      <span className={compactPipelineBadgeClass}>
+                                        pipeline: {variant.pipelineStatus}
+                                      </span>
+                                      <span className="inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[9px] leading-3.5 whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
+                                        {isVariantRestricted ? "restringido" : "uso libre"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className={variantActionRowClass}>
+                                  <PanelButton
+                                    type="button"
+                                    onClick={() => openInNewTab(variant.url)}
+                                    className={variantActionButtonClass}
+                                  >
+                                    Ver
+                                  </PanelButton>
+                                  <PanelButton
+                                    type="button"
+                                    onClick={() => copy(variant.url)}
+                                    className={variantActionButtonClass}
+                                  >
+                                    Copiar
+                                  </PanelButton>
+                                  <PanelButton
+                                    type="button"
+                                    onClick={() => startEdit(variant)}
+                                    disabled={rowBusyId === variant._id}
+                                    className={variantActionButtonClass}
+                                  >
+                                    Editar
+                                  </PanelButton>
+                                  <PanelButton
+                                    type="button"
+                                    onClick={() => removeAsset(variant)}
+                                    disabled={rowBusyId === variant._id}
+                                    className={`${variantActionButtonClass} [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))] hover:[background:var(--accent-soft,var(--muted))]`}
+                                  >
+                                    Borrar
+                                  </PanelButton>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {group.extraVariants.map((variant) => {
+                            const isVariantRestricted = variant.allowedIn.length > 0;
+                            const compactPipelineBadgeClass =
+                              variant.pipelineStatus === "failed"
+                                ? "inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[10px] leading-4 whitespace-normal break-words [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))]"
+                                : "inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[10px] leading-4 whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]";
+
+                            return (
+                              <div
+                                key={variant._id}
+                                className="rounded-md border border-border p-2 [background:var(--surface-1,var(--background))]"
+                              >
+                                <div className="flex items-start gap-2">
+                                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-border [background:var(--surface-2,var(--card))]">
+                                    {renderThumb(variant)}
+                                  </div>
+
+                                  <div className="min-w-0 flex-1">
+                                    <div className="truncate text-[11px] font-semibold text-foreground">
+                                      {variant.variantKey}
+                                    </div>
+                                    <div className="truncate text-[10px] text-muted-foreground">
+                                      {variant.label}
+                                    </div>
+                                    <div className="mt-1 flex flex-wrap gap-1">
+                                      <span className="inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[9px] leading-3.5 whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
+                                        {variant.kind}
+                                      </span>
+                                      <span className={compactPipelineBadgeClass}>
+                                        pipeline: {variant.pipelineStatus}
+                                      </span>
+                                      <span className="inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[9px] leading-3.5 whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
+                                        {isVariantRestricted ? "restringido" : "uso libre"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className={variantActionRowClass}>
+                                  <PanelButton
+                                    type="button"
+                                    onClick={() => openInNewTab(variant.url)}
+                                    className={variantActionButtonClass}
+                                  >
+                                    Ver
+                                  </PanelButton>
+                                  <PanelButton
+                                    type="button"
+                                    onClick={() => copy(variant.url)}
+                                    className={variantActionButtonClass}
+                                  >
+                                    Copiar
+                                  </PanelButton>
+                                  <PanelButton
+                                    type="button"
+                                    onClick={() => startEdit(variant)}
+                                    disabled={rowBusyId === variant._id}
+                                    className={variantActionButtonClass}
+                                  >
+                                    Editar
+                                  </PanelButton>
+                                  <PanelButton
+                                    type="button"
+                                    onClick={() => removeAsset(variant)}
+                                    disabled={rowBusyId === variant._id}
+                                    className={`${variantActionButtonClass} [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))] hover:[background:var(--accent-soft,var(--muted))]`}
+                                  >
+                                    Borrar
+                                  </PanelButton>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {missingVariantSlots.length > 0 ? (
+                          <p className="mt-2 text-[11px] text-muted-foreground">
+                            Slots pendientes: {missingVariantSlots.map((slot) => slot.title).join(", ")}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    </PanelCard>
                   </article>
                 );
               })}
@@ -1106,7 +1788,7 @@ export default function TallerMediaPage() {
       </div>
 
       {isUploadSheetOpen ? (
-        <div className="fixed inset-0 z-110 bg-black/35 lg:hidden">
+        <div className="fixed inset-0 z-110 bg-black/35 px-3 pb-3 pt-6 lg:hidden sm:px-4 sm:pb-4">
           <button
             type="button"
             aria-label="Cerrar alta de asset"
@@ -1114,17 +1796,17 @@ export default function TallerMediaPage() {
             onClick={() => setIsUploadSheetOpen(false)}
           />
 
-          <section className="absolute inset-x-0 bottom-0 max-h-[88vh] overflow-hidden rounded-t-2xl border border-border [background:var(--surface-2,var(--card))]">
+            <PanelCard className="absolute inset-x-3 bottom-3 max-h-[calc(100vh-1.5rem)] overflow-hidden p-0 lg:hidden sm:inset-x-4 sm:bottom-4">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h3 className="text-sm font-semibold">Nuevo asset</h3>
-              <button type="button" onClick={() => setIsUploadSheetOpen(false)} className={quietButtonClass}>
+              <PanelButton type="button" onClick={() => setIsUploadSheetOpen(false)} className="h-9 px-3 text-xs">
                 Cerrar
-              </button>
+              </PanelButton>
             </div>
 
             <div className="max-h-[calc(88vh-64px)] overflow-y-auto p-4">
               <form onSubmit={onUpload} className="grid gap-3">
-                <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+                <PanelCard variant="task" className="p-3">
                   <p className="text-xs font-semibold text-foreground">Bloque 1 · Asset base</p>
                   <div className="mt-2 grid gap-3">
                     <label className="grid gap-1">
@@ -1133,9 +1815,21 @@ export default function TallerMediaPage() {
                         id="taller-media-file-mobile"
                         ref={mobileFileRef}
                         type="file"
-                        className={fileInputClass}
+                        className="sr-only"
                         accept="image/*,video/*,.svg"
+                        onChange={(e) => setMobileSelectedFileName(e.target.files?.[0]?.name ?? "")}
                       />
+                      <PanelButton
+                        variant="primary"
+                        type="button"
+                        onClick={() => mobileFileRef.current?.click()}
+                        className="h-10 w-full justify-center"
+                      >
+                        {mobileSelectedFileName ? "Cambiar archivo" : "Seleccionar archivo"}
+                      </PanelButton>
+                      <span className="min-h-[1rem] text-[11px] [color:var(--text-subtle)]">
+                        {mobileSelectedFileName || "Aún no has seleccionado un archivo."}
+                      </span>
                     </label>
 
                     <label className="grid gap-1">
@@ -1143,12 +1837,12 @@ export default function TallerMediaPage() {
                       <input
                         value={label}
                         onChange={(e) => setLabel(e.target.value)}
-                        className={inputClass}
+                        className={uploadInputClass}
                         placeholder="Ej: Hero ilustracion"
                       />
                     </label>
                   </div>
-                </div>
+                </PanelCard>
 
                 <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
                   <p className="text-xs font-semibold text-foreground">Bloque 2 · Clasificación base</p>
@@ -1158,7 +1852,7 @@ export default function TallerMediaPage() {
                       <select
                         value={visualCategory}
                         onChange={(e) => setVisualCategory(e.target.value as VisualCategory)}
-                        className={selectClass}
+                        className={uploadSelectClass}
                       >
                         {VISUAL_CATEGORY_OPTIONS.map((option) => (
                           <option key={option} value={option}>
@@ -1173,7 +1867,7 @@ export default function TallerMediaPage() {
                       <input
                         value={tags}
                         onChange={(e) => setTags(e.target.value)}
-                        className={inputClass}
+                        className={uploadInputClass}
                         placeholder="hero:background"
                       />
                     </label>
@@ -1283,7 +1977,7 @@ export default function TallerMediaPage() {
                       <select
                         value={uploadScope}
                         onChange={(e) => setUploadScope(e.target.value as OwnershipScope)}
-                        className={selectClass}
+                        className={uploadSelectClass}
                       >
                         {OWNERSHIP_SCOPE_OPTIONS.map((option) => (
                           <option key={option} value={option}>
@@ -1300,7 +1994,7 @@ export default function TallerMediaPage() {
                         onChange={(e) =>
                           setUploadVisibility(e.target.value as OwnershipVisibility)
                         }
-                        className={selectClass}
+                        className={uploadSelectClass}
                       >
                         {OWNERSHIP_VISIBILITY_OPTIONS.map((option) => (
                           <option key={option} value={option}>
@@ -1315,7 +2009,7 @@ export default function TallerMediaPage() {
                       <select
                         value={uploadSector}
                         onChange={(e) => setUploadSector(e.target.value as OwnershipSector)}
-                        className={selectClass}
+                        className={uploadSelectClass}
                       >
                         {OWNERSHIP_SECTOR_OPTIONS.map((option) => (
                           <option key={option} value={option}>
@@ -1327,7 +2021,7 @@ export default function TallerMediaPage() {
 
                     <label className="grid gap-1">
                       <span className="text-xs font-medium text-muted-foreground">Business / client (siguiente fase)</span>
-                      <select disabled className={`${selectClass} opacity-60`} value="">
+                      <select disabled className={`${uploadSelectClass} opacity-60`} value="">
                         <option value="">No conectado aún</option>
                       </select>
                     </label>
@@ -1368,12 +2062,18 @@ export default function TallerMediaPage() {
                   </div>
                 </div>
 
-                <button disabled={busy} className={primaryButtonClass}>
-                  {busy ? "Subiendo..." : "Guardar asset"}
-                </button>
+                <PanelButton
+                  variant="primary"
+                  type="submit"
+                  disabled={busy}
+                  className="h-10 w-full justify-center"
+                >
+                  {busy ? "Subiendo asset base..." : "Subir asset"}
+                </PanelButton>
+                {uploadFeedback}
               </form>
             </div>
-          </section>
+          </PanelCard>
         </div>
       ) : null}
 
@@ -1390,9 +2090,9 @@ export default function TallerMediaPage() {
             <div className="border-b border-border px-4 py-3">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="truncate text-sm font-semibold">Editar asset</h3>
-                <button type="button" onClick={cancelEdit} className={quietButtonClass}>
+                <PanelButton type="button" onClick={cancelEdit} className="h-9 px-3 text-xs">
                   Cerrar
-                </button>
+                </PanelButton>
               </div>
               <p className="mt-1 truncate text-xs text-muted-foreground">{editingItem.label}</p>
             </div>
@@ -1632,27 +2332,29 @@ export default function TallerMediaPage() {
 
             <div className="sticky bottom-0 border-t border-border px-4 py-3 [background:var(--surface-3,var(--card))]">
               <div className="flex items-center justify-end gap-2">
-                <button
+                <PanelButton
                   type="button"
                   onClick={cancelEdit}
                   disabled={rowBusyId === editingItem._id}
-                  className={secondaryButtonClass}
+                  className="h-10"
                 >
                   Cancelar
-                </button>
-                <button
+                </PanelButton>
+                <PanelButton
+                  variant="primary"
                   type="button"
                   onClick={saveEdit}
                   disabled={rowBusyId === editingItem._id}
-                  className={primaryButtonClass}
+                  className="h-10"
                 >
                   {rowBusyId === editingItem._id ? "Guardando..." : "Guardar cambios"}
-                </button>
+                </PanelButton>
               </div>
             </div>
           </section>
         </div>
       ) : null}
+
     </div>
   );
 }
