@@ -71,6 +71,22 @@ Siempre deben consumir tokens del sistema, incluyendo:
 - `--badge-bg`
 - `--badge-fg`
 
+- `--success`
+- `--success-foreground`
+- `--success-soft`
+- `--warning`
+- `--warning-foreground`
+- `--warning-soft`
+- `--danger`
+- `--danger-foreground`
+- `--danger-soft`
+- `--processing`
+- `--processing-foreground`
+- `--processing-soft`
+
+- `--task-surface`
+- `--task-surface-foreground`
+
 - `--accent-soft`
 - `--accent-strong`
 
@@ -109,13 +125,15 @@ Regla:
 
 ## 5. Sombras
 
-Solo se permiten niveles de sombra controlados:
+Solo se permiten niveles de elevacion/sombra controlados:
 
-- `shadow-xs`
-- `shadow-sm`
-- `shadow-md`
+- `--elevation-base`
+- `--elevation-interactive`
+- `--elevation-task`
+- `--elevation-overlay`
 
 No se deben inventar sombras arbitrarias en cada pantalla.
+Referencia de calibracion: `docs/normas/bcc-visual-contract-v1.md`.
 
 ---
 
@@ -140,7 +158,7 @@ Todas las interfaces deben construirse con patrones repetibles y reconocibles.
 ### Card
 - `rounded-xl`
 - `border`
-- `shadow-sm`
+- `--elevation-base`
 - padding consistente
 
 ### Section

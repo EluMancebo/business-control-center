@@ -16,10 +16,28 @@ export type TallerPanelVisualTokensV1 = {
   secondaryForeground: string;
   link: string;
   linkHover: string;
+  success: string;
+  successForeground: string;
+  successSoft: string;
+  warning: string;
+  warningForeground: string;
+  warningSoft: string;
+  danger: string;
+  dangerForeground: string;
+  dangerSoft: string;
+  processing: string;
+  processingForeground: string;
+  processingSoft: string;
+  taskSurface: string;
+  taskSurfaceForeground: string;
   focusRing: string;
   borderSubtle: string;
   borderDefault: string;
   borderStrong: string;
+  elevationBase: string;
+  elevationInteractive: string;
+  elevationTask: string;
+  elevationOverlay: string;
   shadow1: string;
   shadow2: string;
   shadow3: string;
@@ -78,10 +96,28 @@ export function resolveTallerPanelVisualTokensV1(): TallerPanelVisualTokensV1 {
     secondaryForeground: "var(--foreground)",
     link: "var(--link, var(--primary))",
     linkHover: "var(--link-hover, var(--primary))",
+    success: "var(--success)",
+    successForeground: "var(--success-foreground)",
+    successSoft: "var(--success-soft)",
+    warning: "var(--warning)",
+    warningForeground: "var(--warning-foreground)",
+    warningSoft: "var(--warning-soft)",
+    danger: "var(--danger)",
+    dangerForeground: "var(--danger-foreground)",
+    dangerSoft: "var(--danger-soft)",
+    processing: "var(--processing)",
+    processingForeground: "var(--processing-foreground)",
+    processingSoft: "var(--processing-soft)",
+    taskSurface: "var(--task-surface, var(--panel-surface-3))",
+    taskSurfaceForeground: "var(--task-surface-foreground, var(--foreground))",
     focusRing: "var(--ring)",
     borderSubtle: "color-mix(in oklab, var(--panel-border) 56%, transparent)",
     borderDefault: "var(--panel-border)",
     borderStrong: "color-mix(in oklab, var(--border) 88%, var(--foreground))",
+    elevationBase: "var(--elevation-base, var(--panel-shadow-1))",
+    elevationInteractive: "var(--elevation-interactive, var(--panel-shadow-2))",
+    elevationTask: "var(--elevation-task, var(--panel-shadow-2))",
+    elevationOverlay: "var(--elevation-overlay, var(--panel-shadow-3))",
     shadow1: "var(--panel-shadow-1)",
     shadow2: "var(--panel-shadow-2)",
     shadow3: "var(--panel-shadow-3)",
@@ -143,10 +179,28 @@ export function getTallerPanelVisualCssVars(): Record<`--taller-${string}`, stri
     "--taller-secondary-foreground": tokens.secondaryForeground,
     "--taller-link": tokens.link,
     "--taller-link-hover": tokens.linkHover,
+    "--taller-success": tokens.success,
+    "--taller-success-foreground": tokens.successForeground,
+    "--taller-success-soft": tokens.successSoft,
+    "--taller-warning": tokens.warning,
+    "--taller-warning-foreground": tokens.warningForeground,
+    "--taller-warning-soft": tokens.warningSoft,
+    "--taller-danger": tokens.danger,
+    "--taller-danger-foreground": tokens.dangerForeground,
+    "--taller-danger-soft": tokens.dangerSoft,
+    "--taller-processing": tokens.processing,
+    "--taller-processing-foreground": tokens.processingForeground,
+    "--taller-processing-soft": tokens.processingSoft,
+    "--taller-task-surface": tokens.taskSurface,
+    "--taller-task-surface-foreground": tokens.taskSurfaceForeground,
     "--taller-focus-ring": tokens.focusRing,
     "--taller-border-subtle": tokens.borderSubtle,
     "--taller-border-default": tokens.borderDefault,
     "--taller-border-strong": tokens.borderStrong,
+    "--taller-elevation-base": tokens.elevationBase,
+    "--taller-elevation-interactive": tokens.elevationInteractive,
+    "--taller-elevation-task": tokens.elevationTask,
+    "--taller-elevation-overlay": tokens.elevationOverlay,
     "--taller-shadow-1": tokens.shadow1,
     "--taller-shadow-2": tokens.shadow2,
     "--taller-shadow-3": tokens.shadow3,

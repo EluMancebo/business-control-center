@@ -69,17 +69,31 @@ Uso obligatorio:
 
 ### C.2 Extendidos (ya operativos en brand-theme)
 
-`secondary`, `secondaryForeground`, `accent`, `accentForeground`, `accentSoft`, `accentSoftForeground`, `accentStrong`, `accentStrongForeground`, `surface2`, `surface3`, `textSubtle`, `textInverse`, `ctaPrimary`, `ctaPrimaryForeground`, `ctaPrimaryHover`, `ctaSecondary`, `ctaSecondaryForeground`, `ctaSecondaryHover`, `badgeBg`, `badgeFg`, `heroOverlay`, `heroOverlayStrong`, `link`, `linkHover`
+`secondary`, `secondaryForeground`, `accent`, `accentForeground`, `accentSoft`, `accentSoftForeground`, `accentStrong`, `accentStrongForeground`, `surface2`, `surface3`, `textSubtle`, `textInverse`, `ctaPrimary`, `ctaPrimaryForeground`, `ctaPrimaryHover`, `ctaSecondary`, `ctaSecondaryForeground`, `ctaSecondaryHover`, `badgeBg`, `badgeFg`, `heroOverlay`, `heroOverlayStrong`, `link`, `linkHover`, `taskSurface`, `taskSurfaceForeground`
 
 Uso recomendado:
 - shells, toolbars, badges, previews, bloques de estado visual
 
-### C.3 Futuros opcionales (aun no oficiales)
+### C.3 Estados operativos oficiales (v1.1)
+
+Estados semanticos oficiales para feedback operativo transversal:
+- `success`, `successForeground`, `successSoft`
+- `warning`, `warningForeground`, `warningSoft`
+- `danger`, `dangerForeground`, `dangerSoft`
+- `processing`, `processingForeground`, `processingSoft`
+
+Regla:
+- estos estados ya no se resuelven por pantalla con colores locales.
+- cualquier feedback operativo de panel debe consumir esta semantica.
+
+### C.4 Extensiones futuras acotadas
 
 Solo se podran crear si hay necesidad transversal real:
-- `success`, `warning`, `danger` (con foreground y soft)
-- `focusStrong` (accesibilidad avanzada)
 - `surfaceInverse` (zonas invertidas persistentes)
+
+Nota de naming:
+- la superficie oficial para zona de trabajo primaria es `taskSurface`.
+- no se mantiene un segundo token de superficie equivalente (`focusStrong`) para evitar ambiguedad.
 
 ---
 
@@ -105,6 +119,17 @@ Cuando crear token nuevo:
 - debe tener nombre funcional, no estetico
 - requiere actualizar este contrato y el contrato de diseno
 
+Politica oficial de elevacion:
+- `elevationBase`: lectura por defecto de card/surface operativa
+- `elevationInteractive`: hover/foco interactivo (micro elevacion)
+- `elevationTask`: bloque de trabajo primario (task surface)
+- `elevationOverlay`: capas altas (popover, overlays)
+
+Reglas:
+- la sombra apoya; la jerarquia principal sigue siendo tonal.
+- no se permite inventar sombras por pantalla fuera de esta escala.
+- motion permitido: micro elevacion y cambio sutil, sin rebotes ni delays ceremoniales.
+
 ---
 
 ## E) Mapeo por componente
@@ -112,6 +137,11 @@ Cuando crear token nuevo:
 ### `PanelCard`
 - base: `card`, `cardForeground`, `border`
 - opcional contexto: `surface2` para contenedor secundario
+- variantes oficiales:
+  - `default`: superficie operativa normal
+  - `interactive`: micro elevacion en hover/foco
+  - `task`: zona de trabajo nuclear con `taskSurface` + `elevationTask`
+  - `overlay`: capa superior con `elevationOverlay`
 
 ### `PanelButton`
 - `primary`: `primary` + `primaryForeground`
@@ -139,17 +169,20 @@ Cuando crear token nuevo:
 - item inactivo: `mutedForeground` con hover hacia `foreground`
 - bloque accesos: `PanelButton`
 
-### Futuros `PanelField` y `PanelBadge`
+### `PanelBadge` y futuro `PanelField`
+
+`PanelBadge`:
+- `neutral`: `badgeBg` + `badgeFg`
+- `processing`: `processingSoft` + `processingForeground`
+- `success`: `successSoft` + `successForeground`
+- `warning`: `warningSoft` + `warningForeground`
+- `danger`: `dangerSoft` + `dangerForeground`
 
 `PanelField`:
 - input fondo `background`
 - borde `border`
 - foco `ring`
 - helper/error en escala semantica, no color directo
-
-`PanelBadge`:
-- default: `badgeBg` + `badgeFg`
-- variantes futuras (`success/warning/danger`) solo si se oficializan tokens
 
 ---
 

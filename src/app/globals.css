@@ -41,14 +41,38 @@
   --panel-shadow-3: 0 3px 10px rgba(15, 23, 42, 0.08),
     0 24px 48px -32px rgba(15, 23, 42, 0.34);
 
+  --elevation-base: var(--panel-shadow-1);
+  --elevation-interactive: var(--panel-shadow-2);
+  --elevation-task: var(--panel-shadow-2);
+  --elevation-overlay: var(--panel-shadow-3);
+
+  --success: #15803d;
+  --success-foreground: #14532d;
+  --success-soft: #dcfce7;
+
+  --warning: #b45309;
+  --warning-foreground: #78350f;
+  --warning-soft: #fef3c7;
+
+  --danger: #b91c1c;
+  --danger-foreground: #7f1d1d;
+  --danger-soft: #fee2e2;
+
+  --processing: #1d4ed8;
+  --processing-foreground: #1e3a8a;
+  --processing-soft: #dbeafe;
+
+  --task-surface: var(--panel-surface-3);
+  --task-surface-foreground: var(--foreground);
+
   --panel-badge-muted-bg: var(--muted);
   --panel-badge-muted-fg: var(--muted-foreground);
-  --panel-badge-success-bg: #dcfce7;
-  --panel-badge-success-fg: #166534;
-  --panel-badge-warning-bg: #fef3c7;
-  --panel-badge-warning-fg: #92400e;
-  --panel-badge-destructive-bg: #fee2e2;
-  --panel-badge-destructive-fg: #b91c1c;
+  --panel-badge-success-bg: var(--success-soft);
+  --panel-badge-success-fg: var(--success-foreground);
+  --panel-badge-warning-bg: var(--warning-soft);
+  --panel-badge-warning-fg: var(--warning-foreground);
+  --panel-badge-destructive-bg: var(--danger-soft);
+  --panel-badge-destructive-fg: var(--danger-foreground);
 
   /* Pair tokens (light/dark) */
   --bg-light: #ffffff;
@@ -259,14 +283,42 @@ html[data-brand-mode="light"] {
   --panel-shadow-3: 0 2px 8px rgba(15, 23, 42, 0.06),
     0 24px 42px -30px rgba(15, 23, 42, 0.28);
 
+  --elevation-base: var(--panel-shadow-1);
+  --elevation-interactive: var(--panel-shadow-2);
+  --elevation-task: var(--panel-shadow-2);
+  --elevation-overlay: var(--panel-shadow-3);
+
+  --success: color-mix(in oklab, #16a34a 70%, var(--primary) 30%);
+  --success-soft: color-mix(in oklab, var(--success) 18%, var(--panel-surface-2));
+  --success-foreground: #14532d;
+
+  --warning: color-mix(in oklab, #d97706 74%, var(--primary) 26%);
+  --warning-soft: color-mix(in oklab, var(--warning) 18%, var(--panel-surface-2));
+  --warning-foreground: #78350f;
+
+  --danger: color-mix(in oklab, #dc2626 74%, var(--primary) 26%);
+  --danger-soft: color-mix(in oklab, var(--danger) 18%, var(--panel-surface-2));
+  --danger-foreground: #7f1d1d;
+
+  --processing: color-mix(in oklab, #2563eb 76%, var(--primary) 24%);
+  --processing-soft: color-mix(in oklab, var(--processing) 18%, var(--panel-surface-2));
+  --processing-foreground: #1e3a8a;
+
+  --task-surface: color-mix(
+    in oklab,
+    var(--panel-surface-3) 84%,
+    var(--accent-soft, var(--muted))
+  );
+  --task-surface-foreground: var(--foreground);
+
   --panel-badge-muted-bg: color-mix(in oklab, var(--muted) 90%, white);
   --panel-badge-muted-fg: var(--text-subtle, var(--muted-foreground));
-  --panel-badge-success-bg: #dcfce7;
-  --panel-badge-success-fg: #166534;
-  --panel-badge-warning-bg: #fef3c7;
-  --panel-badge-warning-fg: #92400e;
-  --panel-badge-destructive-bg: #fee2e2;
-  --panel-badge-destructive-fg: #b91c1c;
+  --panel-badge-success-bg: var(--success-soft);
+  --panel-badge-success-fg: var(--success-foreground);
+  --panel-badge-warning-bg: var(--warning-soft);
+  --panel-badge-warning-fg: var(--warning-foreground);
+  --panel-badge-destructive-bg: var(--danger-soft);
+  --panel-badge-destructive-fg: var(--danger-foreground);
 }
 
 html[data-brand-mode="dark"] {
@@ -311,14 +363,42 @@ html[data-brand-mode="dark"] {
   --panel-shadow-3: 0 4px 12px rgba(2, 6, 23, 0.46),
     0 24px 48px -28px rgba(2, 6, 23, 0.78);
 
+  --elevation-base: var(--panel-shadow-1);
+  --elevation-interactive: var(--panel-shadow-2);
+  --elevation-task: var(--panel-shadow-2);
+  --elevation-overlay: var(--panel-shadow-3);
+
+  --success: color-mix(in oklab, #22c55e 74%, var(--primary) 26%);
+  --success-soft: color-mix(in oklab, var(--success) 28%, var(--panel-surface-2));
+  --success-foreground: #dcfce7;
+
+  --warning: color-mix(in oklab, #f59e0b 74%, var(--primary) 26%);
+  --warning-soft: color-mix(in oklab, var(--warning) 28%, var(--panel-surface-2));
+  --warning-foreground: #fef3c7;
+
+  --danger: color-mix(in oklab, #ef4444 74%, var(--primary) 26%);
+  --danger-soft: color-mix(in oklab, var(--danger) 28%, var(--panel-surface-2));
+  --danger-foreground: #fee2e2;
+
+  --processing: color-mix(in oklab, #60a5fa 74%, var(--primary) 26%);
+  --processing-soft: color-mix(in oklab, var(--processing) 28%, var(--panel-surface-2));
+  --processing-foreground: #dbeafe;
+
+  --task-surface: color-mix(
+    in oklab,
+    var(--panel-surface-3) 80%,
+    var(--accent-soft, var(--muted))
+  );
+  --task-surface-foreground: var(--foreground);
+
   --panel-badge-muted-bg: color-mix(in oklab, var(--muted) 88%, #111827);
   --panel-badge-muted-fg: var(--text-subtle, var(--muted-foreground));
-  --panel-badge-success-bg: #14532d;
-  --panel-badge-success-fg: #dcfce7;
-  --panel-badge-warning-bg: #78350f;
-  --panel-badge-warning-fg: #fef3c7;
-  --panel-badge-destructive-bg: #7f1d1d;
-  --panel-badge-destructive-fg: #fee2e2;
+  --panel-badge-success-bg: var(--success-soft);
+  --panel-badge-success-fg: var(--success-foreground);
+  --panel-badge-warning-bg: var(--warning-soft);
+  --panel-badge-warning-fg: var(--warning-foreground);
+  --panel-badge-destructive-bg: var(--danger-soft);
+  --panel-badge-destructive-fg: var(--danger-foreground);
 }
 
 /* System (por defecto): arranca como light y responde al media query */
@@ -365,14 +445,42 @@ html[data-brand-mode="system"] {
   --panel-shadow-3: 0 2px 8px rgba(15, 23, 42, 0.06),
     0 24px 42px -30px rgba(15, 23, 42, 0.28);
 
+  --elevation-base: var(--panel-shadow-1);
+  --elevation-interactive: var(--panel-shadow-2);
+  --elevation-task: var(--panel-shadow-2);
+  --elevation-overlay: var(--panel-shadow-3);
+
+  --success: color-mix(in oklab, #16a34a 70%, var(--primary) 30%);
+  --success-soft: color-mix(in oklab, var(--success) 18%, var(--panel-surface-2));
+  --success-foreground: #14532d;
+
+  --warning: color-mix(in oklab, #d97706 74%, var(--primary) 26%);
+  --warning-soft: color-mix(in oklab, var(--warning) 18%, var(--panel-surface-2));
+  --warning-foreground: #78350f;
+
+  --danger: color-mix(in oklab, #dc2626 74%, var(--primary) 26%);
+  --danger-soft: color-mix(in oklab, var(--danger) 18%, var(--panel-surface-2));
+  --danger-foreground: #7f1d1d;
+
+  --processing: color-mix(in oklab, #2563eb 76%, var(--primary) 24%);
+  --processing-soft: color-mix(in oklab, var(--processing) 18%, var(--panel-surface-2));
+  --processing-foreground: #1e3a8a;
+
+  --task-surface: color-mix(
+    in oklab,
+    var(--panel-surface-3) 84%,
+    var(--accent-soft, var(--muted))
+  );
+  --task-surface-foreground: var(--foreground);
+
   --panel-badge-muted-bg: color-mix(in oklab, var(--muted) 90%, white);
   --panel-badge-muted-fg: var(--text-subtle, var(--muted-foreground));
-  --panel-badge-success-bg: #dcfce7;
-  --panel-badge-success-fg: #166534;
-  --panel-badge-warning-bg: #fef3c7;
-  --panel-badge-warning-fg: #92400e;
-  --panel-badge-destructive-bg: #fee2e2;
-  --panel-badge-destructive-fg: #b91c1c;
+  --panel-badge-success-bg: var(--success-soft);
+  --panel-badge-success-fg: var(--success-foreground);
+  --panel-badge-warning-bg: var(--warning-soft);
+  --panel-badge-warning-fg: var(--warning-foreground);
+  --panel-badge-destructive-bg: var(--danger-soft);
+  --panel-badge-destructive-fg: var(--danger-foreground);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -419,14 +527,42 @@ html[data-brand-mode="system"] {
     --panel-shadow-3: 0 4px 12px rgba(2, 6, 23, 0.46),
       0 24px 48px -28px rgba(2, 6, 23, 0.78);
 
+    --elevation-base: var(--panel-shadow-1);
+    --elevation-interactive: var(--panel-shadow-2);
+    --elevation-task: var(--panel-shadow-2);
+    --elevation-overlay: var(--panel-shadow-3);
+
+    --success: color-mix(in oklab, #22c55e 74%, var(--primary) 26%);
+    --success-soft: color-mix(in oklab, var(--success) 28%, var(--panel-surface-2));
+    --success-foreground: #dcfce7;
+
+    --warning: color-mix(in oklab, #f59e0b 74%, var(--primary) 26%);
+    --warning-soft: color-mix(in oklab, var(--warning) 28%, var(--panel-surface-2));
+    --warning-foreground: #fef3c7;
+
+    --danger: color-mix(in oklab, #ef4444 74%, var(--primary) 26%);
+    --danger-soft: color-mix(in oklab, var(--danger) 28%, var(--panel-surface-2));
+    --danger-foreground: #fee2e2;
+
+    --processing: color-mix(in oklab, #60a5fa 74%, var(--primary) 26%);
+    --processing-soft: color-mix(in oklab, var(--processing) 28%, var(--panel-surface-2));
+    --processing-foreground: #dbeafe;
+
+    --task-surface: color-mix(
+      in oklab,
+      var(--panel-surface-3) 80%,
+      var(--accent-soft, var(--muted))
+    );
+    --task-surface-foreground: var(--foreground);
+
     --panel-badge-muted-bg: color-mix(in oklab, var(--muted) 88%, #111827);
     --panel-badge-muted-fg: var(--text-subtle, var(--muted-foreground));
-    --panel-badge-success-bg: #14532d;
-    --panel-badge-success-fg: #dcfce7;
-    --panel-badge-warning-bg: #78350f;
-    --panel-badge-warning-fg: #fef3c7;
-    --panel-badge-destructive-bg: #7f1d1d;
-    --panel-badge-destructive-fg: #fee2e2;
+    --panel-badge-success-bg: var(--success-soft);
+    --panel-badge-success-fg: var(--success-foreground);
+    --panel-badge-warning-bg: var(--warning-soft);
+    --panel-badge-warning-fg: var(--warning-foreground);
+    --panel-badge-destructive-bg: var(--danger-soft);
+    --panel-badge-destructive-fg: var(--danger-foreground);
   }
 }
 
@@ -444,6 +580,25 @@ html[data-brand-mode="system"] {
   --color-ring: var(--ring);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-soft: var(--danger-soft);
+  --color-processing: var(--processing);
+  --color-processing-foreground: var(--processing-foreground);
+  --color-processing-soft: var(--processing-soft);
+  --color-task-surface: var(--task-surface);
+  --color-task-surface-foreground: var(--task-surface-foreground);
+
+  --shadow-elevation-base: var(--elevation-base);
+  --shadow-elevation-interactive: var(--elevation-interactive);
+  --shadow-elevation-task: var(--elevation-task);
+  --shadow-elevation-overlay: var(--elevation-overlay);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

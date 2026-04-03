@@ -66,6 +66,7 @@ Correspondencia operativa:
 - `card` -> `--card` (o banda equivalente local entre `surface` y `panel`)
 - `panel` -> banda de `--surface-3` / `surface3`
 - `popover` -> superficie mas alta derivada localmente desde `surface3`/`border` sin saltos bruscos
+- `task` (zona de trabajo primaria) -> `--task-surface` + `--task-surface-foreground` con `elevationTask`
 
 Notas:
 - `surface-1/2/3` se mantienen como infraestructura tecnica.
@@ -170,6 +171,17 @@ Sombras:
 - suaves, cortas, de baja intensidad
 - no sustituyen la ley tonal
 
+Escala oficial de elevacion (v1.1):
+- `elevationBase`: cards y contenedores operativos por defecto
+- `elevationInteractive`: micro elevacion de hover/focus (sin salto brusco)
+- `elevationTask`: paneles de trabajo primario (`taskSurface`)
+- `elevationOverlay`: popovers/overlays y capas altas
+
+Reglas:
+- usar siempre la escala semantica; no crear sombras ad hoc por pantalla.
+- en panel operativo, hover = micro ajuste (`base -> interactive`) con transicion corta.
+- la profundidad visual final se resuelve por tono + elevacion, no por borde duro.
+
 Bordes:
 - discretos (`borderSubtle` por defecto)
 - apoyo de lectura, no mecanismo principal de profundidad
@@ -196,4 +208,3 @@ Bordes:
 - `background/surface/card/panel/popover` se distinguen en light y dark.
 - `harmony` no rompe escalera estructural.
 - `primary` se percibe en acciones, no en toda la estructura.
-

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import BackToTop from "@/components/panel/BackToTop";
 import PageHeader from "@/components/panel/PageHeader";
+import PanelBadge from "@/components/panel/ui/PanelBadge";
 import PanelButton from "@/components/panel/ui/PanelButton";
 import PanelCard from "@/components/panel/ui/PanelCard";
 import type { AssetItem } from "@/lib/taller/media/types";
@@ -94,33 +96,31 @@ const UPLOAD_FEEDBACK_META: Record<
   {
     label: string;
     description: string;
-    chipClass: string;
-    barClass: string;
+    tone: "processing" | "success" | "danger";
   }
 > = {
-  // Operational-state color exceptions: brand-independent status readability.
   uploading: {
     label: "Subiendo asset base...",
     description: "Guardando archivo en la librería del sistema.",
-    chipClass:
-      "border border-border/70 [background:var(--surface-2,var(--card))] [color:var(--text-subtle)]",
-    barClass: "[background:var(--text-subtle)] opacity-70 animate-pulse",
+    tone: "processing",
   },
   success: {
     label: "Asset base guardado.",
     description: 'Puedes generar variantes desde "Ver variantes".',
-    chipClass:
-      "border border-border/70 [background:var(--surface-2,var(--card))] [color:var(--foreground)]",
-    barClass: "[background:var(--text-subtle)] opacity-80",
+    tone: "success",
   },
   error: {
     label: "Error al subir.",
     description: "Revisa el archivo e inténtalo de nuevo.",
-    chipClass:
-      "border border-border/70 [background:var(--surface-2,var(--card))] [color:var(--foreground)]",
-    barClass: "[background:var(--text-subtle)] opacity-80",
+    tone: "danger",
   },
 };
+
+const VARIANT_PROCESS_PHASES = [
+  "Preparando variante...",
+  "Procesando recurso...",
+  "Optimizando resultado...",
+] as const;
 
 function splitTagInput(value: string): string[] {
   return String(value || "")
@@ -309,6 +309,7 @@ export default function TallerMediaPage() {
   const [busy, setBusy] = useState(false);
   const [rowBusyId, setRowBusyId] = useState<string | null>(null);
   const [variantBusyKey, setVariantBusyKey] = useState<string | null>(null);
+  const [variantProgressStep, setVariantProgressStep] = useState(0);
   const [uploadFeedbackState, setUploadFeedbackState] = useState<UploadFeedbackState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -370,8 +371,11 @@ export default function TallerMediaPage() {
     }
   }
 
-  async function load() {
-    setLoading(true);
+  async function load(options?: { silent?: boolean }) {
+    const isSilentRefresh = options?.silent === true;
+    if (!isSilentRefresh) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const nextItems = await fetchSystemMediaClient("");
@@ -379,7 +383,9 @@ export default function TallerMediaPage() {
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error loading assets");
     } finally {
-      setLoading(false);
+      if (!isSilentRefresh) {
+        setLoading(false);
+      }
     }
   }
 
@@ -408,6 +414,16 @@ export default function TallerMediaPage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!variantBusyKey) return;
+    const timer = window.setInterval(() => {
+      setVariantProgressStep((prev) => (prev + 1) % VARIANT_PROCESS_PHASES.length);
+    }, 1100);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [variantBusyKey]);
 
   const tagStats = useMemo(() => {
     const counter = new Map<string, number>();
@@ -655,7 +671,7 @@ export default function TallerMediaPage() {
       });
       cancelEdit();
       setNotice("Asset actualizado ✓");
-      await load();
+      await load({ silent: true });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Update failed");
     } finally {
@@ -728,7 +744,7 @@ export default function TallerMediaPage() {
           detail: message,
         },
       }));
-      await load();
+      await load({ silent: true });
     } catch (e: unknown) {
       const errorMessage =
         e instanceof Error ? e.message : "No se pudo solicitar la variante";
@@ -826,42 +842,39 @@ export default function TallerMediaPage() {
 
   const uploadFeedbackMeta =
     uploadFeedbackState === "idle" ? null : UPLOAD_FEEDBACK_META[uploadFeedbackState];
+  const uploadFeedbackTone = uploadFeedbackMeta?.tone ?? "processing";
+  const uploadFeedbackIndicatorClass =
+    uploadFeedbackTone === "processing"
+      ? "inline-flex h-2.5 w-2.5 shrink-0 animate-pulse rounded-full [background:var(--processing)]"
+      : uploadFeedbackTone === "success"
+        ? "inline-flex h-2.5 w-2.5 shrink-0 rounded-full [background:var(--success)]"
+        : "inline-flex h-2.5 w-2.5 shrink-0 rounded-full [background:var(--danger)]";
   const uploadFeedback = (
-    <div className="min-h-[82px] w-full rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
+    <div className="min-h-[78px] w-full rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
       <div
         aria-live="polite"
         className={`transition-opacity duration-200 ${uploadFeedbackMeta ? "opacity-100" : "opacity-0"}`}
       >
-        <div className="flex w-full items-center">
-          <span
-            className={`inline-flex w-full items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ${
-              uploadFeedbackMeta?.chipClass ??
-              "border border-border/70 [background:var(--surface-2,var(--card))] [color:var(--text-subtle)]"
-            }`}
+        <div className="flex w-full items-center gap-2">
+          <PanelBadge
+            tone={uploadFeedbackTone}
+            className="h-5 min-w-[164px] justify-center px-2 text-[10px]"
           >
             {uploadFeedbackMeta?.label ?? " "}
-          </span>
+          </PanelBadge>
+          <span className={uploadFeedbackIndicatorClass} />
         </div>
-        <p className="mt-1 text-[11px] text-muted-foreground">
+        <p className="mt-1 min-h-[14px] truncate text-[11px] text-muted-foreground">
           {uploadFeedbackMeta?.description ?? " "}
         </p>
-        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full [background:var(--surface-2,var(--card))]">
-          <span
-            className={`block h-full rounded-full transition-all duration-300 ${
-              uploadFeedbackMeta
-                ? `w-full ${uploadFeedbackMeta.barClass}`
-                : "w-0 [background:var(--surface-2,var(--card))]"
-            }`}
-          />
-        </div>
       </div>
     </div>
   );
 
-  const globalFeedbackTone = error ? "error" : notice ? "success" : "idle";
+  const globalFeedbackTone = error ? "danger" : notice ? "success" : "idle";
   const globalFeedbackMessage = error ?? notice ?? " ";
   const globalFeedbackChip =
-    globalFeedbackTone === "error"
+    globalFeedbackTone === "danger"
       ? "Error"
       : globalFeedbackTone === "success"
         ? "Listo"
@@ -878,7 +891,7 @@ export default function TallerMediaPage() {
         description="Gestiona libreria de assets del sistema con filtros, restricciones y metadatos operativos."
         actions={
           <div className="flex items-center gap-2">
-            <PanelButton type="button" onClick={load} className="h-10">
+            <PanelButton type="button" onClick={() => load()} className="h-10">
               Recargar
             </PanelButton>
             <PanelButton
@@ -902,9 +915,12 @@ export default function TallerMediaPage() {
       <div className="min-h-[64px]">
         <div className={`rounded-xl p-3 text-sm transition-opacity duration-180 ${globalFeedbackClass}`}>
           <div className="flex items-center gap-2">
-            <span className="inline-flex h-5 items-center rounded-full border border-border px-2 text-[10px] font-medium [background:var(--surface-2,var(--card))] [color:var(--text-subtle)]">
+            <PanelBadge
+              tone={globalFeedbackTone === "idle" ? "neutral" : globalFeedbackTone}
+              className="h-5 px-2 text-[10px]"
+            >
               {globalFeedbackChip}
-            </span>
+            </PanelBadge>
             <span className="text-xs [color:var(--text-subtle)]">
               {globalFeedbackMessage}
             </span>
@@ -1372,42 +1388,72 @@ export default function TallerMediaPage() {
                 const feedbackTone: VariantFeedbackTone = isVariantBusyForOriginal
                   ? "processing"
                   : variantFeedbackState?.tone ?? "idle";
-                const feedbackChipClass =
+                const isSvgWarning =
+                  feedbackTone === "error" && /svg/i.test(variantFeedbackState?.detail ?? "");
+                const semanticFeedbackTone: "idle" | "processing" | "success" | "warning" | "danger" =
                   feedbackTone === "processing"
-                    ? "border border-border [background:var(--surface-2,var(--card))] [color:var(--text-subtle)]"
+                    ? "processing"
                     : feedbackTone === "success"
-                      ? "border border-border [background:var(--badge-bg,var(--muted))] [color:var(--badge-fg,var(--foreground))] [border-color:var(--badge-bg,var(--border))]"
+                      ? "success"
                       : feedbackTone === "error"
-                        ? "border border-border [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))]"
-                        : "border border-border [background:var(--surface-2,var(--card))] [color:var(--text-subtle)]";
-                const feedbackTitle = isVariantBusyForOriginal
-                  ? "Generando variante..."
-                  : variantFeedbackState?.title ??
+                        ? isSvgWarning
+                          ? "warning"
+                          : "danger"
+                        : "idle";
+                const feedbackBadgeTone: "neutral" | "processing" | "success" | "warning" | "danger" =
+                  semanticFeedbackTone === "idle" ? "neutral" : semanticFeedbackTone;
+                const feedbackIndicatorClass =
+                  semanticFeedbackTone === "processing"
+                    ? "inline-flex h-2.5 w-2.5 shrink-0 animate-pulse rounded-full [background:var(--processing)]"
+                    : semanticFeedbackTone === "success"
+                      ? "inline-flex h-2.5 w-2.5 shrink-0 rounded-full [background:var(--success)]"
+                      : semanticFeedbackTone === "warning"
+                        ? "inline-flex h-2.5 w-2.5 shrink-0 rounded-full [background:var(--warning)]"
+                        : semanticFeedbackTone === "danger"
+                          ? "inline-flex h-2.5 w-2.5 shrink-0 rounded-full [background:var(--danger)]"
+                          : "inline-flex h-2.5 w-2.5 shrink-0 rounded-full [background:var(--text-subtle)]";
+                const processingPhase = VARIANT_PROCESS_PHASES[variantProgressStep];
+                const feedbackTitle = feedbackTone === "processing"
+                  ? processingPhase
+                  : semanticFeedbackTone === "success"
+                    ? "Variante creada"
+                    : semanticFeedbackTone === "warning"
+                      ? "No vectorizable"
+                      : semanticFeedbackTone === "danger"
+                        ? "Error al generar"
+                        : variantFeedbackState?.title ??
                     (missingVariantSlots.length > 0
                       ? "Generación manual de variantes"
                       : "Variantes completas");
-                const feedbackDetail = isVariantBusyForOriginal
-                  ? `Slot en curso: ${busyVariantSlot?.title ?? "variante"}.`
-                  : variantFeedbackState?.detail ??
+                const feedbackDetail = feedbackTone === "processing"
+                  ? `Trabajando en ${busyVariantSlot?.title ?? "la variante"}...`
+                  : semanticFeedbackTone === "success"
+                    ? "Puedes revisarla en esta misma fila."
+                    : semanticFeedbackTone === "warning"
+                      ? "Este asset no cumple condiciones para SVG."
+                      : semanticFeedbackTone === "danger"
+                        ? "Reintenta desde el slot correspondiente."
+                        : variantFeedbackState?.detail ??
                     (missingVariantSlots.length > 0
                       ? `Selecciona un slot para generar: ${missingVariantSlots
                           .map((slot) => slot.title)
                           .join(", ")}.`
                       : "Todas las variantes principales están generadas.");
-                const feedbackProgressClass =
-                  feedbackTone === "processing"
-                    ? "w-full animate-pulse [background:var(--text-subtle)] opacity-70"
-                    : feedbackTone === "idle"
-                      ? "w-0 [background:var(--surface-2,var(--card))]"
-                      : "w-full [background:var(--text-subtle)] opacity-80";
+                const compactVariantMetaBadgeClass =
+                  "inline-flex h-4 min-w-0 items-center rounded-full border border-border px-1 text-[9px] leading-none whitespace-nowrap [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]";
+                const variantSlotShellClass =
+                  "h-[128px] min-w-0 rounded-md border border-border p-1 [background:var(--surface-1,var(--background))] flex flex-col";
+                const variantSlotHeaderClass = "flex h-[50px] items-start gap-1";
+                const variantSlotMetaRowClass =
+                  "mt-0.5 flex h-4 items-center gap-0.5 overflow-x-hidden overflow-y-visible";
                 const variantActionRowClass =
-                  "mt-1.5 grid grid-cols-2 gap-1 sm:flex sm:flex-nowrap sm:gap-1";
+                  "mt-1.5 grid min-h-[24px] grid-cols-2 gap-0.5 pt-0.5 sm:flex sm:flex-nowrap sm:gap-0.5";
                 const variantActionButtonClass =
-                  "h-7 rounded-md px-2 text-[10px] sm:flex-1 sm:min-w-0";
+                  "h-6 min-w-0 rounded-md px-1 text-[10px] whitespace-nowrap sm:flex-1";
 
                 return (
                   <article key={group.original._id}>
-                    <PanelCard className="p-2.5 sm:p-3">
+                    <PanelCard variant="task" className="p-2.5 sm:p-3">
                     <div className="rounded-xl border border-border/80 p-3 [background:var(--surface-1,var(--background))] sm:p-4">
                       <div className="flex items-start gap-3">
                         <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border [background:var(--surface-2,var(--card))] sm:h-18 sm:w-18">
@@ -1473,7 +1519,7 @@ export default function TallerMediaPage() {
 
                       <div className="mt-3 space-y-2 border-t border-border/70 pt-2.5">
                         {isVariantsExpanded ? (
-                          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(240px,320px)_auto] sm:items-center">
+                          <div className="grid min-h-[64px] gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(240px,320px)_116px] sm:items-center sm:gap-2">
                             <div className="min-w-0">
                               <p className="text-xs font-semibold text-foreground">
                                 Variantes derivadas ({generatedCount})
@@ -1496,28 +1542,25 @@ export default function TallerMediaPage() {
                               </div>
                             </div>
 
-                            <div className="min-h-[52px] min-w-0 rounded-md border border-border/70 px-2.5 py-1.5 [background:var(--surface-2,var(--card))]">
+                            <div className="min-h-[56px] min-w-0 rounded-md border border-border/70 px-2.5 py-1.5 [background:var(--surface-2,var(--card))] sm:max-w-[320px]">
                               <div className="flex items-center gap-1.5">
-                                <span
-                                  className={`inline-flex h-5 min-w-[124px] items-center justify-center rounded-full px-2 text-[10px] font-medium ${feedbackChipClass}`}
+                                <PanelBadge
+                                  tone={feedbackBadgeTone}
+                                  className="h-5 w-[150px] justify-center px-2 text-[10px]"
                                 >
                                   {feedbackTitle}
-                                </span>
+                                </PanelBadge>
+                                <span className={feedbackIndicatorClass} />
                               </div>
-                              <p className="mt-1 truncate text-[10px] text-muted-foreground">
+                              <p className="mt-1 h-[14px] truncate text-[10px] text-muted-foreground">
                                 {feedbackDetail}
                               </p>
-                              <div className="mt-1 h-0.5 w-full overflow-hidden rounded-full [background:var(--surface-3,var(--muted))]">
-                                <span
-                                  className={`block h-full rounded-full transition-opacity duration-300 ${feedbackProgressClass}`}
-                                />
-                              </div>
                             </div>
 
                             <PanelButton
                               type="button"
                               onClick={() => toggleVariantsVisibility(original._id)}
-                              className="h-8 rounded-md px-2.5 text-[11px]"
+                              className="h-8 w-full rounded-md px-2.5 text-[11px] sm:w-[116px] sm:justify-center"
                             >
                               Ocultar variantes
                             </PanelButton>
@@ -1591,8 +1634,8 @@ export default function TallerMediaPage() {
                     </div>
 
                     {isVariantsExpanded ? (
-                      <div className="mt-2 rounded-lg border border-border/70 p-2 [background:var(--surface-2,var(--card))]">
-                        <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
+                      <div className="mt-1 rounded-lg border border-border/70 p-1 [background:var(--surface-2,var(--card))]">
+                        <div className="grid gap-0.5 sm:grid-cols-2 xl:grid-cols-3">
                           {MANUAL_VARIANT_SLOTS.map((slot) => {
                             const variant = group.variantsByKey[slot.key];
                             const isSlotBusy = isVariantBusyForOriginal && busyVariantKey === slot.key;
@@ -1601,37 +1644,54 @@ export default function TallerMediaPage() {
                               return (
                                 <div
                                   key={slot.key}
-                                  className="rounded-md border border-dashed border-border p-2.5 [background:var(--surface-1,var(--background))]"
+                                  className={`${variantSlotShellClass} border-dashed border-border [background:var(--surface-3,var(--muted))]`}
                                 >
-                                  <div className="text-[11px] font-semibold text-foreground">{slot.title}</div>
-                                  <p className="mt-0.5 text-[10px] text-muted-foreground">
-                                    Variante no generada aún.
-                                  </p>
-                                  <PanelButton
-                                    type="button"
-                                    onClick={() => generateVariant(original, slot.key)}
-                                    disabled={isVariantBusyForOriginal}
-                                    className="mt-1.5 h-7 w-full rounded-md px-2 text-[10px]"
-                                  >
-                                    {isSlotBusy ? "Solicitando..." : slot.actionLabel}
-                                  </PanelButton>
+                                  <div className={variantSlotHeaderClass}>
+                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border [background:var(--surface-1,var(--background))]">
+                                      <span className="h-1.5 w-1.5 rounded-full [background:var(--text-subtle)] opacity-70" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="truncate text-[11px] font-semibold text-foreground">
+                                        {slot.title}
+                                      </div>
+                                      <div className="truncate text-[10px] text-muted-foreground">
+                                        Pendiente de generar.
+                                      </div>
+                                      <div className={`${variantSlotMetaRowClass} rounded-sm border border-dashed border-border/80 px-1 [background:var(--surface-1,var(--background))]`}>
+                                        <PanelBadge tone="neutral" className="h-4 px-1 text-[9px]">
+                                          slot reservado
+                                        </PanelBadge>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className={variantActionRowClass}>
+                                    <PanelButton
+                                      type="button"
+                                      onClick={() => generateVariant(original, slot.key)}
+                                      disabled={isVariantBusyForOriginal}
+                                      className={`${variantActionButtonClass} col-span-2 sm:col-span-1`}
+                                    >
+                                      {isSlotBusy ? "Solicitando..." : slot.actionLabel}
+                                    </PanelButton>
+                                  </div>
                                 </div>
                               );
                             }
 
                             const isVariantRestricted = variant.allowedIn.length > 0;
-                            const compactPipelineBadgeClass =
+                            const slotPipelineBadgeClass =
                               variant.pipelineStatus === "failed"
-                                ? "inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[10px] leading-4 whitespace-normal break-words [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))]"
-                                : "inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[10px] leading-4 whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]";
+                                ? "inline-flex h-4 min-w-0 items-center rounded-full border border-border px-1 text-[9px] leading-none whitespace-nowrap [background:var(--danger-soft,var(--surface-3,var(--muted)))] [color:var(--danger-foreground,var(--foreground))]"
+                                : compactVariantMetaBadgeClass;
 
                             return (
                               <div
                                 key={slot.key}
-                                className="rounded-md border border-border p-2 [background:var(--surface-1,var(--background))]"
+                                className={variantSlotShellClass}
                               >
-                                <div className="flex items-start gap-2">
-                                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-border [background:var(--surface-2,var(--card))]">
+                                <div className={variantSlotHeaderClass}>
+                                  <div className="h-7 w-7 shrink-0 overflow-hidden rounded-md border border-border [background:var(--surface-2,var(--card))]">
                                     {renderThumb(variant)}
                                   </div>
 
@@ -1642,14 +1702,14 @@ export default function TallerMediaPage() {
                                     <div className="truncate text-[10px] text-muted-foreground">
                                       {variant.label}
                                     </div>
-                                    <div className="mt-1 flex flex-wrap gap-1">
-                                      <span className="inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[9px] leading-3.5 whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
+                                    <div className={variantSlotMetaRowClass}>
+                                      <span className={`${compactVariantMetaBadgeClass} shrink-0`}>
                                         {variant.kind}
                                       </span>
-                                      <span className={compactPipelineBadgeClass}>
+                                      <span className={`${slotPipelineBadgeClass} min-w-0 truncate`}>
                                         pipeline: {variant.pipelineStatus}
                                       </span>
-                                      <span className="inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[9px] leading-3.5 whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
+                                      <span className={`${compactVariantMetaBadgeClass} shrink-0`}>
                                         {isVariantRestricted ? "restringido" : "uso libre"}
                                       </span>
                                     </div>
@@ -1696,16 +1756,16 @@ export default function TallerMediaPage() {
                             const isVariantRestricted = variant.allowedIn.length > 0;
                             const compactPipelineBadgeClass =
                               variant.pipelineStatus === "failed"
-                                ? "inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[10px] leading-4 whitespace-normal break-words [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))]"
-                                : "inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[10px] leading-4 whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]";
+                                ? "inline-flex h-4 min-w-0 items-center rounded-full border border-border px-1 text-[9px] leading-none whitespace-nowrap [background:var(--danger-soft,var(--surface-3,var(--muted)))] [color:var(--danger-foreground,var(--foreground))]"
+                                : compactVariantMetaBadgeClass;
 
                             return (
                               <div
                                 key={variant._id}
-                                className="rounded-md border border-border p-2 [background:var(--surface-1,var(--background))]"
+                                className={variantSlotShellClass}
                               >
-                                <div className="flex items-start gap-2">
-                                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-border [background:var(--surface-2,var(--card))]">
+                                <div className={variantSlotHeaderClass}>
+                                  <div className="h-7 w-7 shrink-0 overflow-hidden rounded-md border border-border [background:var(--surface-2,var(--card))]">
                                     {renderThumb(variant)}
                                   </div>
 
@@ -1716,14 +1776,14 @@ export default function TallerMediaPage() {
                                     <div className="truncate text-[10px] text-muted-foreground">
                                       {variant.label}
                                     </div>
-                                    <div className="mt-1 flex flex-wrap gap-1">
-                                      <span className="inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[9px] leading-3.5 whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
+                                    <div className={variantSlotMetaRowClass}>
+                                      <span className={`${compactVariantMetaBadgeClass} shrink-0`}>
                                         {variant.kind}
                                       </span>
-                                      <span className={compactPipelineBadgeClass}>
+                                      <span className={`${compactPipelineBadgeClass} min-w-0 truncate`}>
                                         pipeline: {variant.pipelineStatus}
                                       </span>
-                                      <span className="inline-flex items-center rounded-full border border-border px-1.5 py-0.5 text-[9px] leading-3.5 whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
+                                      <span className={`${compactVariantMetaBadgeClass} shrink-0`}>
                                         {isVariantRestricted ? "restringido" : "uso libre"}
                                       </span>
                                     </div>
@@ -1767,11 +1827,13 @@ export default function TallerMediaPage() {
                           })}
                         </div>
 
-                        {missingVariantSlots.length > 0 ? (
-                          <p className="mt-2 text-[11px] text-muted-foreground">
-                            Slots pendientes: {missingVariantSlots.map((slot) => slot.title).join(", ")}
-                          </p>
-                        ) : null}
+                        <p className="mt-2 min-h-[16px] text-[11px] text-muted-foreground">
+                          {missingVariantSlots.length > 0
+                            ? `Slots pendientes: ${missingVariantSlots
+                                .map((slot) => slot.title)
+                                .join(", ")}`
+                            : " "}
+                        </p>
                       </div>
                     ) : null}
                     </PanelCard>
@@ -1786,6 +1848,7 @@ export default function TallerMediaPage() {
           </p>
         </section>
       </div>
+      <BackToTop threshold={320} />
 
       {isUploadSheetOpen ? (
         <div className="fixed inset-0 z-110 bg-black/35 px-3 pb-3 pt-6 lg:hidden sm:px-4 sm:pb-4">

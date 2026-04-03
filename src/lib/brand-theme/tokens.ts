@@ -378,6 +378,30 @@ function deriveSurface(background: string, mode: ResolvedBrandThemeMode, step: 1
   }));
 }
 
+function deriveOperationalColor(args: {
+  primary: string;
+  background: string;
+  mode: ResolvedBrandThemeMode;
+  hue: number;
+  saturation: number;
+  lightnessLight: number;
+  lightnessDark: number;
+  minContrast: number;
+}): string {
+  const candidate = transformHexHsl(args.primary, () => ({
+    h: args.hue,
+    s: args.saturation,
+    l: args.mode === "dark" ? args.lightnessDark : args.lightnessLight,
+  }));
+
+  return ensureContrastAgainstBackground({
+    color: candidate,
+    background: args.background,
+    minRatio: args.minContrast,
+    prefer: args.mode === "dark" ? "lighter" : "darker",
+  });
+}
+
 function stabilizeBackgroundTone(
   background: string,
   primary: string,
@@ -596,6 +620,92 @@ export function buildBrandSemanticTokens(args: {
     prefer: mode === "dark" ? "lighter" : "darker",
   });
 
+  const success = deriveOperationalColor({
+    primary,
+    background,
+    mode,
+    hue: 142,
+    saturation: 62,
+    lightnessLight: 36,
+    lightnessDark: 68,
+    minContrast: mode === "dark" ? 4.1 : 4.2,
+  });
+  const successSoft = ensureContrastAgainstBackground({
+    color: mixHexColors(success, background, mode === "dark" ? 0.62 : 0.76),
+    background,
+    minRatio: mode === "dark" ? 1.24 : 1.18,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+  const successForeground = getContrastText(successSoft, "#052e16", "#ecfdf5");
+
+  const warning = deriveOperationalColor({
+    primary,
+    background,
+    mode,
+    hue: 38,
+    saturation: 78,
+    lightnessLight: 42,
+    lightnessDark: 72,
+    minContrast: mode === "dark" ? 3.6 : 3.8,
+  });
+  const warningSoft = ensureContrastAgainstBackground({
+    color: mixHexColors(warning, background, mode === "dark" ? 0.6 : 0.74),
+    background,
+    minRatio: mode === "dark" ? 1.24 : 1.18,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+  const warningForeground = getContrastText(warningSoft, "#422006", "#fffbeb");
+
+  const danger = deriveOperationalColor({
+    primary,
+    background,
+    mode,
+    hue: 8,
+    saturation: 72,
+    lightnessLight: 42,
+    lightnessDark: 66,
+    minContrast: mode === "dark" ? 4.1 : 4.2,
+  });
+  const dangerSoft = ensureContrastAgainstBackground({
+    color: mixHexColors(danger, background, mode === "dark" ? 0.6 : 0.76),
+    background,
+    minRatio: mode === "dark" ? 1.24 : 1.18,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+  const dangerForeground = getContrastText(dangerSoft, "#450a0a", "#fef2f2");
+
+  const processing = deriveOperationalColor({
+    primary,
+    background,
+    mode,
+    hue: 214,
+    saturation: 70,
+    lightnessLight: 40,
+    lightnessDark: 68,
+    minContrast: mode === "dark" ? 4.1 : 4.2,
+  });
+  const processingSoft = ensureContrastAgainstBackground({
+    color: mixHexColors(processing, background, mode === "dark" ? 0.64 : 0.78),
+    background,
+    minRatio: mode === "dark" ? 1.24 : 1.18,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+  const processingForeground = getContrastText(processingSoft, "#082f49", "#eff6ff");
+
+  const taskSurfaceRaw = mixHexColors(surface3, accentSoft, mode === "dark" ? 0.22 : 0.14);
+  const taskSurface = ensureContrastAgainstBackground({
+    color: taskSurfaceRaw,
+    background,
+    minRatio: mode === "dark" ? 1.3 : 1.2,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+  const taskSurfaceForeground = ensureContrastAgainstBackground({
+    color: foreground,
+    background: taskSurface,
+    minRatio: mode === "dark" ? 7 : 6.8,
+    prefer: mode === "dark" ? "lighter" : "darker",
+  });
+
   return {
     background,
     foreground,
@@ -634,6 +744,25 @@ export function buildBrandSemanticTokens(args: {
 
     badgeBg: accentSoft,
     badgeFg: accentSoftForeground,
+
+    success,
+    successForeground,
+    successSoft,
+
+    warning,
+    warningForeground,
+    warningSoft,
+
+    danger,
+    dangerForeground,
+    dangerSoft,
+
+    processing,
+    processingForeground,
+    processingSoft,
+
+    taskSurface,
+    taskSurfaceForeground,
 
     heroOverlay: mode === "dark" ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.34)",
     heroOverlayStrong: mode === "dark" ? "rgba(0, 0, 0, 0.72)" : "rgba(0, 0, 0, 0.58)",
@@ -684,6 +813,25 @@ export function toBrandCssVariables(tokens: BrandSemanticTokens): Record<string,
 
     "--badge-bg": tokens.badgeBg,
     "--badge-fg": tokens.badgeFg,
+
+    "--success": tokens.success,
+    "--success-foreground": tokens.successForeground,
+    "--success-soft": tokens.successSoft,
+
+    "--warning": tokens.warning,
+    "--warning-foreground": tokens.warningForeground,
+    "--warning-soft": tokens.warningSoft,
+
+    "--danger": tokens.danger,
+    "--danger-foreground": tokens.dangerForeground,
+    "--danger-soft": tokens.dangerSoft,
+
+    "--processing": tokens.processing,
+    "--processing-foreground": tokens.processingForeground,
+    "--processing-soft": tokens.processingSoft,
+
+    "--task-surface": tokens.taskSurface,
+    "--task-surface-foreground": tokens.taskSurfaceForeground,
 
     "--hero-overlay": tokens.heroOverlay,
     "--hero-overlay-strong": tokens.heroOverlayStrong,

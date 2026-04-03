@@ -81,6 +81,25 @@ export type BrandSemanticTokens = BrandCorePaletteTokens & {
   badgeBg: string;
   badgeFg: string;
 
+  success: string;
+  successForeground: string;
+  successSoft: string;
+
+  warning: string;
+  warningForeground: string;
+  warningSoft: string;
+
+  danger: string;
+  dangerForeground: string;
+  dangerSoft: string;
+
+  processing: string;
+  processingForeground: string;
+  processingSoft: string;
+
+  taskSurface: string;
+  taskSurfaceForeground: string;
+
   heroOverlay: string;
   heroOverlayStrong: string;
 
