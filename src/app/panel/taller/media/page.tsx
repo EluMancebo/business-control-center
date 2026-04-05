@@ -1445,17 +1445,17 @@ export default function TallerMediaPage() {
                           .join(", ")}.`
                       : "Todas las variantes principales están generadas.");
                 const compactVariantMetaBadgeClass =
-                  "inline-flex h-5 min-w-0 items-center rounded-full border border-border px-1.5 text-[9px] leading-none whitespace-nowrap [background:var(--surface-3,var(--muted))] text-(--text-subtle)";
+                  "inline-flex h-5 min-w-0 max-w-full items-center rounded-full border border-border px-1.5 text-[9px] leading-none truncate [background:var(--surface-3,var(--muted))] text-(--text-subtle)";
                 const variantSlotShellClass =
                   "min-w-0 rounded-md border border-border p-2 [background:var(--surface-1,var(--background))] flex min-h-[148px] flex-col";
                 const variantSlotHeaderClass =
                   "flex items-start gap-2";
                 const variantSlotMetaRowClass =
-                  "mt-1 flex min-h-[20px] flex-wrap items-center gap-1";
+                  "mt-1 flex min-h-[20px] min-w-0 max-w-full flex-wrap items-center gap-1";
                 const variantActionRowClass =
-                  "mt-auto grid grid-cols-2 gap-1.5 pt-3 sm:grid-cols-2 lg:flex lg:flex-nowrap lg:gap-1";
+                  "mt-auto grid min-w-0 max-w-full grid-cols-2 gap-1.5 pt-3 sm:grid-cols-2 lg:flex lg:flex-nowrap lg:gap-1";
                 const variantActionButtonClass =
-                  "h-8 w-full min-w-0 rounded-md px-2 text-[10px] whitespace-nowrap lg:flex-1 lg:px-1.5 lg:text-[9px]";
+                  "h-8 w-full min-w-0 rounded-md px-2 text-[10px] truncate lg:flex-1 lg:px-1.5 lg:text-[9px]";
                 return (
                   <article key={group.original._id}>
                     <PanelCard variant="task" className="p-2.5 sm:p-3">
@@ -1684,7 +1684,7 @@ export default function TallerMediaPage() {
                             const isVariantRestricted = variant.allowedIn.length > 0;
                             const slotPipelineBadgeClass =
                               variant.pipelineStatus === "failed"
-                                ? "inline-flex h-4 min-w-0 items-center rounded-full border border-border px-1 text-[9px] leading-none whitespace-nowrap [background:var(--danger-soft,var(--surface-3,var(--muted)))] [color:var(--danger-foreground,var(--foreground))]"
+                                ? "inline-flex h-4 min-w-0 max-w-full items-center rounded-full border border-border px-1 text-[9px] leading-none truncate [background:var(--danger-soft,var(--surface-3,var(--muted)))] [color:var(--danger-foreground,var(--foreground))]"
                                 : compactVariantMetaBadgeClass;
 
                             return (
@@ -1705,13 +1705,13 @@ export default function TallerMediaPage() {
                                       {variant.label}
                                     </div>
                                     <div className={variantSlotMetaRowClass}>
-                                      <span className={`${compactVariantMetaBadgeClass} shrink-0`}>
+                                      <span className={`${compactVariantMetaBadgeClass} min-w-0`}>
                                         {variant.kind}
                                       </span>
                                       <span className={`${slotPipelineBadgeClass} min-w-0 truncate`}>
                                         pipeline: {variant.pipelineStatus}
                                       </span>
-                                      <span className={`${compactVariantMetaBadgeClass} shrink-0`}>
+                                      <span className={`${compactVariantMetaBadgeClass} min-w-0`}>
                                         {isVariantRestricted ? "restringido" : "uso libre"}
                                       </span>
                                     </div>
@@ -1758,7 +1758,7 @@ export default function TallerMediaPage() {
                             const isVariantRestricted = variant.allowedIn.length > 0;
                             const compactPipelineBadgeClass =
                               variant.pipelineStatus === "failed"
-                                ? "inline-flex h-4 min-w-0 items-center rounded-full border border-border px-1 text-[9px] leading-none whitespace-nowrap [background:var(--danger-soft,var(--surface-3,var(--muted)))] [color:var(--danger-foreground,var(--foreground))]"
+                                ? "inline-flex h-4 min-w-0 max-w-full items-center rounded-full border border-border px-1 text-[9px] leading-none truncate [background:var(--danger-soft,var(--surface-3,var(--muted)))] [color:var(--danger-foreground,var(--foreground))]"
                                 : compactVariantMetaBadgeClass;
 
                             return (
@@ -1779,13 +1779,13 @@ export default function TallerMediaPage() {
                                       {variant.label}
                                     </div>
                                     <div className={variantSlotMetaRowClass}>
-                                      <span className={`${compactVariantMetaBadgeClass} shrink-0`}>
+                                      <span className={`${compactVariantMetaBadgeClass} min-w-0`}>
                                         {variant.kind}
                                       </span>
                                       <span className={`${compactPipelineBadgeClass} min-w-0 truncate`}>
                                         pipeline: {variant.pipelineStatus}
                                       </span>
-                                      <span className={`${compactVariantMetaBadgeClass} shrink-0`}>
+                                      <span className={`${compactVariantMetaBadgeClass} min-w-0`}>
                                         {isVariantRestricted ? "restringido" : "uso libre"}
                                       </span>
                                     </div>
