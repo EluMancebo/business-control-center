@@ -5,7 +5,7 @@ export type AssetVariantKey = "original" | "thumbnail" | "optimized" | "vectoriz
 export type AssetPipelineStatus = "queued" | "processing" | "ready" | "failed" | "skipped";
 export type AssetPipelineStage = "ingest" | "analyze" | "derive" | "vectorize" | "done";
 export type AssetBusinessId = string | null;
-export type VectorizationKind = "logo" | "icon" | "shape" | "photo" | "illustration";
+export type VectorizationKind = "logo" | "icon" | "shape" | "photo" | "texture" | "illustration";
 
 type SystemAssetOwnership = {
   scope: "system";

@@ -15,8 +15,11 @@ const VECTOR_ICON_MIN_TRANSPARENCY = 0.12;
 const VECTOR_LOGO_MIN_TRANSPARENCY = 0.04;
 const VECTOR_MAX_DIMENSION = 2400;
 const VECTOR_ICON_MAX_DIMENSION = 900;
+const CATEGORY_ICON_MAX_COLORS = 18;
+const CATEGORY_LOGO_MAX_COLORS = 28;
 type DerivedVariantKey = Exclude<AssetVariantKey, "original">;
 type VectorizationAnalysis = NonNullable<ProcessedAssetResult["vectorizationAnalysis"]>;
+type VisualCategoryHint = VectorizationAnalysis["kind"] | null;
 
 function getBlobReadWriteToken() {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
@@ -78,24 +81,56 @@ function isRootUsableAsset(asset: AssetItem): boolean {
   );
 }
 
+function extractVisualCategoryHint(tags: string[]): VisualCategoryHint {
+  for (const rawTag of tags) {
+    const tag = String(rawTag || "").trim().toLowerCase();
+    if (!tag) continue;
+
+    const value = tag.startsWith("visual:") ? tag.slice("visual:".length).trim() : tag;
+    if (
+      value === "logo" ||
+      value === "icon" ||
+      value === "shape" ||
+      value === "photo" ||
+      value === "texture" ||
+      value === "illustration"
+    ) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
 async function analyzeVectorizationCandidate(args: {
   raster: Buffer;
   width: number;
   height: number;
   hasAlpha: boolean;
+  categoryHint: VisualCategoryHint;
 }): Promise<VectorizationAnalysis> {
-  if (!args.hasAlpha) {
+  if (args.categoryHint === "photo") {
     return {
       kind: "photo",
       candidate: false,
-      reason: "No apto para SVG: el asset no tiene transparencia útil para logo/icono.",
+      reason: "No apto para SVG: categoría visual 'photo' excluida en fase 1.",
       sampledColorCount: 0,
       transparencyRatio: 0,
     };
   }
+  if (args.categoryHint === "texture") {
+    return {
+      kind: "texture",
+      candidate: false,
+      reason: "No apto para SVG: categoría visual 'texture' excluida en fase 1.",
+      sampledColorCount: 0,
+      transparencyRatio: 0,
+    };
+  }
+
   if (args.width <= 0 || args.height <= 0) {
     return {
-      kind: "illustration",
+      kind: args.categoryHint ?? "illustration",
       candidate: false,
       reason: "No apto para SVG: dimensiones inválidas.",
       sampledColorCount: 0,
@@ -104,7 +139,7 @@ async function analyzeVectorizationCandidate(args: {
   }
   if (args.width > VECTOR_MAX_DIMENSION || args.height > VECTOR_MAX_DIMENSION) {
     return {
-      kind: "photo",
+      kind: args.categoryHint ?? "photo",
       candidate: false,
       reason: "No apto para SVG: imagen demasiado grande para vectorización fase 1.",
       sampledColorCount: 0,
@@ -121,7 +156,7 @@ async function analyzeVectorizationCandidate(args: {
   const totalPixels = (sample.info.width || 0) * (sample.info.height || 0);
   if (!totalPixels) {
     return {
-      kind: "illustration",
+      kind: args.categoryHint ?? "illustration",
       candidate: false,
       reason: "No apto para SVG: no se pudo muestrear el raster.",
       sampledColorCount: 0,
@@ -149,6 +184,63 @@ async function analyzeVectorizationCandidate(args: {
 
   const transparencyRatio = transparentPixels / totalPixels;
   const sampledColorCount = colors.size;
+
+  if (args.categoryHint === "icon" || args.categoryHint === "logo") {
+    const maxColors = args.categoryHint === "icon" ? CATEGORY_ICON_MAX_COLORS : CATEGORY_LOGO_MAX_COLORS;
+    if (sampledColorCount > maxColors) {
+      return {
+        kind: args.categoryHint,
+        candidate: false,
+        reason: `No apto para SVG: ${args.categoryHint} con demasiados colores muestreados (${sampledColorCount}).`,
+        sampledColorCount,
+        transparencyRatio,
+      };
+    }
+
+    if (
+      args.categoryHint === "icon" &&
+      (args.width > VECTOR_ICON_MAX_DIMENSION * 2 || args.height > VECTOR_ICON_MAX_DIMENSION * 2)
+    ) {
+      return {
+        kind: "icon",
+        candidate: false,
+        reason: "No apto para SVG: icono demasiado grande para fase 1.",
+        sampledColorCount,
+        transparencyRatio,
+      };
+    }
+
+    return {
+      kind: args.categoryHint,
+      candidate: true,
+      reason: `Candidato SVG por categoría visual '${args.categoryHint}'.`,
+      sampledColorCount,
+      transparencyRatio,
+    };
+  }
+
+  if (args.categoryHint === "shape") {
+    const candidate = sampledColorCount <= 6 && transparencyRatio >= 0.02;
+    return {
+      kind: "shape",
+      candidate,
+      reason: candidate
+        ? "Candidato SVG: shape simple detectado en fase 1."
+        : "No apto para SVG en fase 1: shape con complejidad alta.",
+      sampledColorCount,
+      transparencyRatio,
+    };
+  }
+
+  if (!args.hasAlpha) {
+    return {
+      kind: args.categoryHint ?? "photo",
+      candidate: false,
+      reason: "No apto para SVG: sin transparencia útil para esta categoría.",
+      sampledColorCount,
+      transparencyRatio,
+    };
+  }
 
   let kind: VectorizationAnalysis["kind"] = "illustration";
   if (sampledColorCount > 42) {
@@ -282,6 +374,7 @@ export async function processAssetVariant(
     const originalWidth = Number(originalMeta.width || 0);
     const originalHeight = Number(originalMeta.height || 0);
     const hasAlpha = Boolean(originalMeta.hasAlpha);
+    const categoryHint = extractVisualCategoryHint(asset.tags);
 
     await updateSystemAssetPipelineRepository(sourceAssetId, {
       width: originalWidth,
@@ -375,6 +468,7 @@ export async function processAssetVariant(
         width: originalWidth,
         height: originalHeight,
         hasAlpha,
+        categoryHint,
       });
 
       if (!vectorizationAnalysis.candidate) {

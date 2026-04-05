@@ -749,11 +749,12 @@ export default function TallerMediaPage() {
     } catch (e: unknown) {
       const errorMessage =
         e instanceof Error ? e.message : "No se pudo solicitar la variante";
+      const isVectorizationRejection = /no apto para svg|vectoriz/i.test(errorMessage.toLowerCase());
       setVariantFeedbackByAssetId((prev) => ({
         ...prev,
         [original._id]: {
           tone: "error",
-          title: "Error al generar variante.",
+          title: isVectorizationRejection ? "No vectorizable" : "Error al generar variante.",
           detail: errorMessage,
         },
       }));
@@ -1424,9 +1425,9 @@ export default function TallerMediaPage() {
                   : semanticFeedbackTone === "success"
                     ? "Variante creada"
                     : semanticFeedbackTone === "warning"
-                      ? "No vectorizable"
+                      ? variantFeedbackState?.title ?? "No vectorizable"
                       : semanticFeedbackTone === "danger"
-                        ? "Error al generar"
+                        ? variantFeedbackState?.title ?? "Error al generar"
                         : variantFeedbackState?.title ??
                           (missingVariantSlots.length > 0
                             ? "Generación manual de variantes"
@@ -1436,9 +1437,9 @@ export default function TallerMediaPage() {
                   : semanticFeedbackTone === "success"
                     ? "Puedes revisarla en esta misma fila."
                     : semanticFeedbackTone === "warning"
-                      ? "Este asset no cumple condiciones para SVG."
+                      ? variantFeedbackState?.detail ?? "Este asset no cumple condiciones para SVG."
                       : semanticFeedbackTone === "danger"
-                        ? "Reintenta desde el slot correspondiente."
+                        ? variantFeedbackState?.detail ?? "Reintenta desde el slot correspondiente."
                         : variantFeedbackState?.detail ??
                           (missingVariantSlots.length > 0
                             ? `Selecciona un slot para generar: ${missingVariantSlots
