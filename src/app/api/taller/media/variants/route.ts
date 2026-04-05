@@ -86,10 +86,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         ok: false,
-        error:
-          variantKey === "vectorized-svg"
-            ? "Este asset no cumple condiciones para vectorización SVG."
-            : result.pipelineError || "No se pudo generar la variante solicitada.",
+        error: result.pipelineError || "No se pudo generar la variante solicitada.",
       },
       { status: 422 }
     );

@@ -5,6 +5,7 @@ export type AssetVariantKey = "original" | "thumbnail" | "optimized" | "vectoriz
 export type AssetPipelineStatus = "queued" | "processing" | "ready" | "failed" | "skipped";
 export type AssetPipelineStage = "ingest" | "analyze" | "derive" | "vectorize" | "done";
 export type AssetBusinessId = string | null;
+export type VectorizationKind = "logo" | "icon" | "shape" | "photo" | "illustration";
 
 type SystemAssetOwnership = {
   scope: "system";
@@ -86,6 +87,13 @@ export type ProcessedAssetResult = {
   pipelineError: string;
   generatedVariantKeys: AssetVariantKey[];
   vectorizable: boolean;
+  vectorizationAnalysis?: {
+    kind: VectorizationKind;
+    candidate: boolean;
+    reason: string;
+    sampledColorCount: number;
+    transparencyRatio: number;
+  };
 };
 
 // Nuevos tipos para taxonomía y políticas de media

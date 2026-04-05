@@ -9,8 +9,14 @@ import type { AssetItem, AssetVariantKey, ProcessedAssetResult } from "@/lib/tal
 const THUMBNAIL_WIDTH = 300;
 const OPTIMIZED_MAX_WIDTH = 1600;
 const TRANSPARENCY_ALPHA_THRESHOLD = 24;
-const MAX_VECTOR_COLOR_COUNT = 16;
+const VECTOR_ICON_MAX_COLORS = 10;
+const VECTOR_LOGO_MAX_COLORS = 20;
+const VECTOR_ICON_MIN_TRANSPARENCY = 0.12;
+const VECTOR_LOGO_MIN_TRANSPARENCY = 0.04;
+const VECTOR_MAX_DIMENSION = 2400;
+const VECTOR_ICON_MAX_DIMENSION = 900;
 type DerivedVariantKey = Exclude<AssetVariantKey, "original">;
+type VectorizationAnalysis = NonNullable<ProcessedAssetResult["vectorizationAnalysis"]>;
 
 function getBlobReadWriteToken() {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
@@ -72,15 +78,39 @@ function isRootUsableAsset(asset: AssetItem): boolean {
   );
 }
 
-async function detectVectorizableRaster(args: {
+async function analyzeVectorizationCandidate(args: {
   raster: Buffer;
   width: number;
   height: number;
   hasAlpha: boolean;
-}): Promise<boolean> {
-  if (!args.hasAlpha) return false;
-  if (args.width <= 0 || args.height <= 0) return false;
-  if (args.width > 2200 || args.height > 2200) return false;
+}): Promise<VectorizationAnalysis> {
+  if (!args.hasAlpha) {
+    return {
+      kind: "photo",
+      candidate: false,
+      reason: "No apto para SVG: el asset no tiene transparencia útil para logo/icono.",
+      sampledColorCount: 0,
+      transparencyRatio: 0,
+    };
+  }
+  if (args.width <= 0 || args.height <= 0) {
+    return {
+      kind: "illustration",
+      candidate: false,
+      reason: "No apto para SVG: dimensiones inválidas.",
+      sampledColorCount: 0,
+      transparencyRatio: 0,
+    };
+  }
+  if (args.width > VECTOR_MAX_DIMENSION || args.height > VECTOR_MAX_DIMENSION) {
+    return {
+      kind: "photo",
+      candidate: false,
+      reason: "No apto para SVG: imagen demasiado grande para vectorización fase 1.",
+      sampledColorCount: 0,
+      transparencyRatio: 0,
+    };
+  }
 
   const sample = await sharp(args.raster)
     .ensureAlpha()
@@ -89,7 +119,15 @@ async function detectVectorizableRaster(args: {
     .toBuffer({ resolveWithObject: true });
 
   const totalPixels = (sample.info.width || 0) * (sample.info.height || 0);
-  if (!totalPixels) return false;
+  if (!totalPixels) {
+    return {
+      kind: "illustration",
+      candidate: false,
+      reason: "No apto para SVG: no se pudo muestrear el raster.",
+      sampledColorCount: 0,
+      transparencyRatio: 0,
+    };
+  }
 
   const channels = sample.info.channels || 4;
   const data = sample.data;
@@ -107,11 +145,48 @@ async function detectVectorizableRaster(args: {
     const g = quantizeChannel(data[i + 1] || 0);
     const b = quantizeChannel(data[i + 2] || 0);
     colors.add(`${r}-${g}-${b}`);
-    if (colors.size > MAX_VECTOR_COLOR_COUNT) return false;
   }
 
   const transparencyRatio = transparentPixels / totalPixels;
-  return transparencyRatio >= 0.08 && colors.size > 0 && colors.size <= MAX_VECTOR_COLOR_COUNT;
+  const sampledColorCount = colors.size;
+
+  let kind: VectorizationAnalysis["kind"] = "illustration";
+  if (sampledColorCount > 42) {
+    kind = "photo";
+  } else if (sampledColorCount <= 4 && transparencyRatio < VECTOR_LOGO_MIN_TRANSPARENCY) {
+    kind = "shape";
+  } else if (
+    sampledColorCount <= VECTOR_ICON_MAX_COLORS &&
+    transparencyRatio >= VECTOR_ICON_MIN_TRANSPARENCY &&
+    args.width <= VECTOR_ICON_MAX_DIMENSION &&
+    args.height <= VECTOR_ICON_MAX_DIMENSION
+  ) {
+    kind = "icon";
+  } else if (
+    sampledColorCount <= VECTOR_LOGO_MAX_COLORS &&
+    transparencyRatio >= VECTOR_LOGO_MIN_TRANSPARENCY
+  ) {
+    kind = "logo";
+  }
+
+  const candidate = kind === "logo" || kind === "icon";
+  const reason = candidate
+    ? kind === "icon"
+      ? "Candidato SVG: icono simple detectado."
+      : "Candidato SVG: logo simplificado detectado."
+    : kind === "photo"
+      ? "No apto para SVG: detectado como foto o raster complejo."
+      : kind === "shape"
+        ? "No apto para SVG en fase 1: shape sin señal suficiente de logo/icono."
+        : "No apto para SVG: detectado como ilustración compleja.";
+
+  return {
+    kind,
+    candidate,
+    reason,
+    sampledColorCount,
+    transparencyRatio,
+  };
 }
 
 async function createApproximateVectorSvg(raster: Buffer): Promise<{
@@ -160,6 +235,7 @@ export async function processAssetVariant(
 ): Promise<ProcessedAssetResult> {
   const sourceAssetId = toSafeSourceId(asset._id);
   const generatedVariantKeys: AssetVariantKey[] = [];
+  let vectorizationAnalysis: VectorizationAnalysis | undefined;
 
   if (!isRootUsableAsset(asset)) {
     return {
@@ -294,14 +370,14 @@ export async function processAssetVariant(
       });
       generatedVariantKeys.push("optimized");
     } else {
-      const vectorizable = await detectVectorizableRaster({
+      vectorizationAnalysis = await analyzeVectorizationCandidate({
         raster: originalRaster,
         width: originalWidth,
         height: originalHeight,
         hasAlpha,
       });
 
-      if (!vectorizable) {
+      if (!vectorizationAnalysis.candidate) {
         await updateSystemAssetPipelineRepository(sourceAssetId, {
           pipelineStatus: "ready",
           pipelineStage: "done",
@@ -312,9 +388,10 @@ export async function processAssetVariant(
           sourceAssetId,
           pipelineStatus: "skipped",
           pipelineStage: "done",
-          pipelineError: "Asset is not vectorizable",
+          pipelineError: vectorizationAnalysis.reason,
           generatedVariantKeys,
           vectorizable: false,
+          vectorizationAnalysis,
         };
       }
 
@@ -366,6 +443,7 @@ export async function processAssetVariant(
       pipelineError: "",
       generatedVariantKeys,
       vectorizable: true,
+      vectorizationAnalysis,
     };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Pipeline processing failed";
