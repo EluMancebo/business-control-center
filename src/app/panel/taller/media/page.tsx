@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import BackToTop from "@/components/panel/BackToTop";
@@ -149,7 +149,6 @@ function buildGuidedTags(args: {
   visibility: OwnershipVisibility;
   sector: OwnershipSector;
 }): string[] {
-  // Taxonomía guiada provisional (Sprint UX): mantenemos compatibilidad serializando en tags.
   return [
     `visual:${args.visualCategory}`,
     ...args.styles.map((value) => `style:${value}`),
@@ -887,7 +886,7 @@ export default function TallerMediaPage() {
       : "opacity-100 border border-border [background:var(--surface-2,var(--background))]";
 
   return (
-    <div className="mx-auto w-full max-w-[1180px] space-y-6 px-3 pb-4 sm:px-4 lg:px-0">
+    <div className="mx-auto w-full max-w-[1180px] space-y-6 overflow-x-hidden px-3 pb-4 sm:px-4 lg:px-0">
       <PageHeader
         title="Media Center (Taller)"
         description="Gestiona libreria de assets del sistema con filtros, restricciones y metadatos operativos."
@@ -923,14 +922,12 @@ export default function TallerMediaPage() {
             >
               {globalFeedbackChip}
             </PanelBadge>
-            <span className="text-xs text-(--text-subtle)">
-              {globalFeedbackMessage}
-            </span>
+            <span className="text-xs text-(--text-subtle)">{globalFeedbackMessage}</span>
           </div>
         </div>
       </div>
 
-      <section className="rounded-xl border border-border p-5 shadow-sm [background:var(--surface-3,var(--card))]">
+      <section className="min-w-0 rounded-xl border border-border p-5 shadow-sm [background:var(--surface-3,var(--card))]">
         <div className="flex items-center justify-between lg:hidden">
           <span className="text-sm font-semibold text-foreground">Filtros</span>
           <button
@@ -949,116 +946,116 @@ export default function TallerMediaPage() {
           className={`${isMobileFiltersOpen ? "mt-3" : "hidden"} space-y-3 lg:mt-0 lg:block lg:space-y-0`}
         >
           <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_auto]">
-          <label className="grid gap-1">
-            <span className="text-xs font-medium text-muted-foreground">Buscar por label</span>
-            <input
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              className={inputClass}
-              placeholder="Ej: hero, footer, logo"
-            />
-          </label>
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Buscar por label</span>
+              <input
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                className={inputClass}
+                placeholder="Ej: hero, footer, logo"
+              />
+            </label>
 
-          <label className="grid gap-1">
-            <span className="text-xs font-medium text-muted-foreground">Tag libre</span>
-            <input
-              value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
-              className={inputClass}
-              placeholder="Ej: hero:background"
-            />
-          </label>
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Tag libre</span>
+              <input
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value)}
+                className={inputClass}
+                placeholder="Ej: hero:background"
+              />
+            </label>
 
-          <label className="grid gap-1">
-            <span className="text-xs font-medium text-muted-foreground">Tag guiado</span>
-            <select
-              value={selectedTagFromCatalog}
-              onChange={(e) => setTagFilter(e.target.value)}
-              className={selectClass}
-            >
-              <option value="">Todos los tags</option>
-              {tagStats.map((entry) => (
-                <option key={entry.tag} value={entry.tag}>
-                  {entry.tag} ({entry.count})
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="grid gap-1">
-            <span className="text-xs font-medium text-muted-foreground">Tipo</span>
-            <select
-              value={kindFilter}
-              onChange={(e) => setKindFilter(e.target.value as KindFilter)}
-              className={selectClass}
-            >
-              <option value="all">Todos</option>
-              <option value="image">Imagen</option>
-              <option value="svg">SVG</option>
-              <option value="video">Video</option>
-            </select>
-          </label>
-
-          <label className="grid gap-1">
-            <span className="text-xs font-medium text-muted-foreground">Scope</span>
-            <select
-              value={scopeFilter}
-              onChange={(e) => setScopeFilter(e.target.value as ScopeFilter)}
-              className={selectClass}
-            >
-              <option value="all">Todos</option>
-              <option value="system">System</option>
-              <option value="tenant">Tenant</option>
-            </select>
-          </label>
-
-          <div className="flex items-end">
-            <PanelButton type="button" onClick={clearFilters} className="h-10 w-full">
-              Limpiar
-            </PanelButton>
-          </div>
-        </div>
-
-        {tagStats.length > 0 ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {tagStats.slice(0, 10).map((entry) => (
-              <button
-                key={entry.tag}
-                type="button"
-                onClick={() => setTagFilter(entry.tag)}
-                className="inline-flex items-center rounded-full border border-(--badge-bg) px-2 py-1 text-xs transition-colors duration-200 bg-(--badge-bg) text-(--badge-fg) hover:opacity-90"
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Tag guiado</span>
+              <select
+                value={selectedTagFromCatalog}
+                onChange={(e) => setTagFilter(e.target.value)}
+                className={selectClass}
               >
-                {entry.tag} · {entry.count}
-              </button>
-            ))}
-          </div>
-        ) : null}
+                <option value="">Todos los tags</option>
+                {tagStats.map((entry) => (
+                  <option key={entry.tag} value={entry.tag}>
+                    {entry.tag} ({entry.count})
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground">Uso:</span>
-          <button
-            type="button"
-            onClick={() => setRestrictionFilter("all")}
-            className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] text-(--text-subtle)"
-          >
-            Todos
-          </button>
-          <button
-            type="button"
-            onClick={() => setRestrictionFilter("restricted")}
-            className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] text-(--text-subtle)"
-          >
-            Restringidos (`allowedIn`)
-          </button>
-          <button
-            type="button"
-            onClick={() => setRestrictionFilter("open")}
-            className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] text-(--text-subtle)"
-          >
-            Uso libre
-          </button>
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Tipo</span>
+              <select
+                value={kindFilter}
+                onChange={(e) => setKindFilter(e.target.value as KindFilter)}
+                className={selectClass}
+              >
+                <option value="all">Todos</option>
+                <option value="image">Imagen</option>
+                <option value="svg">SVG</option>
+                <option value="video">Video</option>
+              </select>
+            </label>
+
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Scope</span>
+              <select
+                value={scopeFilter}
+                onChange={(e) => setScopeFilter(e.target.value as ScopeFilter)}
+                className={selectClass}
+              >
+                <option value="all">Todos</option>
+                <option value="system">System</option>
+                <option value="tenant">Tenant</option>
+              </select>
+            </label>
+
+            <div className="flex items-end">
+              <PanelButton type="button" onClick={clearFilters} className="h-10 w-full">
+                Limpiar
+              </PanelButton>
+            </div>
+          </div>
+
+          {tagStats.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {tagStats.slice(0, 10).map((entry) => (
+                <button
+                  key={entry.tag}
+                  type="button"
+                  onClick={() => setTagFilter(entry.tag)}
+                  className="inline-flex items-center rounded-full border border-(--badge-bg) px-2 py-1 text-xs transition-colors duration-200 bg-(--badge-bg) text-(--badge-fg) hover:opacity-90"
+                >
+                  {entry.tag} · {entry.count}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">Uso:</span>
+            <button
+              type="button"
+              onClick={() => setRestrictionFilter("all")}
+              className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] text-(--text-subtle)"
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              onClick={() => setRestrictionFilter("restricted")}
+              className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] text-(--text-subtle)"
+            >
+              Restringidos (`allowedIn`)
+            </button>
+            <button
+              type="button"
+              onClick={() => setRestrictionFilter("open")}
+              className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] text-(--text-subtle)"
+            >
+              Uso libre
+            </button>
+          </div>
         </div>
-      </div>
 
         <div className="mt-4 rounded-lg border border-border px-3 py-2 text-xs shadow-sm [background:var(--surface-2,var(--background))] text-(--text-subtle)">
           {loading
@@ -1067,7 +1064,7 @@ export default function TallerMediaPage() {
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
         <PanelCard className="hidden p-5 lg:block">
           <div className="text-sm font-semibold">Subir nuevo asset</div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -1343,7 +1340,7 @@ export default function TallerMediaPage() {
           </form>
         </PanelCard>
 
-        <section className="space-y-4">
+        <section className="min-w-0 space-y-4 overflow-x-hidden">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
             <h2 className="min-w-0 text-sm font-semibold">Biblioteca de assets [TEST-01]</h2>
             <span className="min-w-0 max-w-full truncate text-right text-xs text-muted-foreground">
@@ -1369,9 +1366,7 @@ export default function TallerMediaPage() {
                 const isVariantsExpanded = Boolean(expandedVariantsByAssetId[original._id]);
                 const isRestricted = original.allowedIn.length > 0;
                 const metadataBadgeClass =
-                  "inline-flex h-5 max-w-full items-center rounded-full border border-border px-1.5 text-[10px] leading-none truncate [background:var(--surface-3,var(--muted))] text-(--text-subtle)";
-                const summaryVariantBadgeClass =
-                  "inline-flex h-5 max-w-full items-center rounded-full border border-border px-1.5 text-[10px] leading-none truncate [background:var(--surface-2,var(--background))] text-(--text-subtle)";
+                  "inline-flex h-5 min-w-0 max-w-full items-center rounded-full border border-border px-1.5 text-[10px] leading-none truncate [background:var(--surface-3,var(--muted))] text-(--text-subtle)"
                 const availableVariantSlots = MANUAL_VARIANT_SLOTS.filter((slot) =>
                   Boolean(group.variantsByKey[slot.key])
                 );
@@ -1379,6 +1374,10 @@ export default function TallerMediaPage() {
                   (slot) => !group.variantsByKey[slot.key]
                 );
                 const availableVariantKeys = availableVariantSlots.map((slot) => slot.title);
+                const availableVariantSummary =
+                  availableVariantKeys.length > 0
+                    ? availableVariantKeys.join(" · ")
+                    : "Sin variantes generadas";
                 const busyVariantParts = variantBusyKey?.split(":") ?? [];
                 const busySourceAssetId = busyVariantParts[0] ?? null;
                 const busyVariantKey = busyVariantParts[1] as ManualVariantKey | undefined;
@@ -1388,7 +1387,7 @@ export default function TallerMediaPage() {
                   : undefined;
                 const pipelineBadgeClass =
                   original.pipelineStatus === "failed"
-                    ? "inline-flex h-5 max-w-full items-center rounded-full border border-border px-1.5 text-[10px] leading-none truncate [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))]"
+                    ? "inline-flex h-5 min-w-0 max-w-full items-center rounded-full border border-border px-1.5 text-[10px] leading-none truncate [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))]"
                     : metadataBadgeClass;
                 const generatedCount = availableVariantSlots.length + group.extraVariants.length;
                 const variantFeedbackState = variantFeedbackByAssetId[original._id];
@@ -1429,9 +1428,9 @@ export default function TallerMediaPage() {
                       : semanticFeedbackTone === "danger"
                         ? "Error al generar"
                         : variantFeedbackState?.title ??
-                    (missingVariantSlots.length > 0
-                      ? "Generación manual de variantes"
-                      : "Variantes completas");
+                          (missingVariantSlots.length > 0
+                            ? "Generación manual de variantes"
+                            : "Variantes completas");
                 const feedbackDetail = feedbackTone === "processing"
                   ? `Trabajando en ${busyVariantSlot?.title ?? "la variante"}...`
                   : semanticFeedbackTone === "success"
@@ -1441,230 +1440,261 @@ export default function TallerMediaPage() {
                       : semanticFeedbackTone === "danger"
                         ? "Reintenta desde el slot correspondiente."
                         : variantFeedbackState?.detail ??
-                    (missingVariantSlots.length > 0
-                      ? `Selecciona un slot para generar: ${missingVariantSlots
-                          .map((slot) => slot.title)
-                          .join(", ")}.`
-                      : "Todas las variantes principales están generadas.");
+                          (missingVariantSlots.length > 0
+                            ? `Selecciona un slot para generar: ${missingVariantSlots
+                                .map((slot) => slot.title)
+                                .join(", ")}.`
+                            : "Todas las variantes principales están generadas.");
                 const compactVariantMetaBadgeClass =
                   "inline-flex h-5 min-w-0 max-w-full items-center rounded-full border border-border px-1.5 text-[9px] leading-none truncate [background:var(--surface-3,var(--muted))] text-(--text-subtle)";
-const variantSlotShellClass =
-  "min-w-0 max-w-full overflow-hidden rounded-md border border-border p-2 [background:var(--surface-1,var(--background))] flex min-h-[148px] flex-col";
-const variantSlotHeaderClass =
-  "flex min-w-0 max-w-full items-start gap-2";
+                const variantSlotShellClass =
+                  "min-w-0 max-w-full overflow-hidden rounded-md border border-border p-2 [background:var(--surface-1,var(--background))] flex min-h-[148px] flex-col";
+                const variantSlotHeaderClass =
+                  "flex min-w-0 max-w-full items-start gap-2";
                 const variantSlotMetaRowClass =
                   "mt-1 flex min-h-[20px] min-w-0 max-w-full flex-wrap items-center gap-1";
                 const variantActionRowClass =
                   "mt-auto grid min-w-0 max-w-full grid-cols-2 gap-1.5 pt-3 sm:grid-cols-2 lg:flex lg:flex-nowrap lg:gap-1";
                 const variantActionButtonClass =
                   "h-8 w-full min-w-0 rounded-md px-2 text-[10px] truncate lg:flex-1 lg:px-1.5 lg:text-[9px]";
+
                 return (
-          <article key={group.original._id} className="min-w-0 max-w-full">
-            <PanelCard variant="task" className="min-w-0 max-w-full p-2.5 sm:p-3">
-                    <div className="min-w-0 max-w-full overflow-hidden rounded-xl border border-border/80 p-3 [background:var(--surface-1,var(--background))] sm:p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border [background:var(--surface-2,var(--card))] sm:h-18 sm:w-18">
-                          {renderThumb(original)}
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex min-w-0 flex-wrap items-start gap-2">
-                            <div className="min-w-0">
-                              <h3 className="truncate text-sm font-semibold text-foreground">{original.label}</h3>
-                              <p className="mt-0.5 text-xs text-muted-foreground">
-                                {formatBytes(original.bytes)} · {original.mime || original.kind}
-                              </p>
-                            </div>
-
-                            <div className="mt-0.5 min-w-0 max-w-full space-y-1 sm:mt-0">
-                              <div className="flex min-w-0 max-w-full flex-wrap gap-1">
-                                <span className="inline-flex h-5 max-w-full items-center rounded-full border border-(--badge-bg) px-1.5 text-[10px] leading-none truncate bg-(--badge-bg) text-(--badge-fg)">
-                                  {original.kind}
-                                </span>
-                                <span className={metadataBadgeClass}>{original.scope}</span>
-                                <span className={metadataBadgeClass}>
-                                  {isRestricted ? "restringido" : "uso libre"}
-                                </span>
-                              </div>
-                              <div className="flex min-w-0 max-w-full flex-wrap gap-1">
-                                <span className={pipelineBadgeClass}>
-                                  pipeline: {original.pipelineStatus}
-                                </span>
-                                <span className={metadataBadgeClass}>variant: {original.variantKey}</span>
-                              </div>
-                            </div>
+                  <article key={group.original._id} className="min-w-0 w-full max-w-full">
+                    <PanelCard variant="task" className="min-w-0 w-full max-w-full overflow-hidden p-2.5 sm:p-3">
+                      <div className="min-w-0 w-full max-w-full overflow-hidden rounded-xl border border-border/80 p-3 [background:var(--surface-1,var(--background))] sm:p-4">
+                        <div className="grid min-w-0 grid-cols-[56px_minmax(0,1fr)] items-start gap-3 sm:grid-cols-[72px_minmax(0,1fr)]">
+                          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border [background:var(--surface-2,var(--card))] sm:h-18 sm:w-18">
+                            {renderThumb(original)}
                           </div>
 
-                          <div className="mt-2 min-w-0 overflow-hidden break-all text-[11px] text-(--text-subtle)">{original.url}</div>
+                          <div className="min-w-0 w-full">
+                            <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                              <div className="min-w-0">
+                                <h3 className="truncate text-sm font-semibold text-foreground">{original.label}</h3>
+                                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                  {formatBytes(original.bytes)} · {original.mime || original.kind}
+                                </p>
+                              </div>
 
-                          <div className="mt-2 flex min-w-0 max-w-full flex-wrap gap-1">
-                            {original.tags.length > 0 ? (
-                              original.tags.slice(0, 6).map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="inline-flex h-5 max-w-full items-center rounded-full border border-(--badge-bg) px-1.5 text-[10px] leading-none truncate bg-(--badge-bg) text-(--badge-fg)"
-                                >
-                                  {tag}
+                              <div className="min-w-0 max-w-full space-y-1 sm:justify-self-end">
+                                <div className="flex min-w-0 max-w-full flex-wrap gap-1">
+                                  <span className="inline-flex h-5 min-w-0 max-w-full items-center rounded-full border border-(--badge-bg) px-1.5 text-[10px] leading-none truncate bg-(--badge-bg) text-(--badge-fg)">
+                                    {original.kind}
+                                  </span>
+                                  <span className={metadataBadgeClass}>{original.scope}</span>
+                                  <span className={metadataBadgeClass}>
+                                    {isRestricted ? "restringido" : "uso libre"}
+                                  </span>
+                                </div>
+                                <div className="flex min-w-0 max-w-full flex-wrap gap-1">
+                                  <span className={pipelineBadgeClass}>
+                                    pipeline: {original.pipelineStatus}
+                                  </span>
+                                  <span className={metadataBadgeClass}>variant: {original.variantKey}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mt-2 min-w-0 max-w-full truncate text-[11px] text-(--text-subtle)">
+                              {original.url}
+                            </div>
+
+                            <div className="mt-2 flex min-w-0 max-w-full flex-wrap gap-1 overflow-hidden">
+                              {original.tags.length > 0 ? (
+                                original.tags.slice(0, 6).map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className="inline-flex h-5 min-w-0 max-w-full items-center rounded-full border border-(--badge-bg) px-1.5 text-[10px] leading-none truncate bg-(--badge-bg) text-(--badge-fg)"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-xs text-muted-foreground">Sin tags</span>
+                              )}
+                              {original.tags.length > 6 ? (
+                                <span className="text-xs text-muted-foreground">
+                                  +{original.tags.length - 6}
                                 </span>
-                              ))
-                            ) : (
-                              <span className="text-xs text-muted-foreground">Sin tags</span>
-                            )}
-                            {original.tags.length > 6 ? (
-                              <span className="text-xs text-muted-foreground">
-                                +{original.tags.length - 6}
+                              ) : null}
+                            </div>
+
+                            <div className="mt-1 flex min-w-0 max-w-full items-start gap-1 text-[11px] text-(--text-subtle)">
+                              <span className="shrink-0">Destinos permitidos:</span>
+                              <span className="min-w-0 flex-1 truncate">
+                                {isRestricted ? original.allowedIn.join(", ") : "cualquier slot"}
                               </span>
-                            ) : null}
+                            </div>
                           </div>
+                        </div>
 
-                          <div className="mt-1 min-w-0 break-all text-[11px] text-(--text-subtle)">
-                            Destinos permitidos:{" "}
-                            {isRestricted ? original.allowedIn.slice(0, 3).join(", ") : "cualquier slot"}
+                        <div className="mt-3 space-y-2 border-t border-border/70 pt-2.5">
+                          {isVariantsExpanded ? (
+                            <div className="grid min-h-[64px] min-w-0 gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(220px,320px)_116px] lg:items-center lg:gap-2">
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold text-foreground">
+                                  Variantes derivadas ({generatedCount})
+                                </p>
+                                <div className="mt-1 min-w-0">
+                                  <span className="block truncate text-[11px] text-muted-foreground">
+                                    {availableVariantSummary}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="min-h-[56px] min-w-0 max-w-full overflow-hidden rounded-md border border-border/70 px-2.5 py-1.5 [background:var(--surface-2,var(--card))] sm:max-w-[320px]">
+                                <div className="flex min-w-0 items-center gap-1.5">
+                                  <PanelBadge
+                                    tone={feedbackBadgeTone}
+                                    className="h-5 min-w-0 w-full max-w-full justify-center truncate px-2 text-[10px] sm:w-[150px]"
+                                  >
+                                    {feedbackTitle}
+                                  </PanelBadge>
+                                  <span className={feedbackIndicatorClass} />
+                                </div>
+                                <p className="mt-1 h-[14px] truncate text-[10px] text-muted-foreground">
+                                  {feedbackDetail}
+                                </p>
+                              </div>
+
+                              <PanelButton
+                                type="button"
+                                onClick={() => toggleVariantsVisibility(original._id)}
+                                className="h-8 w-full min-w-0 rounded-md px-2.5 text-[11px] lg:w-[116px] lg:justify-center"
+                              >
+                                Ocultar variantes
+                              </PanelButton>
+                            </div>
+                          ) : (
+                            <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold text-foreground">
+                                  Variantes derivadas ({generatedCount})
+                                </p>
+                                <div className="mt-1 min-w-0">
+                                  <span className="block truncate text-[11px] text-muted-foreground">
+                                    {availableVariantSummary}
+                                  </span>
+                                </div>
+                              </div>
+                              <PanelButton
+                                type="button"
+                                onClick={() => toggleVariantsVisibility(original._id)}
+                                className="h-8 shrink-0 rounded-md px-2.5 text-[11px]"
+                              >
+                                Ver variantes
+                              </PanelButton>
+                            </div>
+                          )}
+
+                          <div className="flex min-w-0 flex-wrap gap-1.5">
+                            <PanelButton
+                              type="button"
+                              onClick={() => openInNewTab(original.url)}
+                              className="h-8 rounded-md px-2.5 text-[11px]"
+                            >
+                              Ver
+                            </PanelButton>
+                            <PanelButton
+                              type="button"
+                              onClick={() => copy(original.url)}
+                              className="h-8 rounded-md px-2.5 text-[11px]"
+                            >
+                              Copiar URL
+                            </PanelButton>
+                            <PanelButton
+                              type="button"
+                              onClick={() => startEdit(original)}
+                              disabled={rowBusyId === original._id}
+                              className="h-8 rounded-md px-2.5 text-[11px]"
+                            >
+                              Editar
+                            </PanelButton>
+                            <PanelButton
+                              type="button"
+                              onClick={() => removeAsset(original)}
+                              disabled={rowBusyId === original._id}
+                              className="h-8 rounded-md px-2.5 text-[11px] [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))] hover:[background:var(--accent-soft,var(--muted))]"
+                            >
+                              Borrar
+                            </PanelButton>
                           </div>
                         </div>
                       </div>
 
-                      <div className="mt-3 space-y-2 border-t border-border/70 pt-2.5">
-                        {isVariantsExpanded ? (
-                          <div className="grid min-h-[64px] gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(220px,320px)_116px] lg:items-center lg:gap-2">
-                            <div className="min-w-0">
-                              <p className="text-xs font-semibold text-foreground">
-                                Variantes derivadas ({generatedCount})
-                              </p>
-                              <div className="mt-1 flex flex-wrap gap-1">
-                                {availableVariantKeys.length > 0 ? (
-                                  availableVariantKeys.map((variantKey) => (
-                                    <span
-                                      key={`${original._id}-summary-${variantKey}`}
-                                      className={summaryVariantBadgeClass}
-                                    >
-                                      {variantKey}
-                                    </span>
-                                  ))
-                                ) : (
-                                  <span className="text-[11px] text-muted-foreground">
-                                    Sin variantes generadas
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                      {isVariantsExpanded ? (
+                        <div className="mt-1 min-w-0 rounded-lg border border-border/70 p-1 [background:var(--surface-2,var(--card))]">
+                          <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                            {MANUAL_VARIANT_SLOTS.map((slot) => {
+                              const variant = group.variantsByKey[slot.key];
+                              const isSlotBusy = isVariantBusyForOriginal && busyVariantKey === slot.key;
 
-                            <div className="min-h-[56px] min-w-0 max-w-full overflow-hidden rounded-md border border-border/70 px-2.5 py-1.5 [background:var(--surface-2,var(--card))] sm:max-w-[320px]">
-                              <div className="flex items-center gap-1.5">
-                                <PanelBadge
-                                  tone={feedbackBadgeTone}
-                            className="h-5 w-full max-w-full justify-center truncate px-2 text-[10px] sm:w-[150px]"
-                                >
-                                  {feedbackTitle}
-                                </PanelBadge>
-                                <span className={feedbackIndicatorClass} />
-                              </div>
-                              <p className="mt-1 h-[14px] truncate text-[10px] text-muted-foreground">
-                                {feedbackDetail}
-                              </p>
-                            </div>
+                              if (!variant) {
+                                return (
+                                  <div
+                                    key={slot.key}
+                                    className={`${variantSlotShellClass} border-dashed border-border [background:var(--surface-3,var(--muted))]`}
+                                  >
+                                    <div className={variantSlotHeaderClass}>
+                                      <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border [background:var(--surface-1,var(--background))]">
+                                        <span className="h-1.5 w-1.5 rounded-full [background:var(--text-subtle)] opacity-70" />
+                                      </div>
 
-                            <PanelButton
-                              type="button"
-                              onClick={() => toggleVariantsVisibility(original._id)}
-                              className="h-8 w-full rounded-md px-2.5 text-[11px] lg:w-[116px] lg:justify-center"
-                            >
-                              Ocultar variantes
-                            </PanelButton>
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-                            <div className="min-w-0">
-                              <p className="text-xs font-semibold text-foreground">
-                                Variantes derivadas ({generatedCount})
-                              </p>
-                              <div className="mt-1 flex flex-wrap gap-1">
-                                {availableVariantKeys.length > 0 ? (
-                                  availableVariantKeys.map((variantKey) => (
-                                    <span
-                                      key={`${original._id}-summary-${variantKey}`}
-                                      className={summaryVariantBadgeClass}
-                                    >
-                                      {variantKey}
-                                    </span>
-                                  ))
-                                ) : (
-                                  <span className="text-[11px] text-muted-foreground">
-                                    Sin variantes generadas
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <PanelButton
-                              type="button"
-                              onClick={() => toggleVariantsVisibility(original._id)}
-                              className="h-8 shrink-0 rounded-md px-2.5 text-[11px]"
-                            >
-                              Ver variantes
-                            </PanelButton>
-                          </div>
-                        )}
+                                      <div className="min-w-0 flex-1">
+                                        <div className="truncate text-[11px] font-semibold text-foreground">
+                                          {slot.title}
+                                        </div>
 
-                        <div className="flex flex-wrap gap-1.5">
-                          <PanelButton
-                            type="button"
-                            onClick={() => openInNewTab(original.url)}
-                            className="h-8 rounded-md px-2.5 text-[11px]"
-                          >
-                            Ver
-                          </PanelButton>
-                          <PanelButton
-                            type="button"
-                            onClick={() => copy(original.url)}
-                            className="h-8 rounded-md px-2.5 text-[11px]"
-                          >
-                            Copiar URL
-                          </PanelButton>
-                          <PanelButton
-                            type="button"
-                            onClick={() => startEdit(original)}
-                            disabled={rowBusyId === original._id}
-                            className="h-8 rounded-md px-2.5 text-[11px]"
-                          >
-                            Editar
-                          </PanelButton>
-                          <PanelButton
-                            type="button"
-                            onClick={() => removeAsset(original)}
-                            disabled={rowBusyId === original._id}
-                            className="h-8 rounded-md px-2.5 text-[11px] [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))] hover:[background:var(--accent-soft,var(--muted))]"
-                          >
-                            Borrar
-                          </PanelButton>
-                        </div>
-                      </div>
-                    </div>
+                                        <div className="mt-1 text-[10px] text-muted-foreground">
+                                          Pendiente de generar.
+                                        </div>
+                                      </div>
+                                    </div>
 
-                    {isVariantsExpanded ? (
-                      <div className="mt-1 rounded-lg border border-border/70 p-1 [background:var(--surface-2,var(--card))]">
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                          {MANUAL_VARIANT_SLOTS.map((slot) => {
-                            const variant = group.variantsByKey[slot.key];
-                            const isSlotBusy = isVariantBusyForOriginal && busyVariantKey === slot.key;
+                                    <div className={variantActionRowClass}>
+                                      <PanelButton
+                                        type="button"
+                                        onClick={() => generateVariant(original, slot.key)}
+                                        disabled={isVariantBusyForOriginal}
+                                        className={`${variantActionButtonClass} col-span-2`}
+                                      >
+                                        {isSlotBusy ? "Solicitando..." : slot.actionLabel}
+                                      </PanelButton>
+                                    </div>
+                                  </div>
+                                );
+                              }
 
-                            if (!variant) {
+                              const isVariantRestricted = variant.allowedIn.length > 0;
+                              const slotPipelineBadgeClass =
+                                variant.pipelineStatus === "failed"
+                                  ? "inline-flex h-4 min-w-0 max-w-full items-center rounded-full border border-border px-1 text-[9px] leading-none truncate [background:var(--danger-soft,var(--surface-3,var(--muted)))] [color:var(--danger-foreground,var(--foreground))]"
+                                  : compactVariantMetaBadgeClass;
+
                               return (
-                                <div
-                                  key={slot.key}
-                                  className={`${variantSlotShellClass} border-dashed border-border [background:var(--surface-3,var(--muted))]`}
-                                >
+                                <div key={slot.key} className={variantSlotShellClass}>
                                   <div className={variantSlotHeaderClass}>
-                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border [background:var(--surface-1,var(--background))]">
-                                      <span className="h-1.5 w-1.5 rounded-full [background:var(--text-subtle)] opacity-70" />
+                                    <div className="h-7 w-7 shrink-0 overflow-hidden rounded-md border border-border [background:var(--surface-2,var(--card))]">
+                                      {renderThumb(variant)}
                                     </div>
 
                                     <div className="min-w-0 flex-1">
                                       <div className="truncate text-[11px] font-semibold text-foreground">
                                         {slot.title}
                                       </div>
-
-                                      <div className="mt-1 text-[10px] text-muted-foreground">
-                                        Pendiente de generar.
+                                      <div className="truncate text-[10px] text-muted-foreground">
+                                        {variant.label}
+                                      </div>
+                                      <div className={variantSlotMetaRowClass}>
+                                        <span className={`${compactVariantMetaBadgeClass} min-w-0`}>
+                                          {variant.kind}
+                                        </span>
+                                        <span className={`${slotPipelineBadgeClass} min-w-0 truncate`}>
+                                          pipeline: {variant.pipelineStatus}
+                                        </span>
+                                        <span className={`${compactVariantMetaBadgeClass} min-w-0`}>
+                                          {isVariantRestricted ? "restringido" : "uso libre"}
+                                        </span>
                                       </div>
                                     </div>
                                   </div>
@@ -1672,174 +1702,120 @@ const variantSlotHeaderClass =
                                   <div className={variantActionRowClass}>
                                     <PanelButton
                                       type="button"
-                                      onClick={() => generateVariant(original, slot.key)}
-                                      disabled={isVariantBusyForOriginal}
-                                      className={`${variantActionButtonClass} col-span-2`}
+                                      onClick={() => openInNewTab(variant.url)}
+                                      className={variantActionButtonClass}
                                     >
-                                      {isSlotBusy ? "Solicitando..." : slot.actionLabel}
+                                      Ver
+                                    </PanelButton>
+                                    <PanelButton
+                                      type="button"
+                                      onClick={() => copy(variant.url)}
+                                      className={variantActionButtonClass}
+                                    >
+                                      Copiar
+                                    </PanelButton>
+                                    <PanelButton
+                                      type="button"
+                                      onClick={() => startEdit(variant)}
+                                      disabled={rowBusyId === variant._id}
+                                      className={variantActionButtonClass}
+                                    >
+                                      Editar
+                                    </PanelButton>
+                                    <PanelButton
+                                      type="button"
+                                      onClick={() => removeAsset(variant)}
+                                      disabled={rowBusyId === variant._id}
+                                      className={`${variantActionButtonClass} [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))] hover:[background:var(--accent-soft,var(--muted))]`}
+                                    >
+                                      Borrar
                                     </PanelButton>
                                   </div>
                                 </div>
                               );
-                            }
+                            })}
 
-                            const isVariantRestricted = variant.allowedIn.length > 0;
-                            const slotPipelineBadgeClass =
-                              variant.pipelineStatus === "failed"
-                                ? "inline-flex h-4 min-w-0 max-w-full items-center rounded-full border border-border px-1 text-[9px] leading-none truncate [background:var(--danger-soft,var(--surface-3,var(--muted)))] [color:var(--danger-foreground,var(--foreground))]"
-                                : compactVariantMetaBadgeClass;
+                            {group.extraVariants.map((variant) => {
+                              const isVariantRestricted = variant.allowedIn.length > 0;
+                              const compactPipelineBadgeClass =
+                                variant.pipelineStatus === "failed"
+                                  ? "inline-flex h-4 min-w-0 max-w-full items-center rounded-full border border-border px-1 text-[9px] leading-none truncate [background:var(--danger-soft,var(--surface-3,var(--muted)))] [color:var(--danger-foreground,var(--foreground))]"
+                                  : compactVariantMetaBadgeClass;
 
-                            return (
-                              <div
-                                key={slot.key}
-                                className={variantSlotShellClass}
-                              >
-                                <div className={variantSlotHeaderClass}>
-                                  <div className="h-7 w-7 shrink-0 overflow-hidden rounded-md border border-border [background:var(--surface-2,var(--card))]">
-                                    {renderThumb(variant)}
-                                  </div>
-
-                                  <div className="min-w-0 flex-1">
-                                    <div className="truncate text-[11px] font-semibold text-foreground">
-                                      {slot.title}
+                              return (
+                                <div key={variant._id} className={variantSlotShellClass}>
+                                  <div className={variantSlotHeaderClass}>
+                                    <div className="h-7 w-7 shrink-0 overflow-hidden rounded-md border border-border [background:var(--surface-2,var(--card))]">
+                                      {renderThumb(variant)}
                                     </div>
-                                    <div className="truncate text-[10px] text-muted-foreground">
-                                      {variant.label}
-                                    </div>
-                                    <div className={variantSlotMetaRowClass}>
-                                      <span className={`${compactVariantMetaBadgeClass} min-w-0`}>
-                                        {variant.kind}
-                                      </span>
-                                      <span className={`${slotPipelineBadgeClass} min-w-0 truncate`}>
-                                        pipeline: {variant.pipelineStatus}
-                                      </span>
-                                      <span className={`${compactVariantMetaBadgeClass} min-w-0`}>
-                                        {isVariantRestricted ? "restringido" : "uso libre"}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
 
-                                <div className={variantActionRowClass}>
-                                  <PanelButton
-                                    type="button"
-                                    onClick={() => openInNewTab(variant.url)}
-                                    className={variantActionButtonClass}
-                                  >
-                                    Ver
-                                  </PanelButton>
-                                  <PanelButton
-                                    type="button"
-                                    onClick={() => copy(variant.url)}
-                                    className={variantActionButtonClass}
-                                  >
-                                    Copiar
-                                  </PanelButton>
-                                  <PanelButton
-                                    type="button"
-                                    onClick={() => startEdit(variant)}
-                                    disabled={rowBusyId === variant._id}
-                                    className={variantActionButtonClass}
-                                  >
-                                    Editar
-                                  </PanelButton>
-                                  <PanelButton
-                                    type="button"
-                                    onClick={() => removeAsset(variant)}
-                                    disabled={rowBusyId === variant._id}
-                                    className={`${variantActionButtonClass} [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))] hover:[background:var(--accent-soft,var(--muted))]`}
-                                  >
-                                    Borrar
-                                  </PanelButton>
-                                </div>
-                              </div>
-                            );
-                          })}
-
-                          {group.extraVariants.map((variant) => {
-                            const isVariantRestricted = variant.allowedIn.length > 0;
-                            const compactPipelineBadgeClass =
-                              variant.pipelineStatus === "failed"
-                                ? "inline-flex h-4 min-w-0 max-w-full items-center rounded-full border border-border px-1 text-[9px] leading-none truncate [background:var(--danger-soft,var(--surface-3,var(--muted)))] [color:var(--danger-foreground,var(--foreground))]"
-                                : compactVariantMetaBadgeClass;
-
-                            return (
-                              <div
-                                key={variant._id}
-                                className={variantSlotShellClass}
-                              >
-                                <div className={variantSlotHeaderClass}>
-                                  <div className="h-7 w-7 shrink-0 overflow-hidden rounded-md border border-border [background:var(--surface-2,var(--card))]">
-                                    {renderThumb(variant)}
-                                  </div>
-
-                                  <div className="min-w-0 flex-1">
-                                    <div className="truncate text-[11px] font-semibold text-foreground">
-                                      {variant.variantKey}
-                                    </div>
-                                    <div className="truncate text-[10px] text-muted-foreground">
-                                      {variant.label}
-                                    </div>
-                                    <div className={variantSlotMetaRowClass}>
-                                      <span className={`${compactVariantMetaBadgeClass} min-w-0`}>
-                                        {variant.kind}
-                                      </span>
-                                      <span className={`${compactPipelineBadgeClass} min-w-0 truncate`}>
-                                        pipeline: {variant.pipelineStatus}
-                                      </span>
-                                      <span className={`${compactVariantMetaBadgeClass} min-w-0`}>
-                                        {isVariantRestricted ? "restringido" : "uso libre"}
-                                      </span>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="truncate text-[11px] font-semibold text-foreground">
+                                        {variant.variantKey}
+                                      </div>
+                                      <div className="truncate text-[10px] text-muted-foreground">
+                                        {variant.label}
+                                      </div>
+                                      <div className={variantSlotMetaRowClass}>
+                                        <span className={`${compactVariantMetaBadgeClass} min-w-0`}>
+                                          {variant.kind}
+                                        </span>
+                                        <span className={`${compactPipelineBadgeClass} min-w-0 truncate`}>
+                                          pipeline: {variant.pipelineStatus}
+                                        </span>
+                                        <span className={`${compactVariantMetaBadgeClass} min-w-0`}>
+                                          {isVariantRestricted ? "restringido" : "uso libre"}
+                                        </span>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
 
-                                <div className={variantActionRowClass}>
-                                  <PanelButton
-                                    type="button"
-                                    onClick={() => openInNewTab(variant.url)}
-                                    className={variantActionButtonClass}
-                                  >
-                                    Ver
-                                  </PanelButton>
-                                  <PanelButton
-                                    type="button"
-                                    onClick={() => copy(variant.url)}
-                                    className={variantActionButtonClass}
-                                  >
-                                    Copiar
-                                  </PanelButton>
-                                  <PanelButton
-                                    type="button"
-                                    onClick={() => startEdit(variant)}
-                                    disabled={rowBusyId === variant._id}
-                                    className={variantActionButtonClass}
-                                  >
-                                    Editar
-                                  </PanelButton>
-                                  <PanelButton
-                                    type="button"
-                                    onClick={() => removeAsset(variant)}
-                                    disabled={rowBusyId === variant._id}
-                                    className={`${variantActionButtonClass} [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))] hover:[background:var(--accent-soft,var(--muted))]`}
-                                  >
-                                    Borrar
-                                  </PanelButton>
+                                  <div className={variantActionRowClass}>
+                                    <PanelButton
+                                      type="button"
+                                      onClick={() => openInNewTab(variant.url)}
+                                      className={variantActionButtonClass}
+                                    >
+                                      Ver
+                                    </PanelButton>
+                                    <PanelButton
+                                      type="button"
+                                      onClick={() => copy(variant.url)}
+                                      className={variantActionButtonClass}
+                                    >
+                                      Copiar
+                                    </PanelButton>
+                                    <PanelButton
+                                      type="button"
+                                      onClick={() => startEdit(variant)}
+                                      disabled={rowBusyId === variant._id}
+                                      className={variantActionButtonClass}
+                                    >
+                                      Editar
+                                    </PanelButton>
+                                    <PanelButton
+                                      type="button"
+                                      onClick={() => removeAsset(variant)}
+                                      disabled={rowBusyId === variant._id}
+                                      className={`${variantActionButtonClass} [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))] hover:[background:var(--accent-soft,var(--muted))]`}
+                                    >
+                                      Borrar
+                                    </PanelButton>
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
+
+                          <p className="mt-2 min-h-4 text-[11px] text-muted-foreground">
+                            {missingVariantSlots.length > 0
+                              ? `Slots pendientes: ${missingVariantSlots
+                                  .map((slot) => slot.title)
+                                  .join(", ")}`
+                              : " "}
+                          </p>
                         </div>
-
-                        <p className="mt-2 min-h-4 text-[11px] text-muted-foreground">
-                          {missingVariantSlots.length > 0
-                            ? `Slots pendientes: ${missingVariantSlots
-                                .map((slot) => slot.title)
-                                .join(", ")}`
-                            : " "}
-                        </p>
-                      </div>
-                    ) : null}
+                      ) : null}
                     </PanelCard>
                   </article>
                 );
@@ -1852,6 +1828,7 @@ const variantSlotHeaderClass =
           </p>
         </section>
       </div>
+
       <BackToTop threshold={320} />
 
       {isUploadSheetOpen ? (
@@ -1863,7 +1840,7 @@ const variantSlotHeaderClass =
             onClick={() => setIsUploadSheetOpen(false)}
           />
 
-            <PanelCard className="absolute inset-x-3 bottom-3 max-h-[calc(100vh-1.5rem)] overflow-hidden p-0 lg:hidden sm:inset-x-4 sm:bottom-4">
+          <PanelCard className="absolute inset-x-3 bottom-3 max-h-[calc(100vh-1.5rem)] overflow-hidden p-0 lg:hidden sm:inset-x-4 sm:bottom-4">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h3 className="text-sm font-semibold">Nuevo asset</h3>
               <PanelButton type="button" onClick={() => setIsUploadSheetOpen(false)} className="h-9 px-3 text-xs">
@@ -2421,7 +2398,6 @@ const variantSlotHeaderClass =
           </section>
         </div>
       ) : null}
-
     </div>
   );
-}
+} 
