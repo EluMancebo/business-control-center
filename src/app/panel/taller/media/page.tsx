@@ -1344,9 +1344,11 @@ export default function TallerMediaPage() {
         </PanelCard>
 
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Biblioteca de assets [TEST-01]</h2>
-            <span className="text-xs text-muted-foreground">Desktop-optimized, responsive-safe</span>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+            <h2 className="min-w-0 text-sm font-semibold">Biblioteca de assets [TEST-01]</h2>
+            <span className="min-w-0 max-w-full truncate text-right text-xs text-muted-foreground">
+              Desktop-optimized, responsive-safe
+            </span>
           </div>
 
           {loading ? (
@@ -1446,10 +1448,10 @@ export default function TallerMediaPage() {
                       : "Todas las variantes principales están generadas.");
                 const compactVariantMetaBadgeClass =
                   "inline-flex h-5 min-w-0 max-w-full items-center rounded-full border border-border px-1.5 text-[9px] leading-none truncate [background:var(--surface-3,var(--muted))] text-(--text-subtle)";
-                const variantSlotShellClass =
-                  "min-w-0 rounded-md border border-border p-2 [background:var(--surface-1,var(--background))] flex min-h-[148px] flex-col";
-                const variantSlotHeaderClass =
-                  "flex items-start gap-2";
+const variantSlotShellClass =
+  "min-w-0 max-w-full overflow-hidden rounded-md border border-border p-2 [background:var(--surface-1,var(--background))] flex min-h-[148px] flex-col";
+const variantSlotHeaderClass =
+  "flex min-w-0 max-w-full items-start gap-2";
                 const variantSlotMetaRowClass =
                   "mt-1 flex min-h-[20px] min-w-0 max-w-full flex-wrap items-center gap-1";
                 const variantActionRowClass =
@@ -1457,9 +1459,9 @@ export default function TallerMediaPage() {
                 const variantActionButtonClass =
                   "h-8 w-full min-w-0 rounded-md px-2 text-[10px] truncate lg:flex-1 lg:px-1.5 lg:text-[9px]";
                 return (
-                  <article key={group.original._id}>
-                    <PanelCard variant="task" className="p-2.5 sm:p-3">
-                    <div className="rounded-xl border border-border/80 p-3 [background:var(--surface-1,var(--background))] sm:p-4">
+          <article key={group.original._id} className="min-w-0 max-w-full">
+            <PanelCard variant="task" className="min-w-0 max-w-full p-2.5 sm:p-3">
+                    <div className="min-w-0 max-w-full overflow-hidden rounded-xl border border-border/80 p-3 [background:var(--surface-1,var(--background))] sm:p-4">
                       <div className="flex items-start gap-3">
                         <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border [background:var(--surface-2,var(--card))] sm:h-18 sm:w-18">
                           {renderThumb(original)}
@@ -1515,7 +1517,7 @@ export default function TallerMediaPage() {
                             ) : null}
                           </div>
 
-                          <div className="mt-1 text-[11px] text-(--text-subtle)">
+                          <div className="mt-1 min-w-0 break-all text-[11px] text-(--text-subtle)">
                             Destinos permitidos:{" "}
                             {isRestricted ? original.allowedIn.slice(0, 3).join(", ") : "cualquier slot"}
                           </div>
@@ -1547,11 +1549,11 @@ export default function TallerMediaPage() {
                               </div>
                             </div>
 
-                            <div className="min-h-[56px] min-w-0 rounded-md border border-border/70 px-2.5 py-1.5 [background:var(--surface-2,var(--card))] sm:max-w-[320px]">
+                            <div className="min-h-[56px] min-w-0 max-w-full overflow-hidden rounded-md border border-border/70 px-2.5 py-1.5 [background:var(--surface-2,var(--card))] sm:max-w-[320px]">
                               <div className="flex items-center gap-1.5">
                                 <PanelBadge
                                   tone={feedbackBadgeTone}
-                                  className="h-5 w-[150px] justify-center px-2 text-[10px]"
+                            className="h-5 w-full max-w-full justify-center truncate px-2 text-[10px] sm:w-[150px]"
                                 >
                                   {feedbackTitle}
                                 </PanelBadge>
