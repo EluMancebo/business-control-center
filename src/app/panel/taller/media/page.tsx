@@ -1345,7 +1345,7 @@ export default function TallerMediaPage() {
 
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Biblioteca de assets</h2>
+            <h2 className="text-sm font-semibold">Biblioteca de assets [TEST-01]</h2>
             <span className="text-xs text-muted-foreground">Desktop-optimized, responsive-safe</span>
           </div>
 
