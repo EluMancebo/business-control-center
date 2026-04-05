@@ -15,8 +15,13 @@ const VECTOR_ICON_MIN_TRANSPARENCY = 0.12;
 const VECTOR_LOGO_MIN_TRANSPARENCY = 0.04;
 const VECTOR_MAX_DIMENSION = 2400;
 const VECTOR_ICON_MAX_DIMENSION = 900;
-const CATEGORY_ICON_MAX_COLORS = 18;
-const CATEGORY_LOGO_MAX_COLORS = 28;
+const DOMINANT_ALPHA_THRESHOLD = 176;
+const DOMINANT_COLOR_STEP = 48;
+const DOMINANT_MIN_SHARE = 0.015;
+const CATEGORY_ICON_MAX_DOMINANT_COLORS = 6;
+const CATEGORY_LOGO_MAX_DOMINANT_COLORS = 10;
+const CATEGORY_ICON_EXTREME_SAMPLED_COLORS = 180;
+const CATEGORY_LOGO_EXTREME_SAMPLED_COLORS = 260;
 type DerivedVariantKey = Exclude<AssetVariantKey, "original">;
 type VectorizationAnalysis = NonNullable<ProcessedAssetResult["vectorizationAnalysis"]>;
 type VisualCategoryHint = VectorizationAnalysis["kind"] | null;
@@ -71,6 +76,30 @@ function quantizeChannel(value: number): number {
   return Math.round(value / 32) * 32;
 }
 
+function quantizeDominantChannel(value: number): number {
+  const quantized = Math.round(value / DOMINANT_COLOR_STEP) * DOMINANT_COLOR_STEP;
+  if (quantized < 0) return 0;
+  if (quantized > 255) return 255;
+  return quantized;
+}
+
+function countDominantColors(args: {
+  bucketCounts: Map<string, number>;
+  solidPixelCount: number;
+}): number {
+  if (args.solidPixelCount <= 0 || args.bucketCounts.size === 0) return 0;
+
+  let dominantColorCount = 0;
+  for (const count of args.bucketCounts.values()) {
+    if (count / args.solidPixelCount >= DOMINANT_MIN_SHARE) {
+      dominantColorCount += 1;
+    }
+  }
+
+  if (dominantColorCount === 0) return 1;
+  return dominantColorCount;
+}
+
 function isRootUsableAsset(asset: AssetItem): boolean {
   const hasParent = Boolean(String(asset.sourceAssetId || "").trim());
   if (hasParent) return false;
@@ -115,6 +144,7 @@ async function analyzeVectorizationCandidate(args: {
       candidate: false,
       reason: "No apto para SVG: categoría visual 'photo' excluida en fase 1.",
       sampledColorCount: 0,
+      dominantColorCount: 0,
       transparencyRatio: 0,
     };
   }
@@ -124,6 +154,7 @@ async function analyzeVectorizationCandidate(args: {
       candidate: false,
       reason: "No apto para SVG: categoría visual 'texture' excluida en fase 1.",
       sampledColorCount: 0,
+      dominantColorCount: 0,
       transparencyRatio: 0,
     };
   }
@@ -134,6 +165,7 @@ async function analyzeVectorizationCandidate(args: {
       candidate: false,
       reason: "No apto para SVG: dimensiones inválidas.",
       sampledColorCount: 0,
+      dominantColorCount: 0,
       transparencyRatio: 0,
     };
   }
@@ -143,6 +175,7 @@ async function analyzeVectorizationCandidate(args: {
       candidate: false,
       reason: "No apto para SVG: imagen demasiado grande para vectorización fase 1.",
       sampledColorCount: 0,
+      dominantColorCount: 0,
       transparencyRatio: 0,
     };
   }
@@ -160,6 +193,7 @@ async function analyzeVectorizationCandidate(args: {
       candidate: false,
       reason: "No apto para SVG: no se pudo muestrear el raster.",
       sampledColorCount: 0,
+      dominantColorCount: 0,
       transparencyRatio: 0,
     };
   }
@@ -167,7 +201,9 @@ async function analyzeVectorizationCandidate(args: {
   const channels = sample.info.channels || 4;
   const data = sample.data;
   const colors = new Set<string>();
+  const dominantBuckets = new Map<string, number>();
   let transparentPixels = 0;
+  let dominantSolidPixels = 0;
 
   for (let i = 0; i < data.length; i += channels) {
     const alpha = channels > 3 ? data[i + 3] : 255;
@@ -180,19 +216,55 @@ async function analyzeVectorizationCandidate(args: {
     const g = quantizeChannel(data[i + 1] || 0);
     const b = quantizeChannel(data[i + 2] || 0);
     colors.add(`${r}-${g}-${b}`);
+
+    if (alpha >= DOMINANT_ALPHA_THRESHOLD) {
+      dominantSolidPixels += 1;
+      const dr = quantizeDominantChannel(data[i] || 0);
+      const dg = quantizeDominantChannel(data[i + 1] || 0);
+      const db = quantizeDominantChannel(data[i + 2] || 0);
+      const key = `${dr}-${dg}-${db}`;
+      dominantBuckets.set(key, (dominantBuckets.get(key) ?? 0) + 1);
+    }
   }
 
   const transparencyRatio = transparentPixels / totalPixels;
   const sampledColorCount = colors.size;
+  const dominantColorCount = countDominantColors({
+    bucketCounts: dominantBuckets,
+    solidPixelCount: dominantSolidPixels,
+  });
 
   if (args.categoryHint === "icon" || args.categoryHint === "logo") {
-    const maxColors = args.categoryHint === "icon" ? CATEGORY_ICON_MAX_COLORS : CATEGORY_LOGO_MAX_COLORS;
-    if (sampledColorCount > maxColors) {
+    const maxDominantColors =
+      args.categoryHint === "icon"
+        ? CATEGORY_ICON_MAX_DOMINANT_COLORS
+        : CATEGORY_LOGO_MAX_DOMINANT_COLORS;
+    const extremeSampledLimit =
+      args.categoryHint === "icon"
+        ? CATEGORY_ICON_EXTREME_SAMPLED_COLORS
+        : CATEGORY_LOGO_EXTREME_SAMPLED_COLORS;
+
+    if (dominantColorCount > maxDominantColors) {
       return {
         kind: args.categoryHint,
         candidate: false,
-        reason: `No apto para SVG: ${args.categoryHint} con demasiados colores muestreados (${sampledColorCount}).`,
+        reason: `No apto para SVG: ${args.categoryHint} con demasiados colores dominantes (${dominantColorCount}).`,
         sampledColorCount,
+        dominantColorCount,
+        transparencyRatio,
+      };
+    }
+
+    if (
+      sampledColorCount > extremeSampledLimit &&
+      dominantColorCount > Math.ceil(maxDominantColors * 1.5)
+    ) {
+      return {
+        kind: args.categoryHint,
+        candidate: false,
+        reason: `No apto para SVG: ${args.categoryHint} con complejidad raster extrema.`,
+        sampledColorCount,
+        dominantColorCount,
         transparencyRatio,
       };
     }
@@ -206,6 +278,7 @@ async function analyzeVectorizationCandidate(args: {
         candidate: false,
         reason: "No apto para SVG: icono demasiado grande para fase 1.",
         sampledColorCount,
+        dominantColorCount,
         transparencyRatio,
       };
     }
@@ -215,6 +288,7 @@ async function analyzeVectorizationCandidate(args: {
       candidate: true,
       reason: `Candidato SVG por categoría visual '${args.categoryHint}'.`,
       sampledColorCount,
+      dominantColorCount,
       transparencyRatio,
     };
   }
@@ -228,6 +302,7 @@ async function analyzeVectorizationCandidate(args: {
         ? "Candidato SVG: shape simple detectado en fase 1."
         : "No apto para SVG en fase 1: shape con complejidad alta.",
       sampledColorCount,
+      dominantColorCount,
       transparencyRatio,
     };
   }
@@ -238,6 +313,7 @@ async function analyzeVectorizationCandidate(args: {
       candidate: false,
       reason: "No apto para SVG: sin transparencia útil para esta categoría.",
       sampledColorCount,
+      dominantColorCount,
       transparencyRatio,
     };
   }
@@ -277,6 +353,7 @@ async function analyzeVectorizationCandidate(args: {
     candidate,
     reason,
     sampledColorCount,
+    dominantColorCount,
     transparencyRatio,
   };
 }

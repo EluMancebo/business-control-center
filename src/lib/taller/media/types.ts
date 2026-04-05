@@ -92,6 +92,7 @@ export type ProcessedAssetResult = {
     candidate: boolean;
     reason: string;
     sampledColorCount: number;
+    dominantColorCount: number;
     transparencyRatio: number;
   };
 };
