@@ -54,6 +54,8 @@ const OWNERSHIP_SECTOR_OPTIONS = [
   "taller",
   "estetica",
   "inmobiliaria",
+  "agencia de viajes",
+  "comercio",
 ] as const;
 
 type VisualCategory = (typeof VISUAL_CATEGORY_OPTIONS)[number];
@@ -803,7 +805,7 @@ export default function TallerMediaPage() {
   function renderThumb(item: AssetItem) {
     if (item.kind === "video") {
       return (
-        <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
+        <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold [background:var(--surface-3,var(--muted))] text-(--text-subtle)">
           VIDEO
         </div>
       );
@@ -811,7 +813,7 @@ export default function TallerMediaPage() {
 
     if (thumbFallbackById[item._id]) {
       return (
-        <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]">
+        <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold [background:var(--surface-3,var(--muted))] text-(--text-subtle)">
           {item.kind.toUpperCase()}
         </div>
       );
@@ -864,7 +866,7 @@ export default function TallerMediaPage() {
           </PanelBadge>
           <span className={uploadFeedbackIndicatorClass} />
         </div>
-        <p className="mt-1 min-h-[14px] truncate text-[11px] text-muted-foreground">
+        <p className="mt-1 min-h-3.5 truncate text-[11px] text-muted-foreground">
           {uploadFeedbackMeta?.description ?? " "}
         </p>
       </div>
@@ -912,8 +914,8 @@ export default function TallerMediaPage() {
         }
       />
 
-      <div className="min-h-[64px]">
-        <div className={`rounded-xl p-3 text-sm transition-opacity duration-180 ${globalFeedbackClass}`}>
+      <div className="min-h-16">
+        <div className={`rounded-xl p-3 text-sm transition-opacity duration-200 ${globalFeedbackClass}`}>
           <div className="flex items-center gap-2">
             <PanelBadge
               tone={globalFeedbackTone === "idle" ? "neutral" : globalFeedbackTone}
@@ -921,7 +923,7 @@ export default function TallerMediaPage() {
             >
               {globalFeedbackChip}
             </PanelBadge>
-            <span className="text-xs [color:var(--text-subtle)]">
+            <span className="text-xs text-(--text-subtle)">
               {globalFeedbackMessage}
             </span>
           </div>
@@ -934,13 +936,16 @@ export default function TallerMediaPage() {
           <button
             type="button"
             onClick={() => setIsMobileFiltersOpen((prev) => !prev)}
-            className="inline-flex h-8 items-center justify-center rounded-md border border-border px-3 text-xs font-semibold transition-colors duration-180 [background:var(--cta-secondary)] [color:var(--cta-secondary-foreground)] hover:[background:var(--cta-secondary-hover)]"
+            aria-expanded={isMobileFiltersOpen}
+            aria-controls="media-filters-panel"
+            className="inline-flex h-8 items-center justify-center rounded-md border border-border px-3 text-xs font-semibold transition-colors duration-200 [background:var(--cta-secondary)] text-(--cta-secondary-foreground) hover:[background:var(--cta-secondary-hover)]"
           >
             {isMobileFiltersOpen ? "Ocultar filtros" : "Ver filtros"}
           </button>
         </div>
 
         <div
+          id="media-filters-panel"
           className={`${isMobileFiltersOpen ? "mt-3" : "hidden"} space-y-3 lg:mt-0 lg:block lg:space-y-0`}
         >
           <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_auto]">
@@ -1021,7 +1026,7 @@ export default function TallerMediaPage() {
                 key={entry.tag}
                 type="button"
                 onClick={() => setTagFilter(entry.tag)}
-                className="inline-flex items-center rounded-full border border-border px-2 py-1 text-xs transition-colors duration-180 [background:var(--badge-bg)] [color:var(--badge-fg)] [border-color:var(--badge-bg)] hover:opacity-90"
+                className="inline-flex items-center rounded-full border border-(--badge-bg) px-2 py-1 text-xs transition-colors duration-200 bg-(--badge-bg) text-(--badge-fg) hover:opacity-90"
               >
                 {entry.tag} · {entry.count}
               </button>
@@ -1034,28 +1039,28 @@ export default function TallerMediaPage() {
           <button
             type="button"
             onClick={() => setRestrictionFilter("all")}
-            className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]"
+            className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] text-(--text-subtle)"
           >
             Todos
           </button>
           <button
             type="button"
             onClick={() => setRestrictionFilter("restricted")}
-            className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]"
+            className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] text-(--text-subtle)"
           >
             Restringidos (`allowedIn`)
           </button>
           <button
             type="button"
             onClick={() => setRestrictionFilter("open")}
-            className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]"
+            className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] text-(--text-subtle)"
           >
             Uso libre
           </button>
         </div>
       </div>
 
-        <div className="mt-4 rounded-lg border border-border px-3 py-2 text-xs shadow-sm [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]">
+        <div className="mt-4 rounded-lg border border-border px-3 py-2 text-xs shadow-sm [background:var(--surface-2,var(--background))] text-(--text-subtle)">
           {loading
             ? "Cargando assets..."
             : `${filteredItems.length} visibles de ${items.length} activos · filtro de restriccion: ${restrictionFilter}`}
@@ -1091,7 +1096,7 @@ export default function TallerMediaPage() {
                   >
                     {desktopSelectedFileName ? "Cambiar archivo" : "Seleccionar archivo"}
                   </PanelButton>
-                  <span className="min-h-[1rem] text-[11px] [color:var(--text-subtle)]">
+                  <span className="min-h-4 text-[11px] text-(--text-subtle)">
                     {desktopSelectedFileName || "Aún no has seleccionado un archivo."}
                   </span>
                 </label>
@@ -1155,12 +1160,12 @@ export default function TallerMediaPage() {
                             setStyleSelection((prev) => toggleSelection(prev, option, 2))
                           }
                           disabled={disabled}
-                          aria-pressed={selected}
+                          aria-pressed={selected ? "true" : "false"}
                           className={[
                             "rounded-full border px-2 py-1 text-xs transition-colors",
                             selected
-                              ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
-                              : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                              ? "border-(--badge-bg) bg-(--badge-bg) text-(--badge-fg)"
+                              : "border-border [background:var(--surface-2,var(--background))] text-(--text-subtle)",
                             disabled ? "opacity-50" : "",
                           ].join(" ")}
                         >
@@ -1185,12 +1190,12 @@ export default function TallerMediaPage() {
                             setColorSelection((prev) => toggleSelection(prev, option, 2))
                           }
                           disabled={disabled}
-                          aria-pressed={selected}
+                          aria-pressed={selected ? "true" : "false"}
                           className={[
                             "rounded-full border px-2 py-1 text-xs transition-colors",
                             selected
-                              ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
-                              : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                              ? "border-(--badge-bg) bg-(--badge-bg) text-(--badge-fg)"
+                              : "border-border [background:var(--surface-2,var(--background))] text-(--text-subtle)",
                             disabled ? "opacity-50" : "",
                           ].join(" ")}
                         >
@@ -1215,12 +1220,12 @@ export default function TallerMediaPage() {
                             setIntentionSelection((prev) => toggleSelection(prev, option, 3))
                           }
                           disabled={disabled}
-                          aria-pressed={selected}
+                          aria-pressed={selected ? "true" : "false"}
                           className={[
                             "rounded-full border px-2 py-1 text-xs transition-colors",
                             selected
-                              ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
-                              : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                              ? "border-(--badge-bg) bg-(--badge-bg) text-(--badge-fg)"
+                              : "border-border [background:var(--surface-2,var(--background))] text-(--text-subtle)",
                             disabled ? "opacity-50" : "",
                           ].join(" ")}
                         >
@@ -1311,12 +1316,12 @@ export default function TallerMediaPage() {
                             : [...prev, option]
                         )
                       }
-                      aria-pressed={selected}
+                      aria-pressed={selected ? "true" : "false"}
                       className={[
                         "rounded-full border px-2 py-1 text-xs transition-colors",
                         selected
-                          ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
-                          : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                          ? "border-(--badge-bg) bg-(--badge-bg) text-(--badge-fg)"
+                          : "border-border [background:var(--surface-2,var(--background))] text-(--text-subtle)",
                       ].join(" ")}
                     >
                       {option}
@@ -1362,9 +1367,9 @@ export default function TallerMediaPage() {
                 const isVariantsExpanded = Boolean(expandedVariantsByAssetId[original._id]);
                 const isRestricted = original.allowedIn.length > 0;
                 const metadataBadgeClass =
-                  "inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] leading-none whitespace-normal break-words [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]";
+                  "inline-flex h-5 max-w-full items-center rounded-full border border-border px-1.5 text-[10px] leading-none truncate [background:var(--surface-3,var(--muted))] text-(--text-subtle)";
                 const summaryVariantBadgeClass =
-                  "inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] leading-none whitespace-normal break-words [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]";
+                  "inline-flex h-5 max-w-full items-center rounded-full border border-border px-1.5 text-[10px] leading-none truncate [background:var(--surface-2,var(--background))] text-(--text-subtle)";
                 const availableVariantSlots = MANUAL_VARIANT_SLOTS.filter((slot) =>
                   Boolean(group.variantsByKey[slot.key])
                 );
@@ -1381,7 +1386,7 @@ export default function TallerMediaPage() {
                   : undefined;
                 const pipelineBadgeClass =
                   original.pipelineStatus === "failed"
-                    ? "inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] leading-none whitespace-normal break-words [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))]"
+                    ? "inline-flex h-5 max-w-full items-center rounded-full border border-border px-1.5 text-[10px] leading-none truncate [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))]"
                     : metadataBadgeClass;
                 const generatedCount = availableVariantSlots.length + group.extraVariants.length;
                 const variantFeedbackState = variantFeedbackByAssetId[original._id];
@@ -1440,17 +1445,17 @@ export default function TallerMediaPage() {
                           .join(", ")}.`
                       : "Todas las variantes principales están generadas.");
                 const compactVariantMetaBadgeClass =
-                  "inline-flex h-4 min-w-0 items-center rounded-full border border-border px-1 text-[9px] leading-none whitespace-nowrap [background:var(--surface-3,var(--muted))] [color:var(--text-subtle)]";
+                  "inline-flex h-5 min-w-0 items-center rounded-full border border-border px-1.5 text-[9px] leading-none whitespace-nowrap [background:var(--surface-3,var(--muted))] text-(--text-subtle)";
                 const variantSlotShellClass =
-                  "h-[128px] min-w-0 rounded-md border border-border p-1 [background:var(--surface-1,var(--background))] flex flex-col";
-                const variantSlotHeaderClass = "flex h-[50px] items-start gap-1";
+                  "min-w-0 rounded-md border border-border p-2 [background:var(--surface-1,var(--background))] flex min-h-[148px] flex-col";
+                const variantSlotHeaderClass =
+                  "flex items-start gap-2";
                 const variantSlotMetaRowClass =
-                  "mt-0.5 flex h-4 items-center gap-0.5 overflow-x-hidden overflow-y-visible";
+                  "mt-1 flex min-h-[20px] flex-wrap items-center gap-1";
                 const variantActionRowClass =
-                  "mt-1.5 grid min-h-[24px] grid-cols-2 gap-0.5 pt-0.5 sm:flex sm:flex-nowrap sm:gap-0.5";
+                  "mt-auto grid grid-cols-2 gap-1.5 pt-3 sm:grid-cols-2 lg:flex lg:flex-nowrap lg:gap-1";
                 const variantActionButtonClass =
-                  "h-6 min-w-0 rounded-md px-1 text-[10px] whitespace-nowrap sm:flex-1";
-
+                  "h-8 w-full min-w-0 rounded-md px-2 text-[10px] whitespace-nowrap lg:flex-1 lg:px-1.5 lg:text-[9px]";
                 return (
                   <article key={group.original._id}>
                     <PanelCard variant="task" className="p-2.5 sm:p-3">
@@ -1461,7 +1466,7 @@ export default function TallerMediaPage() {
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="flex min-w-0 flex-wrap items-start gap-2">
                             <div className="min-w-0">
                               <h3 className="truncate text-sm font-semibold text-foreground">{original.label}</h3>
                               <p className="mt-0.5 text-xs text-muted-foreground">
@@ -1469,9 +1474,9 @@ export default function TallerMediaPage() {
                               </p>
                             </div>
 
-                            <div className="mt-0.5 space-y-1 sm:mt-0">
-                              <div className="flex flex-wrap gap-1">
-                                <span className="inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] leading-none whitespace-normal break-words [background:var(--badge-bg)] [color:var(--badge-fg)] [border-color:var(--badge-bg)]">
+                            <div className="mt-0.5 min-w-0 max-w-full space-y-1 sm:mt-0">
+                              <div className="flex min-w-0 max-w-full flex-wrap gap-1">
+                                <span className="inline-flex h-5 max-w-full items-center rounded-full border border-(--badge-bg) px-1.5 text-[10px] leading-none truncate bg-(--badge-bg) text-(--badge-fg)">
                                   {original.kind}
                                 </span>
                                 <span className={metadataBadgeClass}>{original.scope}</span>
@@ -1479,7 +1484,7 @@ export default function TallerMediaPage() {
                                   {isRestricted ? "restringido" : "uso libre"}
                                 </span>
                               </div>
-                              <div className="flex flex-wrap gap-1">
+                              <div className="flex min-w-0 max-w-full flex-wrap gap-1">
                                 <span className={pipelineBadgeClass}>
                                   pipeline: {original.pipelineStatus}
                                 </span>
@@ -1488,14 +1493,14 @@ export default function TallerMediaPage() {
                             </div>
                           </div>
 
-                          <div className="mt-2 truncate text-[11px] [color:var(--text-subtle)]">{original.url}</div>
+                          <div className="mt-2 min-w-0 overflow-hidden break-all text-[11px] text-(--text-subtle)">{original.url}</div>
 
-                          <div className="mt-2 flex flex-wrap gap-1">
+                          <div className="mt-2 flex min-w-0 max-w-full flex-wrap gap-1">
                             {original.tags.length > 0 ? (
                               original.tags.slice(0, 6).map((tag) => (
                                 <span
                                   key={tag}
-                                  className="inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] leading-none [background:var(--badge-bg)] [color:var(--badge-fg)] [border-color:var(--badge-bg)]"
+                                  className="inline-flex h-5 max-w-full items-center rounded-full border border-(--badge-bg) px-1.5 text-[10px] leading-none truncate bg-(--badge-bg) text-(--badge-fg)"
                                 >
                                   {tag}
                                 </span>
@@ -1510,7 +1515,7 @@ export default function TallerMediaPage() {
                             ) : null}
                           </div>
 
-                          <div className="mt-1 text-[11px] [color:var(--text-subtle)]">
+                          <div className="mt-1 text-[11px] text-(--text-subtle)">
                             Destinos permitidos:{" "}
                             {isRestricted ? original.allowedIn.slice(0, 3).join(", ") : "cualquier slot"}
                           </div>
@@ -1519,7 +1524,7 @@ export default function TallerMediaPage() {
 
                       <div className="mt-3 space-y-2 border-t border-border/70 pt-2.5">
                         {isVariantsExpanded ? (
-                          <div className="grid min-h-[64px] gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(240px,320px)_116px] sm:items-center sm:gap-2">
+                          <div className="grid min-h-[64px] gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(220px,320px)_116px] lg:items-center lg:gap-2">
                             <div className="min-w-0">
                               <p className="text-xs font-semibold text-foreground">
                                 Variantes derivadas ({generatedCount})
@@ -1560,13 +1565,13 @@ export default function TallerMediaPage() {
                             <PanelButton
                               type="button"
                               onClick={() => toggleVariantsVisibility(original._id)}
-                              className="h-8 w-full rounded-md px-2.5 text-[11px] sm:w-[116px] sm:justify-center"
+                              className="h-8 w-full rounded-md px-2.5 text-[11px] lg:w-[116px] lg:justify-center"
                             >
                               Ocultar variantes
                             </PanelButton>
                           </div>
                         ) : (
-                          <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                             <div className="min-w-0">
                               <p className="text-xs font-semibold text-foreground">
                                 Variantes derivadas ({generatedCount})
@@ -1591,7 +1596,7 @@ export default function TallerMediaPage() {
                             <PanelButton
                               type="button"
                               onClick={() => toggleVariantsVisibility(original._id)}
-                              className="h-8 rounded-md px-2.5 text-[11px]"
+                              className="h-8 shrink-0 rounded-md px-2.5 text-[11px]"
                             >
                               Ver variantes
                             </PanelButton>
@@ -1635,7 +1640,7 @@ export default function TallerMediaPage() {
 
                     {isVariantsExpanded ? (
                       <div className="mt-1 rounded-lg border border-border/70 p-1 [background:var(--surface-2,var(--card))]">
-                        <div className="grid gap-0.5 sm:grid-cols-2 xl:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                           {MANUAL_VARIANT_SLOTS.map((slot) => {
                             const variant = group.variantsByKey[slot.key];
                             const isSlotBusy = isVariantBusyForOriginal && busyVariantKey === slot.key;
@@ -1650,17 +1655,14 @@ export default function TallerMediaPage() {
                                     <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border [background:var(--surface-1,var(--background))]">
                                       <span className="h-1.5 w-1.5 rounded-full [background:var(--text-subtle)] opacity-70" />
                                     </div>
+
                                     <div className="min-w-0 flex-1">
                                       <div className="truncate text-[11px] font-semibold text-foreground">
                                         {slot.title}
                                       </div>
-                                      <div className="truncate text-[10px] text-muted-foreground">
+
+                                      <div className="mt-1 text-[10px] text-muted-foreground">
                                         Pendiente de generar.
-                                      </div>
-                                      <div className={`${variantSlotMetaRowClass} rounded-sm border border-dashed border-border/80 px-1 [background:var(--surface-1,var(--background))]`}>
-                                        <PanelBadge tone="neutral" className="h-4 px-1 text-[9px]">
-                                          slot reservado
-                                        </PanelBadge>
                                       </div>
                                     </div>
                                   </div>
@@ -1670,7 +1672,7 @@ export default function TallerMediaPage() {
                                       type="button"
                                       onClick={() => generateVariant(original, slot.key)}
                                       disabled={isVariantBusyForOriginal}
-                                      className={`${variantActionButtonClass} col-span-2 sm:col-span-1`}
+                                      className={`${variantActionButtonClass} col-span-2`}
                                     >
                                       {isSlotBusy ? "Solicitando..." : slot.actionLabel}
                                     </PanelButton>
@@ -1827,7 +1829,7 @@ export default function TallerMediaPage() {
                           })}
                         </div>
 
-                        <p className="mt-2 min-h-[16px] text-[11px] text-muted-foreground">
+                        <p className="mt-2 min-h-4 text-[11px] text-muted-foreground">
                           {missingVariantSlots.length > 0
                             ? `Slots pendientes: ${missingVariantSlots
                                 .map((slot) => slot.title)
@@ -1851,7 +1853,7 @@ export default function TallerMediaPage() {
       <BackToTop threshold={320} />
 
       {isUploadSheetOpen ? (
-        <div className="fixed inset-0 z-110 bg-black/35 px-3 pb-3 pt-6 lg:hidden sm:px-4 sm:pb-4">
+        <div className="fixed inset-0 z-[110] bg-black/35 px-3 pb-3 pt-6 lg:hidden sm:px-4 sm:pb-4">
           <button
             type="button"
             aria-label="Cerrar alta de asset"
@@ -1890,7 +1892,7 @@ export default function TallerMediaPage() {
                       >
                         {mobileSelectedFileName ? "Cambiar archivo" : "Seleccionar archivo"}
                       </PanelButton>
-                      <span className="min-h-[1rem] text-[11px] [color:var(--text-subtle)]">
+                      <span className="min-h-4 text-[11px] text-(--text-subtle)">
                         {mobileSelectedFileName || "Aún no has seleccionado un archivo."}
                       </span>
                     </label>
@@ -1954,12 +1956,12 @@ export default function TallerMediaPage() {
                                 setStyleSelection((prev) => toggleSelection(prev, option, 2))
                               }
                               disabled={disabled}
-                              aria-pressed={selected}
+                              aria-pressed={selected ? "true" : "false"}
                               className={[
                                 "rounded-full border px-2 py-1 text-xs transition-colors",
                                 selected
-                                  ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
-                                  : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                                  ? "border-(--badge-bg) bg-(--badge-bg) text-(--badge-fg)"
+                                  : "border-border [background:var(--surface-2,var(--background))] text-(--text-subtle)",
                                 disabled ? "opacity-50" : "",
                               ].join(" ")}
                             >
@@ -1984,12 +1986,12 @@ export default function TallerMediaPage() {
                                 setColorSelection((prev) => toggleSelection(prev, option, 2))
                               }
                               disabled={disabled}
-                              aria-pressed={selected}
+                              aria-pressed={selected ? "true" : "false"}
                               className={[
                                 "rounded-full border px-2 py-1 text-xs transition-colors",
                                 selected
-                                  ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
-                                  : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                                  ? "border-(--badge-bg) bg-(--badge-bg) text-(--badge-fg)"
+                                  : "border-border [background:var(--surface-2,var(--background))] text-(--text-subtle)",
                                 disabled ? "opacity-50" : "",
                               ].join(" ")}
                             >
@@ -2014,12 +2016,12 @@ export default function TallerMediaPage() {
                                 setIntentionSelection((prev) => toggleSelection(prev, option, 3))
                               }
                               disabled={disabled}
-                              aria-pressed={selected}
+                              aria-pressed={selected ? "true" : "false"}
                               className={[
                                 "rounded-full border px-2 py-1 text-xs transition-colors",
                                 selected
-                                  ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
-                                  : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                                  ? "border-(--badge-bg) bg-(--badge-bg) text-(--badge-fg)"
+                                  : "border-border [background:var(--surface-2,var(--background))] text-(--text-subtle)",
                                 disabled ? "opacity-50" : "",
                               ].join(" ")}
                             >
@@ -2110,12 +2112,12 @@ export default function TallerMediaPage() {
                                 : [...prev, option]
                             )
                           }
-                          aria-pressed={selected}
+                          aria-pressed={selected ? "true" : "false"}
                           className={[
                             "rounded-full border px-2 py-1 text-xs transition-colors",
                             selected
-                              ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
-                              : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                              ? "border-(--badge-bg) bg-(--badge-bg) text-(--badge-fg)"
+                              : "border-border [background:var(--surface-2,var(--background))] text-(--text-subtle)",
                           ].join(" ")}
                         >
                           {option}
@@ -2141,7 +2143,7 @@ export default function TallerMediaPage() {
       ) : null}
 
       {editingItem ? (
-        <div className="fixed inset-0 z-120 flex items-end bg-black/40 lg:items-stretch lg:justify-end">
+        <div className="fixed inset-0 z-[120] flex items-end bg-black/40 lg:items-stretch lg:justify-end">
           <button
             type="button"
             aria-label="Cerrar edicion"
@@ -2165,7 +2167,7 @@ export default function TallerMediaPage() {
                 <div className="h-14 w-14 overflow-hidden rounded-md border border-border">
                   {renderThumb(editingItem)}
                 </div>
-                <div className="min-w-0 text-xs [color:var(--text-subtle)]">
+                <div className="min-w-0 text-xs text-(--text-subtle)">
                   <div className="truncate">kind: {editingItem.kind}</div>
                   <div className="truncate">scope: {editingItem.scope}</div>
                   <div className="truncate">
@@ -2225,12 +2227,12 @@ export default function TallerMediaPage() {
                               setEditStyleSelection((prev) => toggleSelection(prev, option, 2))
                             }
                             disabled={disabled}
-                            aria-pressed={selected}
+                            aria-pressed={selected ? "true" : "false"}
                             className={[
                               "rounded-full border px-2 py-1 text-xs transition-colors",
                               selected
-                                ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
-                                : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                                ? "border-(--badge-bg) bg-(--badge-bg) text-(--badge-fg)"
+                                : "border-border [background:var(--surface-2,var(--background))] text-(--text-subtle)",
                               disabled ? "opacity-50" : "",
                             ].join(" ")}
                           >
@@ -2255,12 +2257,12 @@ export default function TallerMediaPage() {
                               setEditColorSelection((prev) => toggleSelection(prev, option, 2))
                             }
                             disabled={disabled}
-                            aria-pressed={selected}
+                            aria-pressed={selected ? "true" : "false"}
                             className={[
                               "rounded-full border px-2 py-1 text-xs transition-colors",
                               selected
-                                ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
-                                : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                                ? "border-(--badge-bg) bg-(--badge-bg) text-(--badge-fg)"
+                                : "border-border [background:var(--surface-2,var(--background))] text-(--text-subtle)",
                               disabled ? "opacity-50" : "",
                             ].join(" ")}
                           >
@@ -2285,12 +2287,12 @@ export default function TallerMediaPage() {
                               setEditIntentionSelection((prev) => toggleSelection(prev, option, 3))
                             }
                             disabled={disabled}
-                            aria-pressed={selected}
+                            aria-pressed={selected ? "true" : "false"}
                             className={[
                               "rounded-full border px-2 py-1 text-xs transition-colors",
                               selected
-                                ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
-                                : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                                ? "border-(--badge-bg) bg-(--badge-bg) text-(--badge-fg)"
+                                : "border-border [background:var(--surface-2,var(--background))] text-(--text-subtle)",
                               disabled ? "opacity-50" : "",
                             ].join(" ")}
                           >
@@ -2372,12 +2374,12 @@ export default function TallerMediaPage() {
                               : [...prev, option]
                           )
                         }
-                        aria-pressed={selected}
+                        aria-pressed={selected ? "true" : "false"}
                         className={[
                           "rounded-full border px-2 py-1 text-xs transition-colors",
                           selected
-                            ? "border-border [background:var(--badge-bg)] [color:var(--badge-fg)]"
-                            : "border-border [background:var(--surface-2,var(--background))] [color:var(--text-subtle)]",
+                            ? "border-(--badge-bg) bg-(--badge-bg) text-(--badge-fg)"
+                            : "border-border [background:var(--surface-2,var(--background))] text-(--text-subtle)",
                         ].join(" ")}
                       >
                         {option}
@@ -2386,7 +2388,7 @@ export default function TallerMediaPage() {
                   })}
                 </div>
                 {editAllowedInExtra.length > 0 ? (
-                  <p className="mt-2 text-[11px] [color:var(--text-subtle)]">
+                  <p className="mt-2 text-[11px] text-(--text-subtle)">
                     Se conservan restricciones legacy no catalogadas: {editAllowedInExtra.join(", ")}
                   </p>
                 ) : null}

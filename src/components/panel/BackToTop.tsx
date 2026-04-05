@@ -88,16 +88,15 @@ export default function BackToTop({
         .join(" ")}
     >
       <PanelButton
+        variant="primary"
         type="button"
         aria-label="Volver arriba"
         title="Volver arriba"
         onClick={scrollToTop}
         className={[
-          "h-12 w-12 rounded-full p-0",
+          "h-12 w-12 min-w-12 shrink-0 !rounded-full !p-0",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-          "[background:var(--cta-primary,var(--primary))] [color:var(--cta-primary-foreground,var(--primary-foreground))]",
           "shadow-[var(--elevation-base,var(--panel-shadow-1))] hover:shadow-[var(--elevation-interactive,var(--panel-shadow-2))]",
-          "hover:[background:var(--cta-primary-hover,var(--primary))]",
           "transition-[opacity,transform,box-shadow,background-color] duration-180",
           "hover:-translate-y-0.5",
           isVisible
@@ -109,13 +108,13 @@ export default function BackToTop({
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="h-7 w-7"
+          className="h-6 w-6"
           aria-hidden="true"
         >
           <path
             d="M5.25 15.75L12 9L18.75 15.75"
             stroke="currentColor"
-            strokeWidth="3.6"
+            strokeWidth="3.2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
