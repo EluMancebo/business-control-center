@@ -1,3 +1,6 @@
+import type { SvgAnalysis } from "@/lib/media/analyzer";
+import type { SvgAnimationDecision } from "@/lib/media/animation";
+
 export type AssetScope = "system" | "tenant";
 export type AssetKind = "image" | "svg" | "video";
 export type AssetStatus = "active" | "archived";
@@ -87,6 +90,8 @@ export type ProcessedAssetResult = {
   pipelineError: string;
   generatedVariantKeys: AssetVariantKey[];
   vectorizable: boolean;
+  svgAnalysis?: SvgAnalysis;
+  svgAnimation?: SvgAnimationDecision;
   vectorizationAnalysis?: {
     kind: VectorizationKind;
     candidate: boolean;

@@ -406,6 +406,8 @@ export async function processAssetVariant(
   const sourceAssetId = toSafeSourceId(asset._id);
   const generatedVariantKeys: AssetVariantKey[] = [];
   let vectorizationAnalysis: VectorizationAnalysis | undefined;
+  let svgAnalysis: ProcessedAssetResult["svgAnalysis"];
+  let svgAnimation: ProcessedAssetResult["svgAnimation"];
 
   if (!isRootUsableAsset(asset)) {
     return {
@@ -569,6 +571,8 @@ export async function processAssetVariant(
 
       const vectorized = await createApproximateVectorSvg(originalRaster);
       const preparedSvg = prepareSvgPipelineResult(vectorized.svg.toString("utf8"));
+      svgAnalysis = preparedSvg.analysis;
+      svgAnimation = preparedSvg.animation;
       const optimizedSvg = preparedSvg.optimizedSvg.trim();
       if (!optimizedSvg) {
         throw new Error("SVG optimization pipeline returned empty output");
@@ -622,6 +626,8 @@ export async function processAssetVariant(
       pipelineError: "",
       generatedVariantKeys,
       vectorizable: true,
+      svgAnalysis,
+      svgAnimation,
       vectorizationAnalysis,
     };
   } catch (error: unknown) {
