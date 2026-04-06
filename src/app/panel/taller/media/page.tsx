@@ -11,6 +11,7 @@ import {
   deleteSystemMediaClient,
   fetchSystemMediaClient,
   formatBytes,
+  type MediaVariantRequestResult,
   requestSystemAssetVariantClient,
   updateSystemMediaMetadataClient,
   uploadSystemMediaClient,
@@ -79,6 +80,7 @@ type VariantFeedback = {
   tone: VariantFeedbackTone;
   title: string;
   detail: string;
+  technicalDetail?: string;
 };
 
 const MIN_UPLOAD_FEEDBACK_MS = 450;
@@ -302,6 +304,36 @@ function isOriginalAsset(item: AssetItem): boolean {
     item.variantKey !== "optimized" &&
     item.variantKey !== "vectorized-svg"
   );
+}
+
+function buildSvgTechnicalDetail(
+  response: MediaVariantRequestResult
+): string | undefined {
+  const parts: string[] = [];
+  const svgAnalysis = response.svgAnalysis;
+  const svgAnimation = response.svgAnimation;
+
+  if (svgAnalysis?.suggestedType) {
+    parts.push(svgAnalysis.suggestedType);
+  }
+  if (svgAnalysis?.complexity) {
+    const complexityLabel =
+      svgAnalysis.complexity === "low"
+        ? "complejidad baja"
+        : svgAnalysis.complexity === "medium"
+          ? "complejidad media"
+          : "complejidad alta";
+    parts.push(complexityLabel);
+  }
+  if (typeof svgAnalysis?.colorsCount === "number") {
+    parts.push(`${svgAnalysis.colorsCount} colores`);
+  }
+  if (svgAnimation?.suitability?.recommendedAnimation) {
+    parts.push(`animación ${svgAnimation.suitability.recommendedAnimation}`);
+  }
+
+  if (parts.length === 0) return undefined;
+  return parts.join(" · ");
 }
 
 export default function TallerMediaPage() {
@@ -733,16 +765,19 @@ export default function TallerMediaPage() {
     }));
 
     try {
-      const message = await requestSystemAssetVariantClient({
+      const response = await requestSystemAssetVariantClient({
         sourceAssetId: original._id,
         variantKey,
       });
+      const technicalDetail =
+        variantKey === "vectorized-svg" ? buildSvgTechnicalDetail(response) : undefined;
       setVariantFeedbackByAssetId((prev) => ({
         ...prev,
         [original._id]: {
           tone: "success",
           title: "Variante generada.",
-          detail: message,
+          detail: response.message,
+          technicalDetail,
         },
       }));
       await load({ silent: true });
@@ -1446,6 +1481,10 @@ export default function TallerMediaPage() {
                                 .map((slot) => slot.title)
                                 .join(", ")}.`
                             : "Todas las variantes principales están generadas.");
+                const feedbackTechnicalDetail =
+                  semanticFeedbackTone === "success"
+                    ? variantFeedbackState?.technicalDetail
+                    : undefined;
                 const compactVariantMetaBadgeClass =
                   "inline-flex h-5 min-w-0 max-w-full items-center rounded-full border border-border px-1.5 text-[9px] leading-none truncate [background:var(--surface-3,var(--muted))] text-(--text-subtle)";
                 const variantSlotShellClass =
@@ -1556,6 +1595,14 @@ export default function TallerMediaPage() {
                                 <p className="mt-1 h-[14px] truncate text-[10px] text-muted-foreground">
                                   {feedbackDetail}
                                 </p>
+                                {feedbackTechnicalDetail ? (
+                                  <p
+                                    className="mt-0.5 block min-w-0 max-w-full truncate text-[10px] leading-tight text-muted-foreground"
+                                    title={`SVG: ${feedbackTechnicalDetail}`}
+                                  >
+                                    SVG: {feedbackTechnicalDetail}
+                                  </p>
+                                ) : null}
                               </div>
 
                               <PanelButton
