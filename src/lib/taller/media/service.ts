@@ -4,6 +4,7 @@ import type {
   AssetListQuery,
   AssetPipelineStage,
   AssetPipelineStatus,
+  ProcessedAssetResult,
   AssetStatus,
   AssetVariantKey,
 } from "./types";
@@ -24,6 +25,14 @@ type MediaVariantRequestResponse = {
   ok: boolean;
   message?: string;
   error?: string;
+  svgAnalysis?: ProcessedAssetResult["svgAnalysis"];
+  svgAnimation?: ProcessedAssetResult["svgAnimation"];
+};
+
+export type MediaVariantRequestResult = {
+  message: string;
+  svgAnalysis?: ProcessedAssetResult["svgAnalysis"];
+  svgAnimation?: ProcessedAssetResult["svgAnimation"];
 };
 
 const ASSET_VARIANT_KEYS: AssetVariantKey[] = [
@@ -298,7 +307,7 @@ export async function deleteSystemMediaClient(id: string): Promise<void> {
 export async function requestSystemAssetVariantClient(args: {
   sourceAssetId: string;
   variantKey: Exclude<AssetVariantKey, "original">;
-}): Promise<string> {
+}): Promise<MediaVariantRequestResult> {
   const sourceAssetId = args.sourceAssetId.trim();
   if (!sourceAssetId) throw new Error("Missing source asset id");
 
@@ -316,5 +325,9 @@ export async function requestSystemAssetVariantClient(args: {
     throw new Error(json?.error || "No se pudo solicitar la variante");
   }
 
-  return toStringValue(json.message, "Solicitud de variante enviada.");
+  return {
+    message: toStringValue(json.message, "Solicitud de variante enviada."),
+    svgAnalysis: json.svgAnalysis,
+    svgAnimation: json.svgAnimation,
+  };
 }
