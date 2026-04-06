@@ -1,5 +1,6 @@
 import { put } from "@vercel/blob";
 import sharp from "sharp";
+import { prepareSvgPipelineResult } from "@/lib/media/svg-pipeline";
 import {
   updateSystemAssetPipelineRepository,
   upsertSystemAssetVariantRepository,
@@ -567,9 +568,16 @@ export async function processAssetVariant(
       }
 
       const vectorized = await createApproximateVectorSvg(originalRaster);
+      const preparedSvg = prepareSvgPipelineResult(vectorized.svg.toString("utf8"));
+      const optimizedSvg = preparedSvg.optimizedSvg.trim();
+      if (!optimizedSvg) {
+        throw new Error("SVG optimization pipeline returned empty output");
+      }
+      const optimizedSvgBuffer = Buffer.from(optimizedSvg, "utf8");
+
       const svgBlob = await put(
         buildDerivedStorageKey(asset.key, "vectorized-svg", "svg"),
-        new Blob([bufferToArrayBuffer(vectorized.svg)], { type: "image/svg+xml" }),
+        new Blob([bufferToArrayBuffer(optimizedSvgBuffer)], { type: "image/svg+xml" }),
         {
           token: getBlobReadWriteToken(),
           access: "public",
@@ -588,7 +596,7 @@ export async function processAssetVariant(
         tags: asset.tags,
         allowedIn: asset.allowedIn,
         mime: "image/svg+xml",
-        bytes: vectorized.svg.byteLength,
+        bytes: optimizedSvgBuffer.byteLength,
         width: vectorized.width,
         height: vectorized.height,
         sourceAssetId,
