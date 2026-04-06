@@ -95,7 +95,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(
     {
       ok: true,
-      queued: true,
       message: `Variante ${variantKey} generada correctamente.`,
     },
     { status: 200 }
