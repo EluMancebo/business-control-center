@@ -1588,18 +1588,18 @@ export default function TallerMediaPage() {
                             </div>
                           )}
 
-                          <div className="flex min-w-0 flex-wrap gap-1.5">
+                          <div className="flex min-w-0 flex-nowrap gap-1 sm:gap-1.5">
                             <PanelButton
                               type="button"
                               onClick={() => openInNewTab(original.url)}
-                              className="h-8 rounded-md px-2.5 text-[11px]"
+                              className="h-8 min-w-0 flex-1 truncate rounded-md px-2 text-[10px] sm:flex-none sm:px-2.5 sm:text-[11px]"
                             >
                               Ver
                             </PanelButton>
                             <PanelButton
                               type="button"
                               onClick={() => copy(original.url)}
-                              className="h-8 rounded-md px-2.5 text-[11px]"
+                              className="h-8 min-w-0 flex-1 truncate rounded-md px-2 text-[10px] sm:flex-none sm:px-2.5 sm:text-[11px]"
                             >
                               Copiar URL
                             </PanelButton>
@@ -1607,7 +1607,7 @@ export default function TallerMediaPage() {
                               type="button"
                               onClick={() => startEdit(original)}
                               disabled={rowBusyId === original._id}
-                              className="h-8 rounded-md px-2.5 text-[11px]"
+                              className="h-8 min-w-0 flex-1 truncate rounded-md px-2 text-[10px] sm:flex-none sm:px-2.5 sm:text-[11px]"
                             >
                               Editar
                             </PanelButton>
@@ -1615,7 +1615,7 @@ export default function TallerMediaPage() {
                               type="button"
                               onClick={() => removeAsset(original)}
                               disabled={rowBusyId === original._id}
-                              className="h-8 rounded-md px-2.5 text-[11px] [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))] hover:[background:var(--accent-soft,var(--muted))]"
+                              className="h-8 min-w-0 flex-1 truncate rounded-md px-2 text-[10px] sm:flex-none sm:px-2.5 sm:text-[11px] [background:var(--accent-soft,var(--muted))] [color:var(--accent-strong,var(--foreground))] hover:[background:var(--accent-soft,var(--muted))]"
                             >
                               Borrar
                             </PanelButton>
@@ -1631,6 +1631,9 @@ export default function TallerMediaPage() {
                               const isSlotBusy = isVariantBusyForOriginal && busyVariantKey === slot.key;
 
                               if (!variant) {
+                                const showLocalSvgFeedbackInMobile =
+                                  slot.key === "vectorized-svg" &&
+                                  (semanticFeedbackTone === "warning" || semanticFeedbackTone === "danger");
                                 return (
                                   <div
                                     key={slot.key}
@@ -1662,6 +1665,22 @@ export default function TallerMediaPage() {
                                         {isSlotBusy ? "Solicitando..." : slot.actionLabel}
                                       </PanelButton>
                                     </div>
+                                    {showLocalSvgFeedbackInMobile ? (
+                                      <div className="mt-2 min-w-0 rounded-md border border-border/70 p-2 [background:var(--surface-2,var(--card))] sm:hidden">
+                                        <div className="flex min-w-0 items-center gap-1.5">
+                                          <PanelBadge
+                                            tone={feedbackBadgeTone}
+                                            className="h-5 min-w-0 max-w-full truncate px-2 text-[10px]"
+                                          >
+                                            {feedbackTitle}
+                                          </PanelBadge>
+                                          <span className={feedbackIndicatorClass} />
+                                        </div>
+                                        <p className="mt-1 min-w-0 break-words text-[10px] text-muted-foreground">
+                                          {feedbackDetail}
+                                        </p>
+                                      </div>
+                                    ) : null}
                                   </div>
                                 );
                               }
