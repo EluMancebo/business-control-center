@@ -1599,7 +1599,7 @@ export default function TallerMediaPage() {
                             <PanelButton
                               type="button"
                               onClick={() => copy(original.url)}
-                              className="h-8 min-w-0 flex-1 truncate rounded-md px-2 text-[10px] sm:flex-none sm:px-2.5 sm:text-[11px]"
+                              className="h-8 min-w-0 flex-[1.2] truncate rounded-md px-2 text-[10px] sm:flex-none sm:px-2.5 sm:text-[11px]"
                             >
                               Copiar URL
                             </PanelButton>
