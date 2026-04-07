@@ -769,6 +769,30 @@ export default function TallerMediaPage() {
         sourceAssetId: original._id,
         variantKey,
       });
+      if (!response.ok && response.reason === "not-vectorizable") {
+        setVariantFeedbackByAssetId((prev) => ({
+          ...prev,
+          [original._id]: {
+            tone: "error",
+            title: "No vectorizable",
+            detail: response.message,
+          },
+        }));
+        return;
+      }
+
+      if (!response.ok) {
+        setVariantFeedbackByAssetId((prev) => ({
+          ...prev,
+          [original._id]: {
+            tone: "error",
+            title: "Error al generar variante.",
+            detail: response.message,
+          },
+        }));
+        return;
+      }
+
       const technicalDetail =
         variantKey === "vectorized-svg" ? buildSvgTechnicalDetail(response) : undefined;
       setVariantFeedbackByAssetId((prev) => ({
@@ -1193,7 +1217,7 @@ export default function TallerMediaPage() {
                             setStyleSelection((prev) => toggleSelection(prev, option, 2))
                           }
                           disabled={disabled}
-                          aria-pressed={selected ? "true" : "false"}
+                          aria-pressed={selected}
                           className={[
                             "rounded-full border px-2 py-1 text-xs transition-colors",
                             selected
@@ -1223,7 +1247,7 @@ export default function TallerMediaPage() {
                             setColorSelection((prev) => toggleSelection(prev, option, 2))
                           }
                           disabled={disabled}
-                          aria-pressed={selected ? "true" : "false"}
+                          aria-pressed={selected}
                           className={[
                             "rounded-full border px-2 py-1 text-xs transition-colors",
                             selected
@@ -1253,7 +1277,7 @@ export default function TallerMediaPage() {
                             setIntentionSelection((prev) => toggleSelection(prev, option, 3))
                           }
                           disabled={disabled}
-                          aria-pressed={selected ? "true" : "false"}
+                          aria-pressed={selected}
                           className={[
                             "rounded-full border px-2 py-1 text-xs transition-colors",
                             selected
@@ -1349,7 +1373,7 @@ export default function TallerMediaPage() {
                             : [...prev, option]
                         )
                       }
-                      aria-pressed={selected ? "true" : "false"}
+                      aria-pressed={selected}
                       className={[
                         "rounded-full border px-2 py-1 text-xs transition-colors",
                         selected
@@ -2002,7 +2026,7 @@ export default function TallerMediaPage() {
                                 setStyleSelection((prev) => toggleSelection(prev, option, 2))
                               }
                               disabled={disabled}
-                              aria-pressed={selected ? "true" : "false"}
+                              aria-pressed={selected}
                               className={[
                                 "rounded-full border px-2 py-1 text-xs transition-colors",
                                 selected
@@ -2032,7 +2056,7 @@ export default function TallerMediaPage() {
                                 setColorSelection((prev) => toggleSelection(prev, option, 2))
                               }
                               disabled={disabled}
-                              aria-pressed={selected ? "true" : "false"}
+                              aria-pressed={selected}
                               className={[
                                 "rounded-full border px-2 py-1 text-xs transition-colors",
                                 selected
@@ -2062,7 +2086,7 @@ export default function TallerMediaPage() {
                                 setIntentionSelection((prev) => toggleSelection(prev, option, 3))
                               }
                               disabled={disabled}
-                              aria-pressed={selected ? "true" : "false"}
+                              aria-pressed={selected}
                               className={[
                                 "rounded-full border px-2 py-1 text-xs transition-colors",
                                 selected
@@ -2158,7 +2182,7 @@ export default function TallerMediaPage() {
                                 : [...prev, option]
                             )
                           }
-                          aria-pressed={selected ? "true" : "false"}
+                          aria-pressed={selected}
                           className={[
                             "rounded-full border px-2 py-1 text-xs transition-colors",
                             selected
@@ -2273,7 +2297,7 @@ export default function TallerMediaPage() {
                               setEditStyleSelection((prev) => toggleSelection(prev, option, 2))
                             }
                             disabled={disabled}
-                            aria-pressed={selected ? "true" : "false"}
+                            aria-pressed={selected}
                             className={[
                               "rounded-full border px-2 py-1 text-xs transition-colors",
                               selected
@@ -2303,7 +2327,7 @@ export default function TallerMediaPage() {
                               setEditColorSelection((prev) => toggleSelection(prev, option, 2))
                             }
                             disabled={disabled}
-                            aria-pressed={selected ? "true" : "false"}
+                            aria-pressed={selected}
                             className={[
                               "rounded-full border px-2 py-1 text-xs transition-colors",
                               selected
@@ -2333,7 +2357,7 @@ export default function TallerMediaPage() {
                               setEditIntentionSelection((prev) => toggleSelection(prev, option, 3))
                             }
                             disabled={disabled}
-                            aria-pressed={selected ? "true" : "false"}
+                            aria-pressed={selected}
                             className={[
                               "rounded-full border px-2 py-1 text-xs transition-colors",
                               selected
@@ -2420,7 +2444,7 @@ export default function TallerMediaPage() {
                               : [...prev, option]
                           )
                         }
-                        aria-pressed={selected ? "true" : "false"}
+                        aria-pressed={selected}
                         className={[
                           "rounded-full border px-2 py-1 text-xs transition-colors",
                           selected

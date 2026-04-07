@@ -77,12 +77,26 @@ export async function POST(req: NextRequest) {
 
   if (result.pipelineStatus === "failed") {
     return NextResponse.json(
-      { ok: false, error: result.pipelineError || "Variant generation failed" },
+      {
+        ok: false,
+        error: "No se pudo completar la generación de la variante solicitada.",
+      },
       { status: 500 }
     );
   }
 
   if (result.pipelineStatus === "skipped" && !result.generatedVariantKeys.includes(variantKey)) {
+    if (variantKey === "vectorized-svg") {
+      return NextResponse.json(
+        {
+          ok: false,
+          reason: "not-vectorizable",
+          message: "La imagen no cumple criterios para vectorización SVG",
+        },
+        { status: 422 }
+      );
+    }
+
     return NextResponse.json(
       {
         ok: false,

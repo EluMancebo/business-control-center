@@ -23,6 +23,7 @@ type MediaItemResponse = {
 
 type MediaVariantRequestResponse = {
   ok: boolean;
+  reason?: string;
   message?: string;
   error?: string;
   svgAnalysis?: ProcessedAssetResult["svgAnalysis"];
@@ -30,7 +31,9 @@ type MediaVariantRequestResponse = {
 };
 
 export type MediaVariantRequestResult = {
+  ok: boolean;
   message: string;
+  reason?: string;
   svgAnalysis?: ProcessedAssetResult["svgAnalysis"];
   svgAnimation?: ProcessedAssetResult["svgAnimation"];
 };
@@ -321,12 +324,27 @@ export async function requestSystemAssetVariantClient(args: {
   });
 
   const json = (await res.json().catch(() => null)) as MediaVariantRequestResponse | null;
+  if (res.status === 422) {
+    return {
+      ok: false,
+      reason: toStringValue(json?.reason, ""),
+      message: toStringValue(
+        json?.message || json?.error,
+        "No se pudo generar la variante solicitada."
+      ),
+      svgAnalysis: json?.svgAnalysis,
+      svgAnimation: json?.svgAnimation,
+    };
+  }
+
   if (!res.ok || !json?.ok) {
     throw new Error(json?.error || "No se pudo solicitar la variante");
   }
 
   return {
-    message: toStringValue(json.message, "Solicitud de variante enviada."),
+    ok: true,
+    message: toStringValue(json.message, "Variante generada correctamente."),
+    reason: json.reason,
     svgAnalysis: json.svgAnalysis,
     svgAnimation: json.svgAnimation,
   };
