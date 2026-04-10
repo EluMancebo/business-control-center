@@ -4,7 +4,10 @@ export const BRAND_THEME_SEMANTIC_RUNTIME_DEFAULT_ENABLED = false;
 
 const BRAND_THEME_SEMANTIC_RUNTIME_SCOPE_OVERRIDES: Partial<
   Record<BrandScope, boolean>
-> = {};
+> = {
+  panel: true,
+  web: true,
+};
 
 const LOCAL_STORAGE_GLOBAL_KEY = "bcc:flag:brand-theme-runtime-v1";
 const LOCAL_STORAGE_SCOPES_KEY = "bcc:flag:brand-theme-runtime-v1:scopes";
@@ -67,4 +70,3 @@ export function isBrandThemeSemanticRuntimeEnabled(scope: BrandScope): boolean {
 
   return BRAND_THEME_SEMANTIC_RUNTIME_DEFAULT_ENABLED;
 }
-

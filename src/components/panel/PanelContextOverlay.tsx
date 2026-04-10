@@ -107,7 +107,7 @@ export default function PanelContextOverlay() {
       className="pointer-events-none fixed left-1/2 top-2 z-50 -translate-x-1/2"
       suppressHydrationWarning
     >
-      <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-border bg-card/90 px-3 py-1 text-xs text-card-foreground shadow-sm backdrop-blur">
+      <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-transparent px-3 py-1 text-xs [background:var(--surface-2,var(--card))] [color:var(--card-foreground,var(--foreground))] shadow-[var(--elevation-base,var(--panel-shadow-1))] backdrop-blur">
         <span aria-hidden="true">{icon}</span>
         <span className="font-semibold">{ctx}</span>
         <span className="text-muted-foreground">{bizName}</span>

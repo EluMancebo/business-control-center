@@ -215,7 +215,7 @@ function getChangedTokenKeys(a: BrandSemanticTokens, b: BrandSemanticTokens) {
 }
 
 export default function BrandEditor({ scope = "panel", businessSlug }: BrandEditorProps) {
-  const [resolvedSlug, setResolvedSlug] = useState(() => readActiveBusinessSlug());
+  const [resolvedSlug, setResolvedSlug] = useState("");
   const [previewEnabled, setPreviewEnabled] = useState(false);
   const [previewHarmony, setPreviewHarmony] = useState<BrandHarmonyStrategy>(DEFAULT_BRAND_THEME_CONFIG.harmony);
   const [previewAccentStyle, setPreviewAccentStyle] = useState<BrandAccentStyle>(DEFAULT_BRAND_THEME_CONFIG.accentStyle);
@@ -252,6 +252,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   useEffect(() => {
     if (!scopeUsesBusinessSlug || (businessSlug && businessSlug.trim())) return;
     const sync = () => setResolvedSlug(readActiveBusinessSlug());
+    sync();
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
   }, [scopeUsesBusinessSlug, businessSlug]);

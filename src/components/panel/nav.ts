@@ -2,7 +2,11 @@
 
 import type { Capability } from "@/lib/auth/capabilities";
 
+export type NavLayer = "studio" | "client" | "shared";
+
 export type NavLinkItem = {
+  id: string;
+  layer: NavLayer;
   type: "link";
   label: string;
   href: string;
@@ -11,6 +15,7 @@ export type NavLinkItem = {
 };
 
 export type NavChildItem = {
+  id: string;
   label: string;
   href: string;
   disabled?: boolean;
@@ -18,6 +23,8 @@ export type NavChildItem = {
 };
 
 export type NavGroupItem = {
+  id: string;
+  layer: NavLayer;
   type: "group";
   label: string;
   disabled?: boolean;
@@ -28,58 +35,66 @@ export type NavGroupItem = {
 export type NavItem = NavLinkItem | NavGroupItem;
 
 export const NAV: NavItem[] = [
-  { type: "link", label: "Dashboard", href: "/panel/dashboard" },
+  { id: "dashboard", layer: "client", type: "link", label: "Overview", href: "/panel/dashboard" },
 
-  { type: "link", label: "Web pública", href: "/panel/web" },
+  { id: "web-public", layer: "client", type: "link", label: "Web", href: "/panel/web" },
 
   {
+    id: "web-control",
+    layer: "client",
     type: "group",
-    label: "Web Control",
+    label: "Creative Studio",
     capability: "CAN_EDIT_WEB",
     items: [
-      { label: "Panel", href: "/panel/web-control", capability: "CAN_EDIT_WEB" },
-      { label: "Hero", href: "/panel/web-control/hero", capability: "CAN_EDIT_WEB" },
-      { label: "Servicios", href: "/panel/web-control/services", capability: "CAN_EDIT_WEB" },
-      { label: "Ofertas", href: "/panel/web-control/offers", capability: "CAN_EDIT_WEB" },
-      { label: "Testimonios", href: "/panel/web-control/testimonials", capability: "CAN_EDIT_WEB" },
-      { label: "Horario", href: "/panel/web-control/hours", capability: "CAN_EDIT_WEB" },
-      { label: "Ubicación", href: "/panel/web-control/location", capability: "CAN_EDIT_WEB" },
-      { label: "Apariencia", href: "/panel/web-control/brand", capability: "CAN_EDIT_WEB" },
+      { id: "panel", label: "Overview", href: "/panel/web-control", capability: "CAN_EDIT_WEB" },
+      { id: "hero", label: "Hero", href: "/panel/web-control/hero", capability: "CAN_EDIT_WEB" },
+      { id: "services", label: "Services", href: "/panel/web-control/services", capability: "CAN_EDIT_WEB" },
+      { id: "offers", label: "Offers", href: "/panel/web-control/offers", capability: "CAN_EDIT_WEB" },
+      { id: "testimonials", label: "Testimonials", href: "/panel/web-control/testimonials", capability: "CAN_EDIT_WEB" },
+      { id: "hours", label: "Hours", href: "/panel/web-control/hours", capability: "CAN_EDIT_WEB" },
+      { id: "location", label: "Location", href: "/panel/web-control/location", capability: "CAN_EDIT_WEB" },
+      { id: "appearance", label: "Brand", href: "/panel/web-control/brand", capability: "CAN_EDIT_WEB" },
     ],
   },
 
   {
+    id: "taller",
+    layer: "studio",
     type: "group",
-    label: "Taller",
+    label: "Studio",
     items: [
-      { label: "Panel", href: "/panel/taller" },
-      { label: "Brand", href: "/panel/taller/brand" },
-      { label: "Media", href: "/panel/taller/media" },
-      { label: "Web Brand", href: "/panel/taller/web-brand" },
-      { label: "Presets · Hero", href: "/panel/taller/presets/hero" },
-      { label: "Presets · Header", href: "/panel/taller/presets/header", disabled: true },
-      { label: "Presets · Footer", href: "/panel/taller/presets/footer", disabled: true },
-      { label: "Presets · Layouts", href: "/panel/taller/presets/layouts", disabled: true },
+      { id: "panel", label: "Inicio", href: "/panel/taller" },
+      { id: "brand", label: "Brand System", href: "/panel/taller/brand" },
+      { id: "media", label: "Media", href: "/panel/taller/media" },
+      { id: "web-brand", label: "Content Lab (legacy)", href: "/panel/taller/web-brand" },
+      { id: "presets-hero", label: "Components (Hero legacy)", href: "/panel/taller/presets/hero" },
+      { id: "presets-header", label: "Components Header (legacy)", href: "/panel/taller/presets/header", disabled: true },
+      { id: "presets-footer", label: "Components Footer (legacy)", href: "/panel/taller/presets/footer", disabled: true },
+      { id: "presets-layouts", label: "Components Layouts (legacy)", href: "/panel/taller/presets/layouts", disabled: true },
     ],
   },
 
   {
+    id: "marketing",
+    layer: "client",
     type: "group",
     label: "Marketing",
     capability: "CAN_VIEW_ASSIGNED_LEADS",
-    items: [{ label: "Campañas", href: "/panel/marketing", disabled: true }],
+    items: [{ id: "campaigns", label: "Campaigns (legacy)", href: "/panel/marketing", disabled: true }],
   },
 
-  { type: "link", label: "Leads", href: "/panel/leads", capability: "CAN_VIEW_ASSIGNED_LEADS" },
-  { type: "link", label: "Citas", href: "/panel/appointments", capability: "CAN_MANAGE_APPOINTMENTS" },
+  { id: "leads", layer: "client", type: "link", label: "Leads", href: "/panel/leads", capability: "CAN_VIEW_ASSIGNED_LEADS" },
+  { id: "appointments", layer: "client", type: "link", label: "Appointments", href: "/panel/appointments", capability: "CAN_MANAGE_APPOINTMENTS" },
 
   {
+    id: "settings",
+    layer: "client",
     type: "group",
-    label: "Ajustes",
+    label: "Settings",
     items: [
-      { label: "Panel (resumen)", href: "/panel/settings" },
-      { label: "Apariencia (paleta del panel)", href: "/panel/settings/appearance" },
-      { label: "Contraseñas y accesos", href: "/panel/settings/access", capability: "CAN_MANAGE_USERS" },
+      { id: "panel-summary", label: "Overview", href: "/panel/settings" },
+      { id: "panel-appearance", label: "Appearance", href: "/panel/settings/appearance" },
+      { id: "access-security", label: "Access & Security", href: "/panel/settings/access", capability: "CAN_MANAGE_USERS" },
     ],
   },
 ];

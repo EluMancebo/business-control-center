@@ -2,16 +2,21 @@
 
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import type { Capability } from "@/lib/auth/capabilities";
 import type { SessionPayload } from "@/lib/auth/serverSession";
 import BrandHydrator from "@/components/brand/BrandHydrator";
-import { isBrandThemeSemanticRuntimeEnabled } from "@/lib/brand-theme/runtime/flag";
-import { resolvePanelBrandHydratorScope } from "./brandHydratorScope";
-import { getTallerPanelVisualCssVars } from "@/lib/panel/tallerVisualContract";
+
+function getPanelLayer(pathname: string): "studio" | "client" {
+  if (pathname === "/panel/taller" || pathname.startsWith("/panel/taller/")) {
+    return "studio";
+  }
+
+  return "client";
+}
 
 function getStudioTitle(pathname: string) {
   if (pathname.startsWith("/panel/web-control/")) {
@@ -29,7 +34,7 @@ function getStudioTitle(pathname: string) {
     return map[pathname] ?? "Web Control";
   }
 
-  if (pathname.startsWith("/panel/taller/")) {
+  if (pathname === "/panel/taller" || pathname.startsWith("/panel/taller/")) {
     const map: Record<string, string> = {
       "/panel/taller": "Taller",
       "/panel/taller/brand": "Taller · Brand",
@@ -47,8 +52,7 @@ function getStudioTitle(pathname: string) {
 }
 
 function getStudioHubHref(pathname: string) {
-  if (pathname.startsWith("/panel/web-control/")) return "/panel/web-control";
-  if (pathname.startsWith("/panel/taller/")) return "/panel/taller";
+  if (pathname === "/panel/taller" || pathname.startsWith("/panel/taller/")) return "/panel/taller";
   return "/panel/dashboard";
 }
 
@@ -99,10 +103,6 @@ function HomeIcon() {
   );
 }
 
-function isStudioPath(pathname: string) {
-  return pathname.startsWith("/panel/web-control/") || pathname.startsWith("/panel/taller/");
-}
-
 function readActiveBusinessSlug(): string | undefined {
   if (typeof window === "undefined") return undefined;
   const value = window.localStorage.getItem("bcc:activeBusinessSlug");
@@ -144,27 +144,37 @@ export default function PanelShell({
   const enterTimeoutRef = useRef<number | null>(null);
   const exitTimeoutRef = useRef<number | null>(null);
 
-  const isStudio = useMemo(() => isStudioPath(pathname), [pathname]);
+  const layer = useMemo(() => getPanelLayer(pathname), [pathname]);
+  const isStudio = layer === "studio";
 
   const studioTitle = useMemo(() => getStudioTitle(pathname), [pathname]);
   const studioHubHref = useMemo(() => getStudioHubHref(pathname), [pathname]);
-  const isTallerStudio = useMemo(() => pathname.startsWith("/panel/taller/"), [pathname]);
-  const isTallerHub = useMemo(() => pathname === "/panel/taller", [pathname]);
-  const tallerVisualVars = useMemo(
-    () => (isTallerHub ? (getTallerPanelVisualCssVars() as CSSProperties) : undefined),
-    [isTallerHub]
+  const isTallerStudio = useMemo(
+    () => pathname === "/panel/taller" || pathname.startsWith("/panel/taller/"),
+    [pathname]
   );
+  const isTallerHub = useMemo(() => pathname === "/panel/taller", [pathname]);
+  const isStudioFullscreen = isStudio && !isTallerHub;
+  const studioBackHref = useMemo(
+    () => (isTallerHub ? "/panel/dashboard" : studioHubHref),
+    [isTallerHub, studioHubHref]
+  );
+  const clientShellBackgroundClass = computedIsAdmin
+    ? "[background:var(--panel-background,var(--background))]"
+    : "[background:var(--panel-background,var(--background))]";
+  const clientTopbarSurfaceClass = computedIsAdmin
+    ? "[background:var(--panel-surface-2,var(--surface-3,var(--card)))]"
+    : "[background:var(--panel-topbar,var(--surface-3,var(--card)))]";
+  const clientSidebarSurfaceClass = computedIsAdmin
+    ? "[background:var(--surface-2,var(--card))]"
+    : "[background:var(--panel-sidebar,var(--surface-2,var(--card)))]";
 
-  // Shell policy: Capa 1 (admin/studio) y Capa 2 (panel cliente) usan scopes separados.
-  // Excepcion controlada: /panel/taller/brand puede usar scope system cuando runtime semantico system esta ON.
+  // Autoridad de apariencia por capa:
+  // - Capa 1 (admin): studio
+  // - Capa 2 (cliente): panel
   const brandScope = useMemo(
-    () =>
-      resolvePanelBrandHydratorScope({
-        isAdmin: computedIsAdmin,
-        pathname,
-        systemSemanticRuntimeEnabled: isBrandThemeSemanticRuntimeEnabled("system"),
-      }),
-    [computedIsAdmin, pathname]
+    () => (computedIsAdmin ? "studio" : "panel"),
+    [computedIsAdmin]
   );
   const brandBusinessSlug = useMemo(
     () => (brandScope === "panel" ? activeBusinessSlug : undefined),
@@ -199,19 +209,29 @@ export default function PanelShell({
 
       clearStudioTimers();
       setStudioStage("exiting");
+      const targetHref = nextHref === pathname ? "/panel/dashboard" : nextHref;
 
       exitTimeoutRef.current = window.setTimeout(() => {
-        router.push(nextHref);
+        router.push(targetHref);
       }, STUDIO_EXIT_MS);
     },
-    [clearStudioTimers, isStudio, router, studioStage]
+    [clearStudioTimers, isStudio, pathname, router, studioStage]
   );
 
   // Prepare enter-ready before paint to avoid first-frame flash on Studio entry.
   useLayoutEffect(() => {
     const previousPath = previousPathRef.current;
-    const wasStudio = isStudioPath(previousPath);
-    const nowStudio = isStudioPath(pathname);
+    const wasStudio = getPanelLayer(previousPath) === "studio";
+    const nowStudio = layer === "studio";
+
+    if (wasStudio && nowStudio) {
+      // Navigation between Studio child routes must not keep transient animation states.
+      clearStudioTimers();
+      enterReadyFrameRef.current = window.requestAnimationFrame(() => {
+        setStudioStage("idle");
+        enterReadyFrameRef.current = null;
+      });
+    }
 
     if (!wasStudio && nowStudio) {
       clearStudioTimers();
@@ -254,13 +274,13 @@ export default function PanelShell({
         enterFrameRef.current = null;
       }
     };
-  }, [pathname, clearStudioTimers]);
+  }, [pathname, layer, clearStudioTimers]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
 
-      if (isStudio) {
+      if (isStudioFullscreen) {
         e.preventDefault();
         leaveStudio(studioHubHref);
         return;
@@ -271,7 +291,7 @@ export default function PanelShell({
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isStudio, leaveStudio, studioHubHref]);
+  }, [isStudioFullscreen, leaveStudio, studioHubHref]);
 
   useEffect(() => {
     const sync = () => {
@@ -284,7 +304,7 @@ export default function PanelShell({
   }, []);
 
   useEffect(() => {
-    const shouldLock = mobileOpen || isStudio;
+    const shouldLock = mobileOpen || isStudioFullscreen;
     if (!shouldLock) return;
 
     const prevOverflow = document.body.style.overflow;
@@ -293,7 +313,7 @@ export default function PanelShell({
     return () => {
       document.body.style.overflow = prevOverflow;
     };
-  }, [mobileOpen, isStudio]);
+  }, [mobileOpen, isStudioFullscreen]);
 
   useEffect(() => {
     return () => {
@@ -301,7 +321,7 @@ export default function PanelShell({
     };
   }, [clearStudioTimers]);
 
-  if (isStudio) {
+  if (isStudioFullscreen) {
     const studioMotionClass =
       studioStage === "enter-ready"
         ? "bcc-studio-enter-ready"
@@ -310,14 +330,13 @@ export default function PanelShell({
           : studioStage === "exiting"
             ? "bcc-studio-slide-out"
             : "";
-    const studioRootClass =
-      "fixed inset-0 z-100 bg-background text-foreground [background:var(--background)] dark:[background:var(--surface-2,var(--background))]";
+    const studioRootClass = "fixed inset-0 z-100 bg-background text-foreground";
     const studioTopbarClass =
       "border-b border-border shadow-sm backdrop-blur [background:var(--surface-3,var(--card))]";
     const studioSecondaryButtonClass =
       "inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border px-3 text-sm font-semibold disabled:pointer-events-none disabled:opacity-60 [background:var(--cta-secondary,var(--background))] [color:var(--cta-secondary-foreground,var(--foreground))] hover:[background:var(--cta-secondary-hover,var(--muted))]";
     const studioBadgeClass =
-      "inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[11px] font-semibold [background:var(--badge-bg,var(--muted))] [color:var(--badge-fg,var(--foreground))] [border-color:var(--badge-bg,var(--border))]";
+      "inline-flex items-center rounded-full border border-border px-1.5 py-0 text-[10px] font-medium [background:var(--badge-bg,var(--muted))] [color:var(--badge-fg,var(--foreground))] [border-color:var(--badge-bg,var(--border))]";
 
     return (
       <div className={studioRootClass}>
@@ -327,17 +346,19 @@ export default function PanelShell({
           <div className={studioTopbarClass}>
             <div className="mx-auto flex h-14 max-w-400 items-center justify-between px-4">
               <div className="flex min-w-0 items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => leaveStudio(studioHubHref)}
-                  className={studioSecondaryButtonClass}
-                  aria-label="Volver al hub"
-                  title="Volver al hub"
-                  disabled={studioStage === "exiting"}
-                >
-                  <ArrowLeftIcon />
-                  <span>Volver</span>
-                </button>
+                {!isTallerHub ? (
+                  <button
+                    type="button"
+                    onClick={() => leaveStudio(studioBackHref)}
+                    className={studioSecondaryButtonClass}
+                    aria-label="Ir a Inicio Studio"
+                    title="Ir a Inicio Studio"
+                    disabled={studioStage === "exiting"}
+                  >
+                    <ArrowLeftIcon />
+                    <span>Inicio Studio</span>
+                  </button>
+                ) : null}
 
                 <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border shadow-sm [background:var(--surface-3,var(--background))]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -384,7 +405,7 @@ export default function PanelShell({
 
   return (
     <div
-      className="min-h-screen bg-background text-foreground"
+      className={["min-h-screen text-foreground", clientShellBackgroundClass].join(" ")}
       data-role={role ?? ""}
       data-business-id={businessId ?? ""}
       data-user-id={userId ?? ""}
@@ -405,7 +426,7 @@ export default function PanelShell({
           />
 
           <div
-            className={`fixed inset-y-0 left-0 z-50 w-72 border-r border-border shadow-2xl transition-transform duration-300 ease-out [background:var(--surface-2,var(--card))] ${
+            className={`fixed inset-y-0 left-0 z-50 w-72 border-r border-border shadow-2xl transition-transform duration-300 ease-out ${clientSidebarSurfaceClass} ${
               mobileOpen ? "translate-x-0" : "-translate-x-full"
             }`}
             role="dialog"
@@ -436,7 +457,12 @@ export default function PanelShell({
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="border-b border-border px-4 py-2 text-xs shadow-sm sm:px-6 [background:var(--surface-3,var(--card))] [color:var(--text-subtle,var(--muted-foreground))]">
+          <div
+            className={[
+              "border-b border-border px-4 py-2 text-xs shadow-sm sm:px-6 [color:var(--text-subtle,var(--muted-foreground))]",
+              clientTopbarSurfaceClass,
+            ].join(" ")}
+          >
             <span className="font-medium text-foreground">Sesión:</span>{" "}
             rol <span className="font-medium text-foreground">{role ?? "—"}</span>{" "}
             · business <span className="font-medium text-foreground">{shortId(businessId)}</span>{" "}
@@ -451,11 +477,10 @@ export default function PanelShell({
           <Topbar onOpenMenu={() => setMobileOpen(true)} />
 
           <main
-            style={tallerVisualVars}
             className={[
               "flex-1 p-4 sm:p-6",
               isTallerHub
-                ? "[background:var(--taller-background-subtle)]"
+                ? "[background:var(--background)]"
                 : "",
             ]
               .filter(Boolean)

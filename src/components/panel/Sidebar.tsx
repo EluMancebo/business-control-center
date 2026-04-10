@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { NAV, type NavItem, type NavChildItem } from "@/components/panel/nav";
+import { NAV, type NavItem, type NavChildItem, type NavLayer } from "@/components/panel/nav";
 import PanelButton from "@/components/panel/ui/PanelButton";
 import type { Capability } from "@/lib/auth/capabilities";
 
@@ -16,6 +16,11 @@ function isActivePath(pathname: string, href: string) {
 function getPublicHrefFromSlug(slug: string | null | undefined) {
   const clean = String(slug || "").trim();
   return clean ? `/${encodeURIComponent(clean)}` : "/";
+}
+
+function canRenderByLayer(layer: NavLayer, isAdmin: boolean) {
+  if (layer === "studio" && !isAdmin) return false;
+  return true;
 }
 
 function Icon({
@@ -260,41 +265,41 @@ function Icon({
   }
 }
 
-function groupIcon(label: string) {
-  if (label === "Web Control") return "webControl";
-  if (label === "Taller") return "taller";
-  if (label === "Marketing") return "marketing";
-  if (label === "Ajustes") return "settings";
+function groupIcon(groupId: string) {
+  if (groupId === "web-control") return "webControl";
+  if (groupId === "taller") return "taller";
+  if (groupId === "marketing") return "marketing";
+  if (groupId === "settings") return "settings";
   return "settings";
 }
 
-function childIcon(group: string, label: string) {
-  if (group === "Web Control") {
-    if (label === "Panel") return "panel";
-    if (label === "Hero") return "hero";
-    if (label === "Servicios") return "services";
-    if (label === "Ofertas") return "offers";
-    if (label === "Testimonios") return "testimonials";
-    if (label === "Horario") return "hours";
-    if (label === "Ubicación") return "location";
+function childIcon(groupId: string, childId: string) {
+  if (groupId === "web-control") {
+    if (childId === "panel") return "panel";
+    if (childId === "hero") return "hero";
+    if (childId === "services") return "services";
+    if (childId === "offers") return "offers";
+    if (childId === "testimonials") return "testimonials";
+    if (childId === "hours") return "hours";
+    if (childId === "location") return "location";
     return "brand";
   }
 
-  if (group === "Taller") {
-    if (label === "Panel") return "panel";
-    if (label === "Brand") return "brand";
-    if (label === "Media") return "media";
-    if (label === "Web Brand") return "palette";
-    if (label === "Presets · Hero") return "hero";
-    if (label === "Presets · Header") return "header";
-    if (label === "Presets · Footer") return "footer";
-    if (label === "Presets · Layouts") return "layouts";
+  if (groupId === "taller") {
+    if (childId === "panel") return "panel";
+    if (childId === "brand") return "brand";
+    if (childId === "media") return "media";
+    if (childId === "web-brand") return "palette";
+    if (childId === "presets-hero") return "hero";
+    if (childId === "presets-header") return "header";
+    if (childId === "presets-footer") return "footer";
+    if (childId === "presets-layouts") return "layouts";
     return "panel";
   }
 
-  if (group === "Ajustes") {
-    if (label.startsWith("Panel")) return "panel";
-    if (label.startsWith("Apariencia")) return "brand";
+  if (groupId === "settings") {
+    if (childId === "panel-summary") return "panel";
+    if (childId === "panel-appearance") return "brand";
     return "key";
   }
 
@@ -328,7 +333,7 @@ export default function Sidebar({
 
     for (const item of NAV) {
       if (item.type !== "group") continue;
-      if (item.label === "Taller" && !isAdmin) continue;
+      if (!canRenderByLayer(item.layer, isAdmin)) continue;
       if (!canSee(item.capability)) continue;
 
       const visibleChildren = item.items.filter((x: NavChildItem) => canSee(x.capability));
@@ -336,7 +341,7 @@ export default function Sidebar({
         isActivePath(pathname, x.href)
       );
 
-      if (hasActiveChild) open.add(item.label);
+      if (hasActiveChild) open.add(item.id);
     }
 
     return open;
@@ -371,9 +376,23 @@ export default function Sidebar({
   }, []);
 
   const publicHref = getPublicHrefFromSlug(activeSlug);
+  const sidebarSurfaceClass = isAdmin
+    ? "[background:var(--surface-2,var(--card))]"
+    : "[background:var(--panel-sidebar,var(--surface-2,var(--card)))]";
+  const activeItemClass = isAdmin
+    ? "font-medium ring-1 ring-border shadow-sm [background:color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--background)))_52%,var(--surface-3,var(--background)))] [color:var(--foreground,var(--foreground))]"
+    : "font-medium border shadow-sm [border-color:var(--accent-strong,var(--accent,var(--border)))] [background:var(--accent-soft,var(--surface-3,var(--background)))] [color:var(--accent-soft-foreground,var(--foreground))]";
+  const activeGroupClass = isAdmin
+    ? "font-medium [color:var(--foreground,var(--foreground))]"
+    : "font-medium border shadow-sm [border-color:var(--accent-strong,var(--accent,var(--border)))] [background:var(--accent-soft,var(--surface-3,var(--background)))] [color:var(--accent-soft-foreground,var(--foreground))]";
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-border p-4 shadow-[var(--panel-shadow-1)] backdrop-blur [background:var(--surface-2,var(--card))]">
+    <aside
+      className={[
+        "flex h-full w-64 flex-col border-r border-border p-4 shadow-[var(--panel-shadow-1)] backdrop-blur",
+        sidebarSurfaceClass,
+      ].join(" ")}
+    >
       <div className="mx-auto flex h-full w-full max-w-57 flex-col">
         <div className="mb-6">
           <div className="flex items-center gap-3">
@@ -401,6 +420,7 @@ export default function Sidebar({
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto bcc-scrollbar">
           {NAV.map((item: NavItem) => {
             if (item.type === "link") {
+              if (!canRenderByLayer(item.layer, isAdmin)) return null;
               if (!canSee(item.capability)) return null;
 
               const active = isActivePath(pathname, item.href);
@@ -419,9 +439,9 @@ export default function Sidebar({
               }
 
               let iconName: Parameters<typeof Icon>[0]["name"] = "dashboard";
-              if (item.label === "Web pública") iconName = "web";
-              if (item.label === "Leads") iconName = "marketing";
-              if (item.label === "Citas") iconName = "hours";
+              if (item.id === "web-public") iconName = "web";
+              if (item.id === "leads") iconName = "marketing";
+              if (item.id === "appointments") iconName = "hours";
 
               return (
                 <Link
@@ -431,7 +451,7 @@ export default function Sidebar({
                   className={[
                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                     active
-                      ? "font-medium ring-1 ring-border shadow-sm [background:color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--background)))_52%,var(--surface-3,var(--background)))] [color:var(--foreground,var(--foreground))]"
+                      ? activeItemClass
                       : "[color:var(--text-subtle,var(--muted-foreground))] hover:[background:var(--surface-3,var(--muted))] hover:[color:var(--foreground,var(--foreground))]",
                   ].join(" ")}
                 >
@@ -441,38 +461,38 @@ export default function Sidebar({
               );
             }
 
-            if (item.label === "Taller" && !isAdmin) return null;
+            if (!canRenderByLayer(item.layer, isAdmin)) return null;
             if (!canSee(item.capability)) return null;
 
             const visibleChildren = item.items.filter((child: NavChildItem) => canSee(child.capability));
             if (visibleChildren.length === 0) return null;
 
-            const isOpen = openGroups.has(item.label);
+            const isOpen = openGroups.has(item.id);
             const groupHasActive = visibleChildren.some((x: NavChildItem) =>
               isActivePath(pathname, x.href)
             );
 
             return (
-              <div key={item.label} className="mt-2">
+              <div key={item.id} className="mt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setOpenGroups((prev) => {
                       const next = new Set(prev);
-                      if (next.has(item.label)) next.delete(item.label);
-                      else next.add(item.label);
+                      if (next.has(item.id)) next.delete(item.id);
+                      else next.add(item.id);
                       return next;
                     });
                   }}
                   className={[
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
                     groupHasActive
-                      ? "font-medium [color:var(--foreground,var(--foreground))]"
+                      ? activeGroupClass
                       : "[color:var(--text-subtle,var(--muted-foreground))] hover:[background:var(--surface-3,var(--muted))] hover:[color:var(--foreground,var(--foreground))]",
                   ].join(" ")}
                 >
                   <span className="flex items-center gap-2">
-                    <Icon name={groupIcon(item.label)} />
+                    <Icon name={groupIcon(item.id)} />
                     {item.label}
                   </span>
 
@@ -499,7 +519,7 @@ export default function Sidebar({
                               key={child.href}
                               className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm [color:color-mix(in_oklab,var(--text-subtle,var(--muted-foreground))_78%,transparent)]"
                             >
-                              <Icon name={childIcon(item.label, child.label)} />
+                              <Icon name={childIcon(item.id, child.id)} />
                               {child.label} <span className="ml-2 text-xs">(pronto)</span>
                             </div>
                           );
@@ -513,11 +533,11 @@ export default function Sidebar({
                             className={[
                               "mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                               active
-                                ? "font-medium ring-1 ring-border shadow-sm [background:color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--background)))_52%,var(--surface-3,var(--background)))] [color:var(--foreground,var(--foreground))]"
+                                ? activeItemClass
                                 : "[color:var(--text-subtle,var(--muted-foreground))] hover:[background:var(--surface-3,var(--muted))] hover:[color:var(--foreground,var(--foreground))]",
                             ].join(" ")}
                           >
-                            <Icon name={childIcon(item.label, child.label)} />
+                            <Icon name={childIcon(item.id, child.id)} />
                             {child.label}
                           </Link>
                         );

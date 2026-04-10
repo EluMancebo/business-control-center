@@ -66,33 +66,29 @@ export type TallerSurfaceScaleEntry = {
 };
 
 export function resolveTallerPanelVisualTokensV1(): TallerPanelVisualTokensV1 {
-  // Escalera tonal local de Taller (light-first):
-  // background < surface < surfaceRaised/card < surfaceHigh/panel/popover
-  const background =
-    "color-mix(in oklab, var(--panel-background) 98%, var(--panel-surface-1))";
-  const surface = "color-mix(in oklab, var(--panel-surface-1) 82%, var(--panel-surface-2))";
-  const surfaceRaised =
-    "color-mix(in oklab, var(--panel-surface-2) 68%, var(--panel-surface-3))";
-  const surfaceHigh = "color-mix(in oklab, var(--panel-surface-3) 88%, var(--panel-border))";
-  const card = "color-mix(in oklab, var(--panel-surface-2) 58%, var(--panel-surface-3))";
-  const panel = "color-mix(in oklab, var(--panel-surface-3) 88%, var(--panel-border))";
-  const popover = "color-mix(in oklab, var(--panel-surface-3) 62%, var(--panel-border))";
+  const background = "var(--background)";
+  const surface = "var(--panel-surface-1)";
+  const surfaceRaised = "var(--panel-surface-2)";
+  const surfaceHigh = "var(--panel-surface-3)";
+  const card = "var(--card)";
+  const panel = "var(--surface-3, var(--panel-surface-3))";
+  const popover = "var(--surface-3, var(--card))";
 
   return {
     background,
-    backgroundSubtle: "color-mix(in oklab, var(--panel-surface-1) 80%, var(--panel-background))",
+    backgroundSubtle: "var(--panel-surface-1)",
     surface,
     surfaceRaised,
     surfaceHigh,
-    surfaceInverse: "color-mix(in oklab, var(--foreground) 88%, #0f172a)",
+    surfaceInverse: "var(--foreground)",
     textPrimary: "var(--foreground)",
-    textSecondary: "color-mix(in oklab, var(--foreground) 78%, var(--muted-foreground))",
+    textSecondary: "var(--foreground)",
     textMuted: "var(--muted-foreground)",
-    textOnInverse: "#f8fafc",
+    textOnInverse: "var(--background)",
     textOnPrimary: "var(--primary-foreground)",
     primary: "var(--primary)",
     primaryForeground: "var(--primary-foreground)",
-    secondary: "color-mix(in oklab, var(--panel-surface-3) 72%, var(--panel-card))",
+    secondary: "var(--surface-2, var(--card))",
     secondaryForeground: "var(--foreground)",
     link: "var(--link, var(--primary))",
     linkHover: "var(--link-hover, var(--primary))",
@@ -108,12 +104,12 @@ export function resolveTallerPanelVisualTokensV1(): TallerPanelVisualTokensV1 {
     processing: "var(--processing)",
     processingForeground: "var(--processing-foreground)",
     processingSoft: "var(--processing-soft)",
-    taskSurface: "var(--task-surface, var(--panel-surface-3))",
+    taskSurface: "var(--task-surface)",
     taskSurfaceForeground: "var(--task-surface-foreground, var(--foreground))",
     focusRing: "var(--ring)",
-    borderSubtle: "color-mix(in oklab, var(--panel-border) 56%, transparent)",
-    borderDefault: "var(--panel-border)",
-    borderStrong: "color-mix(in oklab, var(--border) 88%, var(--foreground))",
+    borderSubtle: "var(--panel-border, var(--border))",
+    borderDefault: "var(--panel-border, var(--border))",
+    borderStrong: "var(--border)",
     elevationBase: "var(--elevation-base, var(--panel-shadow-1))",
     elevationInteractive: "var(--elevation-interactive, var(--panel-shadow-2))",
     elevationTask: "var(--elevation-task, var(--panel-shadow-2))",
@@ -121,19 +117,18 @@ export function resolveTallerPanelVisualTokensV1(): TallerPanelVisualTokensV1 {
     shadow1: "var(--panel-shadow-1)",
     shadow2: "var(--panel-shadow-2)",
     shadow3: "var(--panel-shadow-3)",
-    chromeBg:
-      "color-mix(in oklab, var(--panel-topbar) 82%, var(--panel-surface-2))",
-    chromeBorder: "var(--panel-border)",
+    chromeBg: "var(--panel-topbar)",
+    chromeBorder: "var(--panel-border, var(--border))",
     chromeText: "var(--foreground)",
     chromeTextMuted: "var(--muted-foreground)",
-    chromeActiveBg: "color-mix(in oklab, var(--primary) 16%, var(--panel-surface-3))",
+    chromeActiveBg: "var(--surface-3, var(--card))",
     chromeActiveText: "var(--foreground)",
-    chromeHoverBg: "color-mix(in oklab, var(--panel-surface-3) 78%, var(--panel-surface-2))",
+    chromeHoverBg: "var(--surface-2, var(--card))",
     card,
     cardForeground: "var(--foreground)",
     panel,
     panelForeground: "var(--foreground)",
-    muted: "color-mix(in oklab, var(--muted) 88%, var(--panel-surface-1))",
+    muted: "var(--muted)",
     mutedForeground: "var(--muted-foreground)",
     popover,
     popoverForeground: "var(--foreground)",
