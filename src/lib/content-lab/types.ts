@@ -32,6 +32,12 @@ export type DesignRuleset = {
   lockedFieldsByBlockType?: Partial<Record<ContentBlockType, string[]>>;
 };
 
+export type LabPieceBlockValue = {
+  key: string;
+  type: ContentBlockType;
+  value: string;
+};
+
 export type LabPiece = {
   id: string;
   type: ContentPieceType;
@@ -39,7 +45,7 @@ export type LabPiece = {
   contextBriefId: string;
   status: LabPieceStatus;
   blockDefinitionId?: string;
-  blocks: ContentBlockType[];
+  blocks: LabPieceBlockValue[];
   presetId?: string;
   rulesetId?: string;
   createdAt?: string;
