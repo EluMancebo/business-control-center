@@ -9,8 +9,14 @@ export type SectionPayloadResult = {
 export function mapLabPieceToSectionPayload(
   labPiece: LabPiece
 ): SectionPayloadResult {
+  const payload: Record<string, unknown> = {};
+
+  for (const block of labPiece.blocks) {
+    payload[block.key] = block.value;
+  }
+
   return {
     sectionId: labPiece.type as SectionId,
-    payload: {},
+    payload,
   };
 }
