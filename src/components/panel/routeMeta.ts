@@ -1,4 +1,4 @@
- //src/components/panel/routeMeta.ts
+//src/components/panel/routeMeta.ts
 
 export type RouteMeta = {
   title: string;
@@ -9,138 +9,138 @@ type RouteMetaMap = Record<string, RouteMeta>;
 
 export const ROUTE_META: RouteMetaMap = {
   "/panel/dashboard": {
-    title: "Overview",
+    title: "Inicio",
     subtitle: "Client layer operational summary",
   },
 
   "/panel/web": {
-    title: "Web",
+    title: "Web publica",
     subtitle: "Public website overview",
   },
 
   "/panel/web-control": {
-    title: "Creative Studio · Overview",
+    title: "Creative Studio",
     subtitle: "Configure and maintain website sections",
   },
 
   "/panel/web-control/hero": {
-    title: "Creative Studio · Hero",
+    title: "Portada",
     subtitle: "Hero section content and media",
   },
 
   "/panel/web-control/services": {
-    title: "Creative Studio · Services",
-    subtitle: "Service catalog and highlights",
+    title: "Contenido",
+    subtitle: "Content structure and composition",
   },
 
   "/panel/web-control/offers": {
-    title: "Creative Studio · Offers",
+    title: "Creative Studio - Offers",
     subtitle: "Offers and campaigns",
   },
 
   "/panel/web-control/testimonials": {
-    title: "Creative Studio · Testimonials",
+    title: "Creative Studio - Testimonials",
     subtitle: "Social proof and testimonials",
   },
 
   "/panel/web-control/hours": {
-    title: "Creative Studio · Hours",
+    title: "Creative Studio - Hours",
     subtitle: "Business hours and availability",
   },
 
   "/panel/web-control/location": {
-    title: "Creative Studio · Location",
+    title: "Ubicacion y horario",
     subtitle: "Address, map and contact",
   },
 
   "/panel/web-control/brand": {
-    title: "Creative Studio · Brand",
+    title: "Apariencia web",
     subtitle: "Brand settings for client website",
   },
 
   "/panel/web-control/home": {
-    title: "Creative Studio · Home",
+    title: "Creative Studio - Home",
     subtitle: "Home composition and layout",
   },
 
   "/panel/leads": {
-    title: "Leads",
+    title: "CRM",
     subtitle: "Lead pipeline and follow-up",
   },
 
   "/panel/appointments": {
-    title: "Appointments",
+    title: "Reservas",
     subtitle: "Schedule and appointment control",
   },
 
   "/panel/marketing": {
-    title: "Marketing · Campaigns (legacy)",
-    subtitle: "Legacy campaigns workspace",
+    title: "Marketing (proximamente)",
+    subtitle: "Planned marketing workspace",
   },
 
   "/panel/settings": {
-    title: "Settings · Overview",
+    title: "Ajustes",
     subtitle: "Client panel settings overview",
   },
 
   "/panel/settings/appearance": {
-    title: "Settings · Appearance",
+    title: "Ajustes - Apariencia",
     subtitle: "Panel appearance controls",
   },
 
   "/panel/settings/access": {
-    title: "Settings · Access & Security",
+    title: "Ajustes - Acceso y seguridad",
     subtitle: "User access and credentials",
   },
 
   "/panel/settings/security": {
-    title: "Settings · Security",
+    title: "Ajustes - Seguridad",
     subtitle: "Security controls and policies",
   },
 
   "/panel/taller": {
-    title: "Studio · Inicio",
-    subtitle: "Capa 1 · Factory and governance workspace",
+    title: "Inicio",
+    subtitle: "Capa 1 - Factory and governance workspace",
   },
 
   "/panel/taller/brand": {
-    title: "Studio · Brand System",
+    title: "Brand System",
     subtitle: "System identity and foundational tokens",
   },
 
   "/panel/taller/media": {
-    title: "Studio · Media",
+    title: "Media",
     subtitle: "Master media assets for the system",
   },
 
   "/panel/taller/web-brand": {
-    title: "Studio · Content Lab (legacy)",
+    title: "Legacy (legacy)",
     subtitle: "Legacy bridge while Content Lab is consolidated",
   },
 
   "/panel/taller/presets/hero": {
-    title: "Studio · Components (Hero legacy)",
-    subtitle: "Legacy Hero components catalog",
+    title: "Components (proximamente)",
+    subtitle: "Planned reusable components",
   },
 
   "/panel/taller/presets/header": {
-    title: "Studio · Components Header (legacy)",
-    subtitle: "Legacy reusable header structures",
+    title: "Marketing (proximamente)",
+    subtitle: "Planned governance domain",
   },
 
   "/panel/taller/presets/footer": {
-    title: "Studio · Components Footer (legacy)",
-    subtitle: "Legacy reusable footer structures",
+    title: "CRM (proximamente)",
+    subtitle: "Planned governance domain",
   },
 
   "/panel/taller/presets/layouts": {
-    title: "Studio · Components Layouts (legacy)",
-    subtitle: "Legacy page composition templates",
+    title: "Presets (proximamente)",
+    subtitle: "Planned governance presets",
   },
 
   "/panel/taller/content": {
-    title: "Studio · Content Lab",
-    subtitle: "Content governance and composition rules",
+    title: "Content",
+    subtitle: "Hub del dominio de composicion autorizada en Studio",
   },
 };
 
@@ -155,7 +155,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
 
   return {
     title: "Panel",
-    subtitle: "Gestión del sistema",
+    subtitle: "Gestion del sistema",
   };
 }
 
@@ -185,6 +185,4 @@ export function buildBreadcrumbs(pathname: string): Crumb[] {
   }
 
   return crumbs;
-} 
-
-   
+}

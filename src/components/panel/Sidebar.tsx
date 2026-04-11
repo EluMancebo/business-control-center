@@ -19,8 +19,11 @@ function getPublicHrefFromSlug(slug: string | null | undefined) {
 }
 
 function canRenderByLayer(layer: NavLayer, isAdmin: boolean) {
-  if (layer === "studio" && !isAdmin) return false;
-  return true;
+  if (isAdmin) {
+    return layer === "studio" || layer === "shared";
+  }
+
+  return layer === "client" || layer === "shared";
 }
 
 function Icon({
@@ -268,12 +271,22 @@ function Icon({
 function groupIcon(groupId: string) {
   if (groupId === "web-control") return "webControl";
   if (groupId === "taller") return "taller";
+  if (groupId === "content") return "panel";
   if (groupId === "marketing") return "marketing";
+  if (groupId === "studio-settings") return "settings";
   if (groupId === "settings") return "settings";
   return "settings";
 }
 
 function childIcon(groupId: string, childId: string) {
+  if (groupId === "content") {
+    if (childId === "content") return "panel";
+    if (childId === "presets-hero") return "hero";
+    if (childId === "media") return "media";
+    if (childId === "presets") return "layouts";
+    return "panel";
+  }
+
   if (groupId === "web-control") {
     if (childId === "panel") return "panel";
     if (childId === "hero") return "hero";
@@ -288,7 +301,10 @@ function childIcon(groupId: string, childId: string) {
   if (groupId === "taller") {
     if (childId === "panel") return "panel";
     if (childId === "brand") return "brand";
+    if (childId === "content") return "panel";
     if (childId === "media") return "media";
+    if (childId === "presets") return "layouts";
+    if (childId === "studio-settings") return "settings";
     if (childId === "web-brand") return "palette";
     if (childId === "presets-hero") return "hero";
     if (childId === "presets-header") return "header";
@@ -297,7 +313,7 @@ function childIcon(groupId: string, childId: string) {
     return "panel";
   }
 
-  if (groupId === "settings") {
+  if (groupId === "settings" || groupId === "studio-settings") {
     if (childId === "panel-summary") return "panel";
     if (childId === "panel-appearance") return "brand";
     return "key";
@@ -411,7 +427,7 @@ export default function Sidebar({
                 Business Control Center
               </div>
               <div className="text-xs text-muted-foreground">
-                {isAdmin ? "Taller (Admin)" : "Panel cliente"}
+                {isAdmin ? "Studio (Admin)" : "Panel cliente"}
               </div>
             </div>
           </div>
@@ -429,7 +445,7 @@ export default function Sidebar({
               if (disabled) {
                 return (
                   <div
-                    key={item.href}
+                    key={`${item.id}:${item.href}`}
                     className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm [color:color-mix(in_oklab,var(--text-subtle,var(--muted-foreground))_78%,transparent)]"
                   >
                     <Icon name="panel" />
@@ -445,7 +461,7 @@ export default function Sidebar({
 
               return (
                 <Link
-                  key={item.href}
+                  key={`${item.id}:${item.href}`}
                   href={item.href}
                   onClick={onNavigate}
                   className={[
@@ -509,37 +525,50 @@ export default function Sidebar({
                 >
                   <div className="min-h-0">
                     <div className="ml-3 mt-1 border-l border-border pl-3">
-                      {visibleChildren.map((child: NavChildItem) => {
+                      {visibleChildren.map((child: NavChildItem, index: number) => {
+                        const prevChild = index > 0 ? visibleChildren[index - 1] : undefined;
+                        const showSubgroupLabel =
+                          !!child.subgroupId && child.subgroupId !== prevChild?.subgroupId;
                         const active = isActivePath(pathname, child.href);
                         const disabled = child.disabled === true;
 
                         if (disabled) {
                           return (
-                            <div
-                              key={child.href}
-                              className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm [color:color-mix(in_oklab,var(--text-subtle,var(--muted-foreground))_78%,transparent)]"
-                            >
-                              <Icon name={childIcon(item.id, child.id)} />
-                              {child.label} <span className="ml-2 text-xs">(pronto)</span>
+                            <div key={`${child.id}:${child.href}`}>
+                              {showSubgroupLabel ? (
+                                <div className="mt-2 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] [color:var(--text-subtle,var(--muted-foreground))]">
+                                  {child.subgroupLabel ?? child.subgroupId}
+                                </div>
+                              ) : null}
+                              <div className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm [color:color-mix(in_oklab,var(--text-subtle,var(--muted-foreground))_78%,transparent)]">
+                                <Icon name={childIcon(item.id, child.id)} />
+                                {child.label} <span className="ml-2 text-xs">(pronto)</span>
+                              </div>
                             </div>
                           );
                         }
 
                         return (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            onClick={onNavigate}
-                            className={[
-                              "mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                              active
-                                ? activeItemClass
-                                : "[color:var(--text-subtle,var(--muted-foreground))] hover:[background:var(--surface-3,var(--muted))] hover:[color:var(--foreground,var(--foreground))]",
-                            ].join(" ")}
-                          >
-                            <Icon name={childIcon(item.id, child.id)} />
-                            {child.label}
-                          </Link>
+                          <div key={`${child.id}:${child.href}`}>
+                            {showSubgroupLabel ? (
+                              <div className="mt-2 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] [color:var(--text-subtle,var(--muted-foreground))]">
+                                {child.subgroupLabel ?? child.subgroupId}
+                              </div>
+                            ) : null}
+                            <Link
+                              href={child.href}
+                              onClick={onNavigate}
+                              className={[
+                                "mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                                active
+                                  ? activeItemClass
+                                  : "[color:var(--text-subtle,var(--muted-foreground))] hover:[background:var(--surface-3,var(--muted))] hover:[color:var(--foreground,var(--foreground))]",
+                              ].join(" ")}
+                            >
+                              <Icon name={childIcon(item.id, child.id)} />
+                              {child.label}
+                            </Link>
+                          </div>
                         );
                       })}
                     </div>

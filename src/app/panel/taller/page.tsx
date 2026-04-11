@@ -1,123 +1,92 @@
-//src/app/panel/taller/page.tsx
 import PageHeader from "@/components/panel/PageHeader";
-import Link from "next/link";
+import PanelBadge from "@/components/panel/ui/PanelBadge";
+import PanelButton from "@/components/panel/ui/PanelButton";
+import PanelCard from "@/components/panel/ui/PanelCard";
+
+type StudioDomain = {
+  id: string;
+  name: string;
+  statusLabel: string;
+  statusTone: "neutral" | "success";
+};
+
+type ContentAccess = {
+  id: string;
+  label: string;
+  href?: string;
+  disabled?: boolean;
+};
+
+const STUDIO_DOMAINS: StudioDomain[] = [
+  { id: "domain-brand-system", name: "Brand System", statusLabel: "Disponible", statusTone: "success" },
+  { id: "domain-content", name: "Content", statusLabel: "Disponible", statusTone: "success" },
+  { id: "domain-marketing", name: "Marketing", statusLabel: "Proximamente", statusTone: "neutral" },
+  { id: "domain-crm", name: "CRM", statusLabel: "Proximamente", statusTone: "neutral" },
+  { id: "domain-booking", name: "Reservas", statusLabel: "Proximamente", statusTone: "neutral" },
+  { id: "domain-automations", name: "Automatizaciones", statusLabel: "Proximamente", statusTone: "neutral" },
+  { id: "domain-settings", name: "Ajustes", statusLabel: "Disponible", statusTone: "success" },
+];
+
+const CONTENT_ACCESSES: ContentAccess[] = [
+  { id: "content-access-content", label: "Content", href: "/panel/taller/content" },
+  { id: "content-access-lab", label: "Content Lab", disabled: true },
+  { id: "content-access-components", label: "Components", disabled: true },
+  { id: "content-access-media", label: "Media", href: "/panel/taller/media" },
+  { id: "content-access-presets", label: "Presets", disabled: true },
+];
 
 export default function TallerPage() {
-  const ctaBaseClass =
-    "transition-all duration-200 hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
-  const secondaryCtaClass = `${ctaBaseClass} border border-border shadow-[var(--elevation-base,var(--panel-shadow-1))] [background:var(--surface-3,var(--muted))] hover:[background:var(--panel-card,var(--card))]`;
-  const primaryCtaClass = `${ctaBaseClass} shadow-[var(--elevation-interactive,var(--panel-shadow-2))] bg-primary text-primary-foreground hover:brightness-90`;
-
   return (
-    <section className="rounded-2xl border border-border p-4 shadow-[var(--elevation-base,var(--panel-shadow-1))] sm:p-6 [background:var(--background)]">
+    <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
       <PageHeader
-        title="Taller (Capa 1)"
-        description="Diseño base, presets y reglas para que los clientes nunca rompan la web."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/panel/taller/brand"
-              className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold ${secondaryCtaClass}`}
-            >
-              Brand System
-            </Link>
-
-            <Link
-              href="/panel/taller/media"
-              className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold ${secondaryCtaClass}`}
-            >
-              Media
-            </Link>
-
-            <Link
-              href="/panel/taller/content"
-              className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold ${secondaryCtaClass}`}
-            >
-              Content Lab (legacy)
-            </Link>
-
-            <Link
-              href="/panel/taller/presets/hero"
-              className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold ${primaryCtaClass}`}
-            >
-              Presets Hero
-            </Link>
-          </div>
-        }
+        title="Inicio"
+        description="Gobierno de Studio: dominios base, estados actuales y accesos principales."
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border border-border p-5 text-card-foreground shadow-[var(--elevation-base,var(--panel-shadow-1))] [background:var(--surface-2,var(--card))]">
-          <div className="text-sm font-semibold">Brand System</div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Reglas de marca del sistema y gobierno visual de Studio.
-          </p>
-          <div className="mt-4">
-            <Link
-              href="/panel/taller/brand"
-              className={`inline-flex rounded-lg px-3 py-2 text-sm font-medium ${secondaryCtaClass}`}
-            >
-              Abrir Brand System →
-            </Link>
-          </div>
-        </section>
-
-        <section className="rounded-xl border border-border p-5 text-card-foreground shadow-[var(--elevation-base,var(--panel-shadow-1))] [background:var(--surface-2,var(--card))]">
-          <div className="text-sm font-semibold">Media</div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Biblioteca de assets tipados y variantes para composición segura.
-          </p>
-          <div className="mt-4">
-            <Link
-              href="/panel/taller/media"
-              className={`inline-flex rounded-lg px-3 py-2 text-sm font-medium ${secondaryCtaClass}`}
-            >
-              Abrir Media →
-            </Link>
-          </div>
-        </section>
-
-        <section className="rounded-xl border border-border p-5 text-card-foreground shadow-[var(--elevation-base,var(--panel-shadow-1))] [background:var(--surface-2,var(--card))]">
-          <div className="text-sm font-semibold">Content Lab (legacy)</div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Espacio legacy de composición de contenido, mantenido por compatibilidad.
-          </p>
-          <div className="mt-4">
-            <Link
-              href="/panel/taller/content"
-              className={`inline-flex rounded-lg px-3 py-2 text-sm font-medium ${secondaryCtaClass}`}
-            >
-              Abrir Content Lab →
-            </Link>
-          </div>
-        </section>
-
-        <section className="rounded-xl border border-border p-5 text-card-foreground shadow-[var(--elevation-base,var(--panel-shadow-1))] [background:var(--surface-2,var(--card))]">
-          <div className="text-sm font-semibold">Presets Hero</div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Catálogo de variantes Hero autorizadas para consumo en capas operativas.
-          </p>
-          <div className="mt-4">
-            <Link
-              href="/panel/taller/presets/hero"
-              className={`inline-flex rounded-lg px-3 py-2 text-sm font-medium ${secondaryCtaClass}`}
-            >
-              Abrir Presets Hero →
-            </Link>
-          </div>
-        </section>
-      </div>
-
-      <section className="mt-6 rounded-xl border border-border p-6 shadow-[var(--elevation-task,var(--panel-shadow-2))] [background:var(--surface-3,var(--card))]">
-        <div className="text-sm font-semibold">Flujo oficial (End-to-End)</div>
-        <div className="mt-2 text-sm text-muted-foreground">
-          <div>1) Taller define preset (A/B/C) y límites</div>
-          <div>2) Cliente edita solo slots permitidos en draft</div>
-          <div>3) Preview renderiza draft sin publicar</div>
-          <div>4) Publish copia draft → published</div>
-          <div>5) Web pública siempre lee published</div>
-        </div>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {STUDIO_DOMAINS.map((domain) => (
+          <PanelCard key={domain.id} className="flex items-center justify-between gap-3 p-4 sm:p-5">
+            <h2 className="text-sm font-semibold text-foreground sm:text-base">{domain.name}</h2>
+            <PanelBadge tone={domain.statusTone}>{domain.statusLabel}</PanelBadge>
+          </PanelCard>
+        ))}
       </section>
-    </section>
+
+      <section className="mt-6">
+        <PanelCard>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold">Content</h2>
+              <p className="mt-1 text-sm [color:var(--text-subtle,var(--muted-foreground))]">
+                Accesos de entrada para composicion autorizada y recursos del dominio.
+              </p>
+            </div>
+            <PanelBadge tone="success">Disponible</PanelBadge>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {CONTENT_ACCESSES.map((entry) => (
+              <div
+                key={entry.id}
+                className="rounded-lg border border-border p-3 [background:var(--surface-1,var(--background))]"
+              >
+                <div className="text-sm font-medium text-foreground">{entry.label}</div>
+                <div className="mt-3">
+                  {entry.href ? (
+                    <PanelButton id={`${entry.id}-open`} href={entry.href} variant="secondary">
+                      Abrir
+                    </PanelButton>
+                  ) : (
+                    <PanelButton id={`${entry.id}-open`} variant="secondary" disabled>
+                      Proximamente
+                    </PanelButton>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </PanelCard>
+      </section>
+    </main>
   );
-}  
+}

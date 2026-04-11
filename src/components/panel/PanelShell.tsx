@@ -154,7 +154,7 @@ export default function PanelShell({
     [pathname]
   );
   const isTallerHub = useMemo(() => pathname === "/panel/taller", [pathname]);
-  const isStudioFullscreen = isStudio && !isTallerHub;
+  const isStudioFullscreen = isStudio && !isTallerHub && pathname !== "/panel/taller/content";
   const studioBackHref = useMemo(
     () => (isTallerHub ? "/panel/dashboard" : studioHubHref),
     [isTallerHub, studioHubHref]
