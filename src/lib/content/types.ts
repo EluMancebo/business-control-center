@@ -4,6 +4,8 @@ export type ContentStatus = "draft" | "ready" | "archived";
 
 export type ContentValidationState = "valid" | "invalid" | "incomplete";
 
+export type ContentPieceType = "hero" | "banner" | "promo" | "card";
+
 export type ContentBlockType = "text" | "image" | "cta" | "title" | "gallery";
 
 export type ContentMediaKind = Extract<AssetKind, "image" | "video" | "svg">;
@@ -21,6 +23,7 @@ export type ContentPreset = {
   id: string;
   name: string;
   description?: string;
+  pieceType: ContentPieceType;
   status: ContentStatus;
   allowedBlockTypes: ContentBlockType[];
   maxBlocks?: number;
@@ -29,6 +32,7 @@ export type ContentPreset = {
 
 export type ContentPiece = {
   id: string;
+  type: ContentPieceType;
   presetId: string;
   blocks: ContentBlock[];
   status: ContentStatus;
