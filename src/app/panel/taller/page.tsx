@@ -1,88 +1,200 @@
+import Link from "next/link";
 import PageHeader from "@/components/panel/PageHeader";
 import PanelBadge from "@/components/panel/ui/PanelBadge";
-import PanelButton from "@/components/panel/ui/PanelButton";
 import PanelCard from "@/components/panel/ui/PanelCard";
 
-type StudioDomain = {
+type BadgeTone = "success" | "processing" | "neutral";
+
+type StudioFeature = {
   id: string;
   name: string;
+  description: string;
   statusLabel: string;
-  statusTone: "neutral" | "success";
-};
-
-type ContentAccess = {
-  id: string;
-  label: string;
+  statusTone: BadgeTone;
   href?: string;
-  disabled?: boolean;
 };
 
-const STUDIO_DOMAINS: StudioDomain[] = [
-  { id: "domain-brand-system", name: "Brand System", statusLabel: "Disponible", statusTone: "success" },
-  { id: "domain-content", name: "Content", statusLabel: "Disponible", statusTone: "success" },
-  { id: "domain-marketing", name: "Marketing", statusLabel: "Proximamente", statusTone: "neutral" },
-  { id: "domain-crm", name: "CRM", statusLabel: "Proximamente", statusTone: "neutral" },
-  { id: "domain-booking", name: "Reservas", statusLabel: "Proximamente", statusTone: "neutral" },
-  { id: "domain-automations", name: "Automatizaciones", statusLabel: "Proximamente", statusTone: "neutral" },
-  { id: "domain-settings", name: "Ajustes", statusLabel: "Disponible", statusTone: "success" },
+type ContentFeature = {
+  id: string;
+  name: string;
+  description: string;
+  statusLabel: string;
+  statusTone: BadgeTone;
+  href?: string;
+};
+
+const STUDIO_FEATURES: StudioFeature[] = [
+  {
+    id: "studio-brand-system",
+    name: "Brand System",
+    description: "Identidad visual y reglas base del sistema.",
+    statusLabel: "Disponible",
+    statusTone: "success",
+    href: "/panel/taller/brand",
+  },
+  {
+    id: "studio-marketing",
+    name: "Marketing",
+    description: "Dominio de gobierno comercial en preparacion.",
+    statusLabel: "En preparacion",
+    statusTone: "processing",
+  },
+  {
+    id: "studio-crm",
+    name: "CRM",
+    description: "Flujo de relacion y gestion de clientes en preparacion.",
+    statusLabel: "En preparacion",
+    statusTone: "processing",
+  },
+  {
+    id: "studio-booking",
+    name: "Reservas",
+    description: "Gobierno de disponibilidad y agenda proximamente.",
+    statusLabel: "Proximamente",
+    statusTone: "neutral",
+  },
+  {
+    id: "studio-automations",
+    name: "Automatizaciones",
+    description: "Reglas automatizadas del sistema proximamente.",
+    statusLabel: "Proximamente",
+    statusTone: "neutral",
+  },
+  {
+    id: "studio-settings",
+    name: "Ajustes",
+    description: "Configuracion general del entorno de trabajo.",
+    statusLabel: "Disponible",
+    statusTone: "success",
+    href: "/panel/settings",
+  },
 ];
 
-const CONTENT_ACCESSES: ContentAccess[] = [
-  { id: "content-access-content", label: "Content", href: "/panel/taller/content" },
-  { id: "content-access-lab", label: "Content Lab", disabled: true },
-  { id: "content-access-components", label: "Components", disabled: true },
-  { id: "content-access-media", label: "Media", href: "/panel/taller/media" },
-  { id: "content-access-presets", label: "Presets", disabled: true },
+const CONTENT_FEATURES: ContentFeature[] = [
+  {
+    id: "content-domain",
+    name: "Content",
+    description: "Entrada del dominio para composicion autorizada.",
+    statusLabel: "Disponible",
+    statusTone: "success",
+    href: "/panel/taller/content",
+  },
+  {
+    id: "content-lab",
+    name: "Content Lab",
+    description: "Reglas y calidad de composicion en preparacion.",
+    statusLabel: "En preparacion",
+    statusTone: "processing",
+  },
+  {
+    id: "content-components",
+    name: "Components",
+    description: "Bloques reutilizables del dominio proximamente.",
+    statusLabel: "Proximamente",
+    statusTone: "neutral",
+  },
+  {
+    id: "content-media",
+    name: "Media",
+    description: "Recursos visuales ya disponibles para el dominio.",
+    statusLabel: "Disponible",
+    statusTone: "success",
+    href: "/panel/taller/media",
+  },
+  {
+    id: "content-presets",
+    name: "Presets",
+    description: "Puntos de partida seguros en preparacion.",
+    statusLabel: "En preparacion",
+    statusTone: "processing",
+  },
 ];
+
+function FeatureCard({
+  feature,
+}: {
+  feature: StudioFeature | ContentFeature;
+}) {
+  if (feature.href) {
+    return (
+      <Link
+        href={feature.href}
+        className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        <PanelCard
+          variant="interactive"
+          className="h-full p-4 transition-transform duration-150 group-hover:-translate-y-px group-active:translate-y-0 sm:p-5"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="text-sm font-semibold text-foreground sm:text-base">{feature.name}</h3>
+            <PanelBadge
+              tone={feature.statusTone}
+              className="transition-transform duration-150 group-hover:scale-[1.03]"
+            >
+              {feature.statusLabel}
+            </PanelBadge>
+          </div>
+          <p className="mt-2 text-sm [color:var(--text-subtle,var(--muted-foreground))]">
+            {feature.description}
+          </p>
+        </PanelCard>
+      </Link>
+    );
+  }
+
+  return (
+    <PanelCard className="h-full p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="text-sm font-semibold text-foreground sm:text-base">{feature.name}</h3>
+        <PanelBadge tone={feature.statusTone}>{feature.statusLabel}</PanelBadge>
+      </div>
+      <p className="mt-2 text-sm [color:var(--text-subtle,var(--muted-foreground))]">
+        {feature.description}
+      </p>
+    </PanelCard>
+  );
+}
 
 export default function TallerPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
       <PageHeader
         title="Inicio"
-        description="Gobierno de Studio: dominios base, estados actuales y accesos principales."
+        description="Centro de mando de Studio para recorrer dominios, estados y accesos clave de Capa 1."
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {STUDIO_DOMAINS.map((domain) => (
-          <PanelCard key={domain.id} className="flex items-center justify-between gap-3 p-4 sm:p-5">
-            <h2 className="text-sm font-semibold text-foreground sm:text-base">{domain.name}</h2>
-            <PanelBadge tone={domain.statusTone}>{domain.statusLabel}</PanelBadge>
-          </PanelCard>
-        ))}
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold">Dominios Studio</h2>
+          <PanelBadge tone="success" size="md">
+            Capa 1 activa
+          </PanelBadge>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {STUDIO_FEATURES.map((feature) => (
+            <FeatureCard key={feature.id} feature={feature} />
+          ))}
+        </div>
       </section>
 
       <section className="mt-6">
-        <PanelCard>
+        <PanelCard variant="task">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-base font-semibold">Content</h2>
               <p className="mt-1 text-sm [color:var(--text-subtle,var(--muted-foreground))]">
-                Accesos de entrada para composicion autorizada y recursos del dominio.
+                Dominio padre de composicion autorizada con sus features hijas visibles.
               </p>
             </div>
-            <PanelBadge tone="success">Disponible</PanelBadge>
+            <PanelBadge tone="success" size="md">
+              Dominio activo
+            </PanelBadge>
           </div>
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {CONTENT_ACCESSES.map((entry) => (
-              <div
-                key={entry.id}
-                className="rounded-lg border border-border p-3 [background:var(--surface-1,var(--background))]"
-              >
-                <div className="text-sm font-medium text-foreground">{entry.label}</div>
-                <div className="mt-3">
-                  {entry.href ? (
-                    <PanelButton id={`${entry.id}-open`} href={entry.href} variant="secondary">
-                      Abrir
-                    </PanelButton>
-                  ) : (
-                    <PanelButton id={`${entry.id}-open`} variant="secondary" disabled>
-                      Proximamente
-                    </PanelButton>
-                  )}
-                </div>
-              </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {CONTENT_FEATURES.map((feature) => (
+              <FeatureCard key={feature.id} feature={feature} />
             ))}
           </div>
         </PanelCard>

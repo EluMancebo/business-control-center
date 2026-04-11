@@ -12,7 +12,7 @@ const VARIANT_CLASS: Record<PanelCardVariant, string> = {
   default:
     "rounded-xl border border-border p-6 text-card-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))] [background:var(--surface-2,var(--card))] [color:var(--card-foreground,var(--foreground))]",
   interactive:
-    "rounded-xl border border-border p-6 text-card-foreground transition-[box-shadow,background-color] duration-150 [box-shadow:var(--elevation-base,var(--panel-shadow-1))] hover:[box-shadow:var(--elevation-interactive,var(--panel-shadow-2))] [background:var(--surface-2,var(--card))] [color:var(--card-foreground,var(--foreground))]",
+    "rounded-xl border border-border p-6 text-card-foreground transition-[box-shadow,background-color,transform] duration-150 [box-shadow:var(--elevation-base,var(--panel-shadow-1))] hover:[box-shadow:var(--elevation-interactive,var(--panel-shadow-2))] [background:var(--surface-2,var(--card))] hover:[background:var(--surface-3,var(--muted))] hover:-translate-y-px active:translate-y-0 [color:var(--card-foreground,var(--foreground))]",
   task:
     "rounded-xl border border-border p-6 text-card-foreground ring-1 ring-border/45 [box-shadow:var(--elevation-task,var(--panel-shadow-2))] [background:var(--task-surface,var(--surface-3,var(--card)))] [color:var(--task-surface-foreground,var(--card-foreground,var(--foreground)))]",
   overlay:
