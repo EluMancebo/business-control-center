@@ -1,6 +1,37 @@
 import type { ContentBlockType, ContentMediaKind, ContentPieceType } from "@/lib/content/types";
 
-export type LabPieceStatus = "draft" | "in_review" | "approved" | "rejected" | "archived";
+export type LabPieceStatus =
+  | "draft"
+  | "candidate"
+  | "approved"
+  | "obsolete"
+  | "blocked";
+
+export type LabPieceApprovalScore = {
+  conversion: number;
+  communication: number;
+  design: number;
+  ux: number;
+  responsive: number;
+  seoA11yPerformance: number;
+  total: number;
+};
+
+export type ApprovalArtifact = {
+  pieceId: string;
+  pieceType: ContentPieceType;
+  briefId?: string;
+  status: Exclude<LabPieceStatus, "draft">;
+  score: LabPieceApprovalScore;
+  hardBlockers: string[];
+  warnings: string[];
+  rationale: string[];
+  approvedBy?: string;
+  approvedAt?: string;
+  version: number;
+  presetVaultEligible: boolean;
+  publishEligible: boolean;
+};
 
 export type ContextBrief = {
   id: string;
@@ -44,6 +75,7 @@ export type LabPiece = {
   title: string;
   contextBriefId: string;
   status: LabPieceStatus;
+  approval?: ApprovalArtifact;
   blockDefinitionId?: string;
   blocks: LabPieceBlockValue[];
   presetId?: string;
