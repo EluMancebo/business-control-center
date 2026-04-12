@@ -30,6 +30,9 @@ export type BusinessPublic = {
 type PublicHeroProps = {
   data: HeroData;
   business?: BusinessPublic;
+  mobileMenuStyle?: "opaque" | "integrated";
+  forceMobileMenuOpen?: boolean;
+  copyWidth?: "narrow" | "normal" | "wide";
 };
 
 function normalizeAssetUrl(url?: string): string | undefined {
@@ -93,7 +96,13 @@ function FooterInlineItem({ icon, text }: { icon: string; text: string }) {
   );
 }
 
-export default function PublicHero({ data, business }: PublicHeroProps) {
+export default function PublicHero({
+  data,
+  business,
+  mobileMenuStyle = "integrated",
+  forceMobileMenuOpen,
+  copyWidth = "normal",
+}: PublicHeroProps) {
   const titleRaw = data.title ?? "El centro de mando de tu negocio";
   const { lead: titleLead, accent: titleAccent } = splitTitleForAccent(titleRaw);
 
@@ -102,6 +111,7 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
     "Publica ofertas, popups, heros por eventos, campañas y recordatorios.";
 
   const badge = data.badge ?? "Barbería Premium";
+  const showBadge = typeof badge === "string" ? badge.trim().length > 0 : Boolean(badge);
 
   const cta1 = (data.primaryCtaLabel as string) ?? "Pedir cita";
   const cta2 = (data.secondaryCtaLabel as string) ?? "Servicios";
@@ -124,6 +134,20 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
     normalizeAssetUrl(business?.logoUrl) ?? normalizeAssetUrl(data.logoUrl);
   const heroLogoUrl =
     normalizeAssetUrl(data.logoUrl) ?? normalizeAssetUrl(business?.logoUrl);
+  const isMenuControlled = typeof forceMobileMenuOpen === "boolean";
+
+  const menuBackdropClass =
+    mobileMenuStyle === "opaque"
+      ? "pointer-events-none fixed inset-0 z-40 opacity-0 transition-opacity duration-300 peer-checked:pointer-events-auto peer-checked:opacity-100 bg-black/90 backdrop-blur-[3px]"
+      : "pointer-events-none fixed inset-0 z-40 opacity-0 transition-opacity duration-300 peer-checked:pointer-events-auto peer-checked:opacity-100 bg-black/55 backdrop-blur-[2px]";
+
+  const menuPanelClass =
+    mobileMenuStyle === "opaque"
+      ? "fixed inset-y-0 right-0 z-50 w-[min(100vw,26rem)] translate-x-full border-l border-white/40 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_30px_70px_rgba(0,0,0,0.7)] transition-transform duration-300 ease-out peer-checked:translate-x-0 [background:rgba(8,10,14,0.96)] [color:var(--text-inverse,#ffffff)]"
+      : "fixed inset-y-0 right-0 z-50 w-[min(92vw,24rem)] translate-x-full border-l border-white/30 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_28px_60px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out peer-checked:translate-x-0 [background:color-mix(in_oklab,var(--hero-frame-surface-bg)_88%,rgba(6,8,12,0.78))] [color:var(--text-inverse,#ffffff)]";
+
+  const copyWidthClass =
+    copyWidth === "narrow" ? "max-w-lg" : copyWidth === "wide" ? "max-w-2xl" : "max-w-xl";
 
   return (
     <section
@@ -180,11 +204,16 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
           </nav>
 
           <div className="md:hidden">
-            <input id="bcc-mobile-menu" type="checkbox" className="peer sr-only" />
+            <input
+              id="bcc-mobile-menu"
+              type="checkbox"
+              className="peer sr-only"
+              {...(isMenuControlled ? { checked: forceMobileMenuOpen, readOnly: true } : {})}
+            />
 
             <label
               htmlFor="bcc-mobile-menu"
-              className="cursor-pointer rounded-xl p-2 transition [background:var(--hero-chrome-surface-bg)] hover:[background:var(--hero-chrome-surface-hover-bg)]"
+              className="cursor-pointer rounded-xl p-2 transition peer-checked:pointer-events-none peer-checked:opacity-0 [background:var(--hero-chrome-surface-bg)] hover:[background:var(--hero-chrome-surface-hover-bg)]"
               aria-label="Abrir menú"
             >
               <span className="block h-0.5 w-6 [background:var(--text-inverse,#ffffff)]" />
@@ -194,11 +223,11 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
 
             <label
               htmlFor="bcc-mobile-menu"
-              className="pointer-events-none fixed inset-0 z-40 opacity-0 transition-opacity duration-500 peer-checked:pointer-events-auto peer-checked:opacity-100 [background:color-mix(in_oklab,var(--accent,var(--primary))_28%,black)]"
+              className={menuBackdropClass}
               aria-label="Cerrar menú"
             />
 
-            <div className="fixed inset-y-0 right-0 z-50 w-64 translate-x-full p-4 shadow-2xl transition-transform duration-700 ease-out peer-checked:translate-x-0 [background:color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_34%,black)] [color:var(--text-inverse,#ffffff)]">
+            <div className={menuPanelClass}>
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold">{business?.name ?? "Menú"}</div>
 
@@ -227,8 +256,8 @@ export default function PublicHero({ data, business }: PublicHeroProps) {
 
         <main className="min-h-0 flex-1 pt-5 pb-36 md:pb-0">
           <div className="grid grid-cols-1 items-center gap-5 md:grid-cols-2 md:gap-8">
-            <div className="max-w-xl">
-              <Pill className="mb-3">{badge}</Pill>
+            <div className={copyWidthClass}>
+              {showBadge ? <Pill className="mb-3">{badge}</Pill> : null}
 
               <h1 className="text-balance text-3xl font-extrabold leading-[1.02] tracking-tight [color:var(--text-inverse,#ffffff)] sm:text-5xl md:text-6xl">
                 <span>{titleLead || titleRaw}</span>
