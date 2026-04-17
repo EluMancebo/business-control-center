@@ -6,6 +6,7 @@ import { resolvePublicSitePage, type PublicSiteRepository } from "@/lib/public-s
 import { buildBusinessSite } from "@/lib/site/helpers";
 import type { RenderableHeroSection, RenderableLocationSection, RenderableSection } from "@/lib/site-renderer";
 import type { HeroData, HeroAppearanceVariant } from "@/lib/web/hero/types";
+import { mapHeroToPublicPayload } from "@/lib/web/hero/publicPayload";
 
 export const dynamic = "force-dynamic";
 
@@ -406,6 +407,7 @@ export default async function PublicBusinessPage({
     : undefined;
   const hero =
     previewHero ?? resolvedHeroSection?.payload ?? publishedPage?.hero?.data ?? null;
+  const publicHeroPayload = hero ? mapHeroToPublicPayload(hero) : null;
   const location = resolvedLocationSection?.payload;
 
   return (
@@ -416,10 +418,10 @@ export default async function PublicBusinessPage({
         id="public-business-page"
         className="min-h-svh w-full overflow-x-hidden overflow-y-auto bcc-scrollbar bg-background text-foreground"
       >
-        {hero ? (
+        {publicHeroPayload ? (
           <>
             <section id="public-business-hero">
-              <PublicHero data={hero} business={business ?? undefined} />
+              <PublicHero data={publicHeroPayload} business={business ?? undefined} />
             </section>
 
             {location ? (

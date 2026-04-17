@@ -3,22 +3,7 @@ import type { ChangeEvent, MouseEvent, ReactNode } from "react";
 import CreatedByMini from "@/components/footer/CreatedByMini";
 import { resolveHeroAppearance } from "./appearance";
 import type { HeroAppearanceVariant } from "@/lib/web/hero/types";
-
-export type HeroData = {
-  badge?: string;
-  title?: string;
-  description?: string;
-
-  primaryCtaLabel?: string;
-  primaryCtaHref?: string;
-  secondaryCtaLabel?: string;
-  secondaryCtaHref?: string;
-
-  backgroundImageUrl?: string;
-  logoUrl?: string;
-  logoSvg?: string;
-  heroAppearanceVariant?: HeroAppearanceVariant;
-};
+import type { PublicHeroPayload } from "@/lib/web/hero/publicPayload";
 
 export type BusinessPublic = {
   name?: string;
@@ -28,7 +13,7 @@ export type BusinessPublic = {
 };
 
 type PublicHeroProps = {
-  data: HeroData;
+  data: PublicHeroPayload;
   business?: BusinessPublic;
   mobileMenuStyle?: "opaque" | "integrated";
   forceMobileMenuOpen?: boolean;
