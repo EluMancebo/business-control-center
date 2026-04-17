@@ -5,6 +5,7 @@ export const BRAND_THEME_SEMANTIC_RUNTIME_DEFAULT_ENABLED = false;
 const BRAND_THEME_SEMANTIC_RUNTIME_SCOPE_OVERRIDES: Partial<
   Record<BrandScope, boolean>
 > = {
+  studio: true,
   panel: true,
   web: true,
 };

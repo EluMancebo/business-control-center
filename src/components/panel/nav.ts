@@ -56,8 +56,7 @@ export const NAV: NavItem[] = [
       {
         id: "content-lab",
         label: "Content Lab",
-        href: "/panel/taller/content",
-        disabled: true,
+        href: "/panel/taller/content-lab",
       },
       {
         id: "presets-hero",

@@ -142,6 +142,10 @@ export const ROUTE_META: RouteMetaMap = {
     title: "Content",
     subtitle: "Hub del dominio de composicion autorizada en Studio",
   },
+  "/panel/taller/content-lab": {
+    title: "Content Lab",
+    subtitle: "Laboratorio de composicion y validacion visual en Studio",
+  },
 };
 
 export function getRouteMeta(pathname: string): RouteMeta {

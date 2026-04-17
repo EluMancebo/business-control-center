@@ -33,10 +33,10 @@ const CONTENT_HUB_CARDS: ContentHubCard[] = [
     id: "content-hub-lab",
     title: "Content Lab",
     description: "Gobierno creativo y reglas de composicion autorizada por Studio.",
-    statusLabel: "Proximamente",
-    statusTone: "neutral",
-    ctaLabel: "Proximamente",
-    disabled: true,
+    statusLabel: "Disponible",
+    statusTone: "success",
+    href: "/panel/taller/content-lab",
+    ctaLabel: "Abrir Content Lab",
   },
   {
     id: "content-hub-components",
@@ -111,9 +111,9 @@ const CONTENT_STATUS: ContentDomainStatus[] = [
   {
     id: "content-status-lab",
     area: "Content Lab",
-    phase: "En preparacion",
-    statusLabel: "Proximamente",
-    statusTone: "neutral",
+    phase: "Disponible",
+    statusLabel: "Acceso activo",
+    statusTone: "success",
   },
   {
     id: "content-status-components",
