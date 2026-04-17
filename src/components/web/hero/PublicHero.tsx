@@ -28,6 +28,7 @@ type PublicHeroProps = {
   visualPosition?: "left" | "center" | "right";
   logoPosition?: "left" | "center" | "right";
   overlayColor?: "blue" | "green" | "amber" | "purple" | "smoke" | "none";
+  overlayStyleMode?: "gradient" | "solid" | "none";
   backgroundEmphasis?: "low" | "medium" | "high";
   isLabMode?: boolean;
   labSceneOverlayClassName?: string;
@@ -45,7 +46,7 @@ const HERO_APPEARANCE_TOKEN_CLASS: Record<HeroAppearanceVariant, string> = {
     "[--hero-overlay-tint-opacity:0.58] [--hero-overlay-no-image-bg:linear-gradient(to_bottom,color-mix(in_oklab,var(--accent,var(--primary))_74%,black),color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_68%,black),color-mix(in_oklab,var(--accent,var(--primary))_76%,black))] [--hero-chrome-surface-bg:color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_44%,black)] [--hero-chrome-surface-hover-bg:color-mix(in_oklab,var(--accent,var(--primary))_56%,black)] [--hero-frame-surface-bg:color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_40%,black)] [--hero-footer-surface-bg:color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_42%,black)] [--hero-chrome-surface-border:color-mix(in_oklab,var(--hero-text-inverse)_28%,transparent)]",
 };
 
-const HERO_OVERLAY_TINT_TOKEN_CLASS: Record<HeroOverlayColor, string> = {
+const HERO_OVERLAY_GRADIENT_TINT_TOKEN_CLASS: Record<HeroOverlayColor, string> = {
   blue:
     "[--hero-overlay-tint-bg:linear-gradient(140deg,color-mix(in_oklab,var(--processing,var(--accent,var(--primary)))_74%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_58%,var(--hero-overlay-strong,var(--foreground)))_50%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_72%,var(--foreground)))]",
   green:
@@ -59,6 +60,24 @@ const HERO_OVERLAY_TINT_TOKEN_CLASS: Record<HeroOverlayColor, string> = {
   none:
     "[--hero-overlay-tint-bg:linear-gradient(140deg,transparent,transparent)] [--hero-overlay-tint-opacity:0]",
 };
+
+const HERO_OVERLAY_SOLID_TINT_TOKEN_CLASS: Record<HeroOverlayColor, string> = {
+  blue:
+    "[--hero-overlay-tint-bg:color-mix(in_oklab,var(--processing,var(--accent,var(--primary)))_76%,var(--hero-overlay-strong,var(--foreground)))]",
+  green:
+    "[--hero-overlay-tint-bg:color-mix(in_oklab,var(--success,var(--accent,var(--primary)))_76%,var(--hero-overlay-strong,var(--foreground)))]",
+  amber:
+    "[--hero-overlay-tint-bg:color-mix(in_oklab,var(--warning,var(--accent,var(--primary)))_76%,var(--hero-overlay-strong,var(--foreground)))]",
+  purple:
+    "[--hero-overlay-tint-bg:color-mix(in_oklab,var(--accent-strong,var(--accent,var(--primary)))_76%,var(--hero-overlay-strong,var(--foreground)))]",
+  smoke:
+    "[--hero-overlay-tint-bg:color-mix(in_oklab,var(--foreground,var(--primary))_78%,var(--hero-overlay-strong,var(--foreground)))]",
+  none:
+    "[--hero-overlay-tint-bg:transparent] [--hero-overlay-tint-opacity:0]",
+};
+
+const HERO_OVERLAY_STYLE_NONE_TOKEN_CLASS =
+  "[--hero-overlay-tint-bg:transparent] [--hero-overlay-tint-opacity:0]";
 
 const HERO_SURFACE_MODE_TOKEN_CLASS = {
   lab: "[--hero-chrome-surface-bg:color-mix(in_oklab,var(--surface-3,var(--card))_76%,transparent)] [--hero-chrome-surface-hover-bg:color-mix(in_oklab,var(--surface-3,var(--card))_88%,transparent)] [--hero-frame-surface-bg:color-mix(in_oklab,var(--surface-3,var(--card))_68%,transparent)] [--hero-footer-surface-bg:color-mix(in_oklab,var(--surface-3,var(--card))_72%,transparent)] [--hero-chrome-surface-border:color-mix(in_oklab,var(--border)_88%,transparent)]",
@@ -152,6 +171,7 @@ export default function PublicHero({
   visualPosition = "right",
   logoPosition = "center",
   overlayColor = "blue",
+  overlayStyleMode = "gradient",
   backgroundEmphasis = "medium",
   isLabMode = false,
   labSceneOverlayClassName,
@@ -177,7 +197,12 @@ export default function PublicHero({
   const heroAppearance = resolveHeroAppearance(data as unknown);
   const heroAppearanceTokenClassName =
     HERO_APPEARANCE_TOKEN_CLASS[heroAppearance.variant];
-  const heroOverlayTintTokenClassName = HERO_OVERLAY_TINT_TOKEN_CLASS[overlayColor];
+  const heroOverlayTintTokenClassName =
+    overlayStyleMode === "none"
+      ? HERO_OVERLAY_STYLE_NONE_TOKEN_CLASS
+      : overlayStyleMode === "solid"
+        ? HERO_OVERLAY_SOLID_TINT_TOKEN_CLASS[overlayColor]
+        : HERO_OVERLAY_GRADIENT_TINT_TOKEN_CLASS[overlayColor];
   const heroSurfaceModeTokenClassName = hasLabSceneOverlay
     ? HERO_SURFACE_MODE_TOKEN_CLASS.lab
     : HERO_SURFACE_MODE_TOKEN_CLASS.runtime;

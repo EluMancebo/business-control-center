@@ -9,6 +9,8 @@ import Topbar from "./Topbar";
 import type { Capability } from "@/lib/auth/capabilities";
 import type { SessionPayload } from "@/lib/auth/serverSession";
 import BrandHydrator from "@/components/brand/BrandHydrator";
+import { resolvePanelBrandHydratorScope } from "./brandHydratorScope";
+import { isBrandThemeSemanticRuntimeEnabled } from "@/lib/brand-theme/runtime/flag";
 
 function getPanelLayer(pathname: string): "studio" | "client" {
   if (pathname === "/panel/taller" || pathname.startsWith("/panel/taller/")) {
@@ -169,12 +171,20 @@ export default function PanelShell({
     ? "[background:var(--surface-2,var(--card))]"
     : "[background:var(--panel-sidebar,var(--surface-2,var(--card)))]";
 
-  // Autoridad de apariencia por capa:
-  // - Capa 1 (Studio): studio
-  // - Capa 2 (Panel cliente): panel
+  const systemSemanticRuntimeEnabled = useMemo(
+    () => isBrandThemeSemanticRuntimeEnabled("system"),
+    []
+  );
+
+  // ResoluciÃ³n centralizada de scope para evitar divergencias entre Studio y Panel.
   const brandScope = useMemo(
-    () => (isStudio ? "studio" : "panel"),
-    [isStudio]
+    () =>
+      resolvePanelBrandHydratorScope({
+        isAdmin: computedIsAdmin,
+        pathname,
+        systemSemanticRuntimeEnabled,
+      }),
+    [computedIsAdmin, pathname, systemSemanticRuntimeEnabled]
   );
   const brandBusinessSlug = useMemo(
     () => (brandScope === "panel" ? activeBusinessSlug : undefined),

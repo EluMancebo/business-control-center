@@ -799,6 +799,17 @@ export function toBrandCssVariables(tokens: BrandSemanticTokens): Record<string,
 
     "--surface-2": tokens.surface2,
     "--surface-3": tokens.surface3,
+    "--surface-1": tokens.background,
+
+    // Panel shells and Studio surfaces consume these directly.
+    "--panel-background": tokens.background,
+    "--panel-surface-1": tokens.background,
+    "--panel-surface-2": tokens.surface2,
+    "--panel-surface-3": tokens.surface3,
+    "--panel-card": tokens.card,
+    "--panel-border": tokens.border,
+    "--panel-topbar": tokens.surface3,
+    "--panel-sidebar": tokens.surface2,
 
     "--text-subtle": tokens.textSubtle,
     "--text-inverse": tokens.textInverse,

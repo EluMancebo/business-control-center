@@ -21,7 +21,10 @@ type CopyWidth = "compact" | "balanced" | "expanded";
 type PositionX = "left" | "center" | "right";
 type CopyBlockPosition = "left" | "center-left" | "center" | "right";
 type CtaPosition = "start" | "center" | "end";
-type OverlayColor = "blue" | "green" | "amber" | "purple" | "smoke" | "none";
+type OverlayColor = "blue" | "green" | "amber" | "purple" | "smoke";
+type OverlayStyleMode = "gradient" | "solid" | "none";
+type PositionXOverride = PositionX | "auto";
+type CopyBlockPositionOverride = CopyBlockPosition | "auto";
 type BackgroundEmphasis = "low" | "medium" | "high";
 type CtaMode = "balanced" | "primary-focus";
 type Verdict = "weak" | "promising" | "preset-candidate";
@@ -229,7 +232,6 @@ const OVERLAY_TINT_PREVIEW_CLASS: Record<OverlayColor, string> = {
   amber: "bg-gradient-to-r from-amber-700 to-stone-900",
   purple: "bg-gradient-to-r from-violet-700 to-indigo-900",
   smoke: "bg-gradient-to-r from-slate-700 to-slate-950",
-  none: "border border-border/80 bg-transparent",
 };
 
 const HERO_CANDIDATES: Record<CandidateId, PublishedPieceSnapshot> = {
@@ -306,7 +308,7 @@ const SHOW_LAYOUT_GUIDES = false;
 const PREVIEW_STAGE_HORIZONTAL_PADDING = 24;
 const PREVIEW_STAGE_VERTICAL_PADDING = 40;
 
-const SCENE_OVERLAY_TINT_CLASS: Record<OverlayColor, string> = {
+const SCENE_OVERLAY_GRADIENT_TINT_CLASS: Record<OverlayColor, string> = {
   blue:
     "[background:linear-gradient(136deg,color-mix(in_oklab,var(--processing,var(--accent,var(--primary)))_78%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_54%,var(--hero-overlay,var(--foreground)))_48%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_80%,var(--foreground)))]",
   green:
@@ -317,7 +319,19 @@ const SCENE_OVERLAY_TINT_CLASS: Record<OverlayColor, string> = {
     "[background:linear-gradient(136deg,color-mix(in_oklab,var(--accent-strong,var(--accent,var(--primary)))_78%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_54%,var(--hero-overlay,var(--foreground)))_48%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_80%,var(--foreground)))]",
   smoke:
     "[background:linear-gradient(136deg,color-mix(in_oklab,var(--foreground,var(--primary))_80%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--surface-3,var(--muted))_58%,var(--hero-overlay,var(--foreground)))_48%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_82%,var(--foreground)))]",
-  none: "[background:linear-gradient(136deg,transparent,transparent)]",
+};
+
+const SCENE_OVERLAY_SOLID_TINT_CLASS: Record<OverlayColor, string> = {
+  blue:
+    "[background:color-mix(in_oklab,var(--processing,var(--accent,var(--primary)))_74%,var(--hero-overlay-strong,var(--foreground)))]",
+  green:
+    "[background:color-mix(in_oklab,var(--success,var(--accent,var(--primary)))_74%,var(--hero-overlay-strong,var(--foreground)))]",
+  amber:
+    "[background:color-mix(in_oklab,var(--warning,var(--accent,var(--primary)))_74%,var(--hero-overlay-strong,var(--foreground)))]",
+  purple:
+    "[background:color-mix(in_oklab,var(--accent-strong,var(--accent,var(--primary)))_74%,var(--hero-overlay-strong,var(--foreground)))]",
+  smoke:
+    "[background:color-mix(in_oklab,var(--foreground,var(--primary))_78%,var(--hero-overlay-strong,var(--foreground)))]",
 };
 
 const SCENE_OVERLAY_OPACITY_CLASS: Record<
@@ -375,7 +389,11 @@ function resolveLabBrandScopeFromRole(role: SessionRole): Extract<BrandScope, "p
   return role === "admin" ? "studio" : "panel";
 }
 
-export default function PublishedHeroLabPage() {
+export default function PublishedHeroLabPage({
+  disableInternalBrandHydrator = false,
+}: {
+  disableInternalBrandHydrator?: boolean;
+}) {
   const [brandScope, setBrandScope] = useState<Extract<BrandScope, "panel" | "studio">>("panel");
   const [sessionRole, setSessionRole] = useState<SessionRole>(null);
   const [componentType, setComponentType] = useState<LabComponentType>("hero");
@@ -395,8 +413,14 @@ export default function PublishedHeroLabPage() {
   const [copyWidth, setCopyWidth] = useState<CopyWidth>("balanced");
   const [ctaMode, setCtaMode] = useState<CtaMode>("balanced");
   const [overlayMode, setOverlayMode] = useState<HeroAppearanceVariant>("soft");
+  const [overlayStyleMode, setOverlayStyleMode] = useState<OverlayStyleMode>("gradient");
   const [overlayColor, setOverlayColor] = useState<OverlayColor>("blue");
   const [backgroundEmphasis, setBackgroundEmphasis] = useState<BackgroundEmphasis>("medium");
+  const [navPositionOverride, setNavPositionOverride] = useState<PositionXOverride>("auto");
+  const [logoPositionOverride, setLogoPositionOverride] = useState<PositionXOverride>("auto");
+  const [visualPositionOverride, setVisualPositionOverride] = useState<PositionXOverride>("auto");
+  const [copyBlockPositionOverride, setCopyBlockPositionOverride] =
+    useState<CopyBlockPositionOverride>("auto");
   const [badgeVisible, setBadgeVisible] = useState<boolean>(true);
   const [headlineDraft, setHeadlineDraft] = useState<string>("");
   const [subheadlineDraft, setSubheadlineDraft] = useState<string>("");
@@ -493,16 +517,29 @@ export default function PublishedHeroLabPage() {
     [freeLayoutDraft, viewport]
   );
   const overlaySlots = activeFreeLayoutViewport?.slots ?? [];
-  const sceneOverlayTintClass = SCENE_OVERLAY_TINT_CLASS[overlayColor];
+  const sceneOverlayTintClass =
+    overlayStyleMode === "solid"
+      ? SCENE_OVERLAY_SOLID_TINT_CLASS[overlayColor]
+      : SCENE_OVERLAY_GRADIENT_TINT_CLASS[overlayColor];
   const sceneOverlayOpacityClass = SCENE_OVERLAY_OPACITY_CLASS[overlayMode][backgroundEmphasis];
   const heroLayoutClass = HERO_LAYOUT_CLASS[heroLayoutType];
-  const navPosition = heroLayoutClass.navPosition;
+  const navPosition =
+    navPositionOverride === "auto" ? heroLayoutClass.navPosition : navPositionOverride;
   const headlinePosition = heroLayoutClass.headlinePosition;
-  const copyBlockPosition = heroLayoutClass.copyBlockPosition;
+  const copyBlockPosition =
+    copyBlockPositionOverride === "auto"
+      ? heroLayoutClass.copyBlockPosition
+      : copyBlockPositionOverride;
   const ctaPosition = heroLayoutClass.ctaPosition;
   const footerPosition = heroLayoutClass.footerPosition;
-  const visualPosition = heroLayoutClass.visualPosition;
-  const logoPosition = heroLayoutClass.logoPosition;
+  const visualPosition =
+    visualPositionOverride === "auto" ? heroLayoutClass.visualPosition : visualPositionOverride;
+  const logoPosition =
+    logoPositionOverride === "auto" ? heroLayoutClass.logoPosition : logoPositionOverride;
+  const labSceneOverlayClassName =
+    overlayStyleMode === "none"
+      ? "opacity-0 [background:transparent]"
+      : `mix-blend-normal transition-opacity duration-200 ${sceneOverlayTintClass} ${sceneOverlayOpacityClass}`;
   const updateBrief = <K extends keyof HeroBrief>(key: K, value: HeroBrief[K]) => {
     setBrief((previous) => ({ ...previous, [key]: value }));
   };
@@ -575,7 +612,7 @@ export default function PublishedHeroLabPage() {
             ];
 
     const atmosphereSuggestions = [
-      `Direccion base: overlay ${overlayMode}, tinte ${overlayColor}, fondo ${backgroundEmphasis}.`,
+      `Direccion base: densidad ${overlayMode}, estilo ${overlayStyleMode}, tinte ${overlayColor}, fondo ${backgroundEmphasis}.`,
       brief.tone === "premium"
         ? "Para tono premium: prioriza composicion estable, contraste medio-alto y copy corto."
         : brief.tone === "close"
@@ -594,7 +631,7 @@ export default function PublishedHeroLabPage() {
       ctas: ctaOptions,
       atmosphere: atmosphereSuggestions,
     };
-  }, [backgroundEmphasis, brief, overlayColor, overlayMode]);
+  }, [backgroundEmphasis, brief, overlayColor, overlayMode, overlayStyleMode]);
 
   const snapshotForPreview = useMemo<PublishedPieceSnapshot>(() => {
     const base = HERO_CANDIDATES[candidateId];
@@ -1075,7 +1112,7 @@ export default function PublishedHeroLabPage() {
 
   return (
     <main className="min-h-svh w-full [background:radial-gradient(136%_120%_at_50%_-10%,color-mix(in_oklab,var(--accent-soft,var(--muted))_66%,transparent),transparent_40%),linear-gradient(180deg,color-mix(in_oklab,var(--panel-surface-1,var(--background))_72%,var(--panel-background,var(--background)))_0%,var(--panel-background,var(--background))_100%)] text-foreground">
-      <BrandHydrator scope={brandScope} />
+      {disableInternalBrandHydrator ? null : <BrandHydrator scope={brandScope} />}
       <div className="mx-auto w-full max-w-[1600px] px-3 py-4 sm:px-4 sm:py-6">
         <div className="mb-4 rounded-2xl border border-border/70 [background:var(--panel-surface-1,var(--background))] p-4 [box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]">
           <p className="text-xs font-semibold uppercase tracking-wider text-processing-foreground">
@@ -1216,6 +1253,82 @@ export default function PublishedHeroLabPage() {
                     <option value="expanded">expanded</option>
                   </select>
                 </label>
+                <div className="rounded-lg border border-border [background:var(--surface-3,var(--card))] p-2">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Composition Fine Tune
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNavPositionOverride("auto");
+                        setLogoPositionOverride("auto");
+                        setVisualPositionOverride("auto");
+                        setCopyBlockPositionOverride("auto");
+                      }}
+                      className="rounded-md border border-border/80 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground transition hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))]"
+                    >
+                      reset
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <label className="grid gap-1">
+                      <span className="text-muted-foreground">nav</span>
+                      <select
+                        value={navPositionOverride}
+                        onChange={(event) => setNavPositionOverride(event.target.value as PositionXOverride)}
+                        className="rounded-md border border-border [background:var(--surface-2,var(--card))] px-2 py-1 text-foreground"
+                      >
+                        <option value="auto">auto</option>
+                        <option value="left">left</option>
+                        <option value="center">center</option>
+                        <option value="right">right</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-muted-foreground">logo</span>
+                      <select
+                        value={logoPositionOverride}
+                        onChange={(event) => setLogoPositionOverride(event.target.value as PositionXOverride)}
+                        className="rounded-md border border-border [background:var(--surface-2,var(--card))] px-2 py-1 text-foreground"
+                      >
+                        <option value="auto">auto</option>
+                        <option value="left">left</option>
+                        <option value="center">center</option>
+                        <option value="right">right</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-muted-foreground">visual</span>
+                      <select
+                        value={visualPositionOverride}
+                        onChange={(event) => setVisualPositionOverride(event.target.value as PositionXOverride)}
+                        className="rounded-md border border-border [background:var(--surface-2,var(--card))] px-2 py-1 text-foreground"
+                      >
+                        <option value="auto">auto</option>
+                        <option value="left">left</option>
+                        <option value="center">center</option>
+                        <option value="right">right</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-muted-foreground">copy block</span>
+                      <select
+                        value={copyBlockPositionOverride}
+                        onChange={(event) =>
+                          setCopyBlockPositionOverride(event.target.value as CopyBlockPositionOverride)
+                        }
+                        className="rounded-md border border-border [background:var(--surface-2,var(--card))] px-2 py-1 text-foreground"
+                      >
+                        <option value="auto">auto</option>
+                        <option value="left">left</option>
+                        <option value="center-left">center-left</option>
+                        <option value="center">center</option>
+                        <option value="right">right</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
               </div>
             </section>
             <section className="rounded-2xl border border-border/80 [background:var(--panel-sidebar,var(--surface-2,var(--card)))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
@@ -1248,7 +1361,7 @@ export default function PublishedHeroLabPage() {
                   `opaque` concentra foco en la banda del menu. `integrated` elimina caja visible y navega flotando sobre el hero.
                 </p>
                 <label className="block">
-                  <span className="mb-1 block text-muted-foreground">overlay mode</span>
+                  <span className="mb-1 block text-muted-foreground">overlay density</span>
                   <select
                     value={overlayMode}
                     onChange={(event) => setOverlayMode(event.target.value as HeroAppearanceVariant)}
@@ -1259,15 +1372,28 @@ export default function PublishedHeroLabPage() {
                     <option value="solid">solid</option>
                   </select>
                 </label>
+                <label className="block">
+                  <span className="mb-1 block text-muted-foreground">overlay style</span>
+                  <select
+                    value={overlayStyleMode}
+                    onChange={(event) => setOverlayStyleMode(event.target.value as OverlayStyleMode)}
+                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
+                  >
+                    <option value="gradient">gradient</option>
+                    <option value="solid">solid</option>
+                    <option value="none">none</option>
+                  </select>
+                </label>
                 <div>
                   <span className="mb-1 block text-muted-foreground">overlay tint</span>
                   <div className="grid grid-cols-2 gap-1 rounded-lg border border-border [background:var(--surface-3,var(--card))] p-1">
-                    {(["blue", "green", "amber", "purple", "smoke", "none"] as const).map((tint) => (
+                    {(["blue", "green", "amber", "purple", "smoke"] as const).map((tint) => (
                       <button
                         key={tint}
                         type="button"
                         onClick={() => setOverlayColor(tint)}
-                        className={`inline-flex items-center gap-2 rounded-md border px-2 py-1.5 text-[11px] font-semibold capitalize transition ${overlayColor === tint ? "[border-color:color-mix(in_oklab,var(--processing)_44%,transparent)] bg-processing-soft text-processing-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))]" : "border-border/80 text-muted-foreground hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))]"}`}
+                        disabled={overlayStyleMode === "none"}
+                        className={`inline-flex items-center gap-2 rounded-md border px-2 py-1.5 text-[11px] font-semibold capitalize transition disabled:opacity-45 ${overlayColor === tint ? "[border-color:color-mix(in_oklab,var(--processing)_44%,transparent)] bg-processing-soft text-processing-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))]" : "border-border/80 text-muted-foreground hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))]"}`}
                       >
                         <span className={`block h-2.5 w-4 rounded-sm ${OVERLAY_TINT_PREVIEW_CLASS[tint]}`} />
                         {tint}
@@ -1382,8 +1508,9 @@ export default function PublishedHeroLabPage() {
 
               <div
                 ref={previewStageRef}
-                className="relative h-full flex-1 overflow-hidden border-t border-border/70 [background:var(--panel-surface-2,var(--surface-2,var(--card)))] [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,var(--border)_44%,transparent)]"
+                className="relative h-full flex-1 overflow-hidden border-t border-border/70 [background:linear-gradient(180deg,color-mix(in_oklab,var(--background)_94%,var(--surface-2,var(--card))),color-mix(in_oklab,var(--background)_88%,var(--surface-2,var(--card))))] [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,var(--border)_44%,transparent)]"
               >
+                <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:radial-gradient(color-mix(in_oklab,var(--border)_34%,transparent)_1px,transparent_1px)] [background-size:16px_16px]" />
                 <div className="absolute inset-0 flex items-center justify-center px-3 py-5">
                   <div
                     className="relative overflow-hidden rounded-[24px] ring-1 ring-border/65 [box-shadow:var(--elevation-overlay,var(--panel-shadow-3))]"
@@ -1421,8 +1548,9 @@ export default function PublishedHeroLabPage() {
                         visualPosition={visualPosition}
                         logoPosition={logoPosition}
                         overlayColor={overlayColor}
+                        overlayStyleMode={overlayStyleMode}
                         backgroundEmphasis={backgroundEmphasis}
-                        labSceneOverlayClassName={`mix-blend-normal transition-opacity duration-200 ${sceneOverlayTintClass} ${sceneOverlayOpacityClass}`}
+                        labSceneOverlayClassName={labSceneOverlayClassName}
                         isLabMode={true}
                       />
                       {SHOW_LAYOUT_GUIDES ? (
