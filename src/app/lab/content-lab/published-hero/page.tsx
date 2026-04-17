@@ -26,7 +26,7 @@ type BackgroundEmphasis = "low" | "medium" | "high";
 type CtaMode = "balanced" | "primary-focus";
 type Verdict = "weak" | "promising" | "preset-candidate";
 type LabComponentType = "hero" | "banner" | "landing";
-type HeroLayoutType = "centered" | "split-left" | "split-right" | "stacked";
+type HeroLayoutType = "centered" | "split" | "logo-focus" | "media-heavy";
 type ActionPriority = "alta" | "media" | "baja";
 type CanvasMode = "preview" | "layout";
 type BriefObjective = "bookings" | "services" | "campaign";
@@ -161,9 +161,9 @@ const VIEWPORT_BUTTON_LABEL: Record<
 
 const HERO_LAYOUT_TYPES: readonly HeroLayoutType[] = [
   "centered",
-  "split-left",
-  "split-right",
-  "stacked",
+  "split",
+  "logo-focus",
+  "media-heavy",
 ];
 
 const HERO_LAYOUT_CLASS: Record<
@@ -175,6 +175,7 @@ const HERO_LAYOUT_CLASS: Record<
     ctaPosition: CtaPosition;
     footerPosition: PositionX;
     visualPosition: PositionX;
+    logoPosition: PositionX;
   }
 > = {
   centered: {
@@ -184,31 +185,42 @@ const HERO_LAYOUT_CLASS: Record<
     ctaPosition: "center",
     footerPosition: "center",
     visualPosition: "center",
+    logoPosition: "center",
   },
-  "split-left": {
+  split: {
     navPosition: "left",
     headlinePosition: "left",
     copyBlockPosition: "left",
     ctaPosition: "start",
     footerPosition: "left",
     visualPosition: "right",
+    logoPosition: "left",
   },
-  "split-right": {
-    navPosition: "right",
-    headlinePosition: "right",
-    copyBlockPosition: "right",
-    ctaPosition: "end",
-    footerPosition: "right",
-    visualPosition: "left",
-  },
-  stacked: {
+  "logo-focus": {
     navPosition: "center",
     headlinePosition: "center",
     copyBlockPosition: "center-left",
     ctaPosition: "center",
     footerPosition: "center",
     visualPosition: "center",
+    logoPosition: "center",
   },
+  "media-heavy": {
+    navPosition: "right",
+    headlinePosition: "right",
+    copyBlockPosition: "right",
+    ctaPosition: "end",
+    footerPosition: "right",
+    visualPosition: "left",
+    logoPosition: "right",
+  },
+};
+
+const HERO_LAYOUT_LABEL: Record<HeroLayoutType, string> = {
+  centered: "Centered",
+  split: "Split",
+  "logo-focus": "Logo focus",
+  "media-heavy": "Media heavy",
 };
 
 const OVERLAY_TINT_PREVIEW_CLASS: Record<OverlayColor, string> = {
@@ -377,7 +389,7 @@ export default function PublishedHeroLabPage() {
   });
   const [viewport, setViewport] = useState<PreviewViewport>("mobile");
   const [canvasMode, setCanvasMode] = useState<CanvasMode>("preview");
-  const [heroLayoutType, setHeroLayoutType] = useState<HeroLayoutType>("split-left");
+  const [heroLayoutType, setHeroLayoutType] = useState<HeroLayoutType>("split");
   const [menuStyle, setMenuStyle] = useState<MenuStyle>("integrated");
   const [menuOpen, setMenuOpen] = useState<boolean>(true);
   const [copyWidth, setCopyWidth] = useState<CopyWidth>("balanced");
@@ -490,6 +502,7 @@ export default function PublishedHeroLabPage() {
   const ctaPosition = heroLayoutClass.ctaPosition;
   const footerPosition = heroLayoutClass.footerPosition;
   const visualPosition = heroLayoutClass.visualPosition;
+  const logoPosition = heroLayoutClass.logoPosition;
   const updateBrief = <K extends keyof HeroBrief>(key: K, value: HeroBrief[K]) => {
     setBrief((previous) => ({ ...previous, [key]: value }));
   };
@@ -929,7 +942,7 @@ export default function PublishedHeroLabPage() {
   const whyThisScore = useMemo(() => {
     const reasons: string[] = [];
 
-    if (heroLayoutType === "split-left" || heroLayoutType === "split-right") {
+    if (heroLayoutType === "split" || heroLayoutType === "media-heavy") {
       reasons.push(
         `El layout ${heroLayoutType} mejora jerarquia entre copy y visual para el headline actual.`
       );
@@ -1006,8 +1019,8 @@ export default function PublishedHeroLabPage() {
     if (heroLayoutType === "centered" && brief.priority === "conversion") {
       actions.push({
         priority: "media",
-        action: "Probar split-left para conversion",
-        reason: "Con prioridad de conversion, split-left suele acelerar escaneo y decision.",
+        action: "Probar split para conversion",
+        reason: "Con prioridad de conversion, split suele acelerar escaneo y decision.",
       });
     }
 
@@ -1180,13 +1193,16 @@ export default function PublishedHeroLabPage() {
                         onClick={() => setHeroLayoutType(layoutType)}
                         className={`rounded-md border px-2 py-2 text-center text-[11px] font-semibold uppercase tracking-wide transition ${heroLayoutType === layoutType ? "[border-color:color-mix(in_oklab,var(--processing)_44%,transparent)] bg-processing-soft text-processing-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))]" : "border-transparent text-muted-foreground hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))] hover:[border-color:color-mix(in_oklab,var(--border)_62%,transparent)]"}`}
                       >
-                        {layoutType}
+                        {HERO_LAYOUT_LABEL[layoutType]}
                       </button>
                     ))}
                   </div>
                 </div>
                 <p className="rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-[11px] text-muted-foreground">
-                  Active composition: <span className="font-semibold text-foreground">{heroLayoutType}</span>
+                  Active composition:{" "}
+                  <span className="font-semibold text-foreground">
+                    {HERO_LAYOUT_LABEL[heroLayoutType]}
+                  </span>
                 </p>
                 <label className="block text-xs">
                   <span className="mb-1 block text-muted-foreground">copy width</span>
@@ -1403,6 +1419,7 @@ export default function PublishedHeroLabPage() {
                         ctaPosition={ctaPosition}
                         footerPosition={footerPosition}
                         visualPosition={visualPosition}
+                        logoPosition={logoPosition}
                         overlayColor={overlayColor}
                         backgroundEmphasis={backgroundEmphasis}
                         labSceneOverlayClassName={`mix-blend-normal transition-opacity duration-200 ${sceneOverlayTintClass} ${sceneOverlayOpacityClass}`}

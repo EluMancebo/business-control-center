@@ -192,6 +192,21 @@ export default function PublicHero({
   const isMenuControlled = typeof forceMobileMenuOpen === "boolean";
   const shouldBindLabMenuHandlers = isLabMode && isMenuControlled;
   const resolvedCopyPosition = copyBlockPosition ?? contentPosition;
+  const isLogoFocusComposition =
+    isLabMode &&
+    visualPosition === "center" &&
+    logoPosition === "center" &&
+    resolvedCopyPosition === "center-left";
+  const isMediaHeavyComposition =
+    isLabMode &&
+    visualPosition === "left" &&
+    resolvedCopyPosition === "right" &&
+    ctaPosition === "end";
+  const isSplitComposition =
+    isLabMode &&
+    visualPosition === "right" &&
+    resolvedCopyPosition === "left" &&
+    ctaPosition === "start";
   const menuLayerPositionClass = isLabMode ? "absolute" : "fixed";
   const menuBackdropZClass = isLabMode ? "z-20" : "z-40";
   const menuPanelZClass = isLabMode ? "z-30" : "z-50";
@@ -222,6 +237,11 @@ export default function PublicHero({
 
   const copyWidthClass =
     copyWidth === "narrow" ? "max-w-lg" : copyWidth === "wide" ? "max-w-2xl" : "max-w-xl";
+  const heroGridClass = isMediaHeavyComposition
+    ? "grid grid-cols-1 items-center gap-5 md:grid-cols-[0.82fr_1.18fr] md:gap-9"
+    : isSplitComposition
+      ? "grid grid-cols-1 items-center gap-5 md:grid-cols-2 md:gap-10"
+      : "grid grid-cols-1 items-center gap-5 md:grid-cols-2 md:gap-8";
   const frameSurfaceClass = isLabMode
     ? "[background:transparent]"
     : "[background:var(--hero-frame-surface-bg)]";
@@ -268,15 +288,40 @@ export default function PublicHero({
   const ctaDesktopAlignClass = ctaPosition === "center" ? "justify-center" : ctaPosition === "end" ? "justify-end" : "justify-start";
   const ctaMobilePositionClass = ctaPosition === "center" ? "mx-auto max-w-sm" : ctaPosition === "end" ? "ml-auto max-w-sm" : "mr-auto max-w-sm";
   const copyPaneOrderClass = visualPosition === "left" ? "md:order-2" : "md:order-1";
+  const copyPaneSpacingClass = isSplitComposition
+    ? "md:pr-6"
+    : isMediaHeavyComposition
+      ? "md:pl-4"
+      : "";
   const logoAlignClass = logoPosition === "left" ? "justify-start" : logoPosition === "right" ? "justify-end" : "justify-center";
   const logoTextAlignClass = logoPosition === "left" ? "text-left" : logoPosition === "right" ? "text-right" : "text-center";
   const logoFramePaddingClass = logoPosition === "center" ? "" : "px-6";
   const visualPaneClass =
     visualPosition === "left"
-      ? "mx-auto hidden w-full max-w-md md:order-1 md:mr-auto md:block md:max-w-xl"
+      ? isMediaHeavyComposition
+        ? "mx-auto hidden w-full max-w-md md:order-1 md:-ml-6 md:block md:w-[112%] md:max-w-none"
+        : "mx-auto hidden w-full max-w-md md:order-1 md:mr-auto md:block md:max-w-xl"
       : visualPosition === "center"
-        ? "mx-auto hidden w-full max-w-md md:order-2 md:block md:max-w-xl"
+        ? isLogoFocusComposition
+          ? "mx-auto hidden w-full max-w-md md:order-2 md:block md:max-w-2xl"
+          : "mx-auto hidden w-full max-w-md md:order-2 md:block md:max-w-xl"
         : "mx-auto hidden w-full max-w-md md:order-2 md:ml-auto md:block md:max-w-xl";
+  const headlineSizeClass = isLogoFocusComposition
+    ? "text-balance text-2xl font-bold leading-[1.06] tracking-tight sm:text-4xl md:text-5xl"
+    : "text-balance text-3xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl md:text-6xl";
+  const visualFrameAspectClass = isLogoFocusComposition
+    ? "sm:aspect-[2/1] md:aspect-[12/5]"
+    : isMediaHeavyComposition
+      ? "sm:aspect-[16/9] md:aspect-[16/9]"
+      : "sm:aspect-video md:aspect-[16/10]";
+  const logoMobileSizeClass = isLogoFocusComposition
+    ? "max-h-40 w-auto opacity-95"
+    : "max-h-32 w-auto opacity-95";
+  const logoDesktopSizeClass = isLogoFocusComposition
+    ? "max-h-56 w-auto opacity-95 md:max-h-80"
+    : isMediaHeavyComposition
+      ? "max-h-48 w-auto opacity-95 md:max-h-72"
+      : "max-h-44 w-auto opacity-95 md:max-h-64";
   const footerDesktopAlignClass =
     footerPosition === "left"
       ? "md:justify-start"
@@ -450,11 +495,11 @@ export default function PublicHero({
         </header>
 
         <main className="min-h-0 flex-1 pt-5 pb-36 md:pb-0">
-          <div className="grid grid-cols-1 items-center gap-5 md:grid-cols-2 md:gap-8">
-            <div className={`${copyPositionClass} ${copyPaneOrderClass}`}>
+          <div className={heroGridClass}>
+            <div className={`${copyPositionClass} ${copyPaneOrderClass} ${copyPaneSpacingClass}`}>
               {showBadge ? <Pill className="mb-3">{badge}</Pill> : null}
 
-              <h1 className={`text-balance text-3xl font-extrabold leading-[1.02] tracking-tight [color:var(--hero-text-inverse)] sm:text-5xl md:text-6xl ${headlinePositionClass}`}>
+              <h1 className={`${headlineSizeClass} [color:var(--hero-text-inverse)] ${headlinePositionClass}`}>
                 <span>{titleLead || titleRaw}</span>
                 {titleAccent ? (
                   <>
@@ -473,7 +518,7 @@ export default function PublicHero({
                     <img
                       src={heroLogoUrl}
                       alt={business?.name ?? "Logo"}
-                      className="max-h-32 w-auto opacity-95"
+                      className={logoMobileSizeClass}
                     />
                   ) : (
                     <div className={`${logoTextAlignClass} [color:var(--hero-text-80)]`}>
@@ -528,13 +573,13 @@ export default function PublicHero({
             </div>
 
             <div className={visualPaneClass}>
-              <div className={`relative mx-auto flex aspect-[16/7] w-full items-center rounded-[28px] ${logoAlignClass} ${logoFramePaddingClass} ${visualFrameSurfaceClass} sm:aspect-video md:aspect-[16/10]`}>
+              <div className={`relative mx-auto flex aspect-[16/7] w-full items-center rounded-[28px] ${logoAlignClass} ${logoFramePaddingClass} ${visualFrameSurfaceClass} ${visualFrameAspectClass}`}>
                 {heroLogoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={heroLogoUrl}
                     alt={business?.name ?? "Logo"}
-                    className="max-h-44 w-auto opacity-95 md:max-h-64"
+                    className={logoDesktopSizeClass}
                   />
                 ) : (
                   <div className={`${logoTextAlignClass} [color:var(--hero-text-80)]`}>
