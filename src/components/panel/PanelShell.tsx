@@ -170,11 +170,11 @@ export default function PanelShell({
     : "[background:var(--panel-sidebar,var(--surface-2,var(--card)))]";
 
   // Autoridad de apariencia por capa:
-  // - Capa 1 (admin): studio
-  // - Capa 2 (cliente): panel
+  // - Capa 1 (Studio): studio
+  // - Capa 2 (Panel cliente): panel
   const brandScope = useMemo(
-    () => (computedIsAdmin ? "studio" : "panel"),
-    [computedIsAdmin]
+    () => (isStudio ? "studio" : "panel"),
+    [isStudio]
   );
   const brandBusinessSlug = useMemo(
     () => (brandScope === "panel" ? activeBusinessSlug : undefined),

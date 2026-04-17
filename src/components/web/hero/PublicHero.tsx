@@ -205,6 +205,7 @@ export default function PublicHero({
   const heroLogoUrl =
     normalizeAssetUrl(data.logoUrl) ?? normalizeAssetUrl(business?.logoUrl);
   const isMenuControlled = typeof forceMobileMenuOpen === "boolean";
+  const shouldBindLabMenuHandlers = isLabMode && isMenuControlled;
   const resolvedCopyPosition = copyBlockPosition ?? contentPosition;
   const menuLayerPositionClass = isLabMode ? "absolute" : "fixed";
   const menuBackdropZClass = isLabMode ? "z-20" : "z-40";
@@ -399,7 +400,13 @@ export default function PublicHero({
               id="bcc-mobile-menu"
               type="checkbox"
               className="peer sr-only"
-              {...(isMenuControlled ? { checked: forceMobileMenuOpen, onChange: (event: ChangeEvent<HTMLInputElement>) => handleMenuStateChange(event.target.checked) } : {})}
+              {...(shouldBindLabMenuHandlers
+                ? {
+                    checked: Boolean(forceMobileMenuOpen),
+                    onChange: (event: ChangeEvent<HTMLInputElement>) =>
+                      handleMenuStateChange(event.target.checked),
+                  }
+                : {})}
             />
 
             <label
@@ -431,13 +438,25 @@ export default function PublicHero({
               </div>
 
               <div className="mt-4 space-y-2">
-                <a href="#" className={menuItemClass} onClick={handleLabNavItemClick}>
+                <a
+                  href="#"
+                  className={menuItemClass}
+                  {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
+                >
                   Home
                 </a>
-                <a href="#" className={menuItemClass} onClick={handleLabNavItemClick}>
+                <a
+                  href="#"
+                  className={menuItemClass}
+                  {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
+                >
                   Services
                 </a>
-                <a href="#" className={menuItemClass} onClick={handleLabNavItemClick}>
+                <a
+                  href="#"
+                  className={menuItemClass}
+                  {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
+                >
                   Contact
                 </a>
               </div>
