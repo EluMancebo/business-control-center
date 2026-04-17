@@ -1,5 +1,6 @@
 import { getSitePageSections, type SitePageSectionsInput } from "@/lib/site-reader";
 import type { SectionInstance } from "@/lib/studio";
+import { renderBannerSection } from "./banner";
 import { renderHeroSection } from "./hero";
 import { renderLocationSection } from "./location";
 import type { RenderableSection, RenderableUnsupportedSection, RendererInputSection } from "./types";
@@ -45,6 +46,11 @@ export function renderSiteSections(input: SitePageSectionsInput): RenderableSect
 
     if (normalizedSection.id === "hero") {
       renderable.push(renderHeroSection(normalizedSection));
+      continue;
+    }
+
+    if (normalizedSection.id === "banner") {
+      renderable.push(renderBannerSection(normalizedSection));
       continue;
     }
 

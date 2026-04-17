@@ -1,5 +1,6 @@
 import type { ResolvedSitePage } from "@/lib/site-reader";
 import type { HeroSectionPayload } from "@/lib/studio";
+import type { PublicBannerPayload } from "@/lib/web/banner/publicPayload";
 
 export type RenderableHeroSection = {
   type: "hero";
@@ -22,6 +23,13 @@ export type RenderableLocationSection = {
   payload: LocationSectionPayload;
 };
 
+export type RenderableBannerSection = {
+  type: "banner";
+  sectionId: "banner";
+  variant: string;
+  payload: PublicBannerPayload;
+};
+
 export type RenderableUnsupportedSection = {
   type: "unsupported";
   sectionId: string;
@@ -31,6 +39,7 @@ export type RenderableUnsupportedSection = {
 
 export type RenderableSection =
   | RenderableHeroSection
+  | RenderableBannerSection
   | RenderableLocationSection
   | RenderableUnsupportedSection;
 

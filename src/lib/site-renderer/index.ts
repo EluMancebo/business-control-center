@@ -1,4 +1,5 @@
 export type {
+  RenderableBannerSection,
   RenderableHeroSection,
   RenderableLocationSection,
   LocationSectionPayload,
@@ -11,6 +12,7 @@ export type {
 } from "./types";
 
 export { parseHeroSectionPayload, renderHeroSection } from "./hero";
+export { parseBannerSectionPayload, renderBannerSection } from "./banner";
 export { parseLocationSectionPayload, renderLocationSection } from "./location";
 export { renderSiteSections } from "./sections";
 export { renderSitePage } from "./page";
