@@ -238,8 +238,8 @@ export default function PublicHero({
   const opaqueMenuWidthClass = isLabMode ? "w-full max-w-[26rem]" : "w-[min(100vw,26rem)]";
   const integratedMenuWidthClass = isLabMode ? "w-[min(92%,24rem)]" : "w-[min(92vw,24rem)]";
   const heroRootClass = isLabMode
-    ? "relative h-full w-full overflow-hidden"
-    : "relative min-h-svh w-full overflow-hidden";
+    ? "relative isolate h-full w-full overflow-hidden"
+    : "relative isolate min-h-svh w-full overflow-hidden";
   const heroContentClass = isLabMode
     ? "relative z-10 mx-auto flex h-full w-full max-w-6xl flex-col px-6"
     : "relative z-10 mx-auto flex min-h-svh w-full max-w-6xl flex-col px-6";
@@ -276,10 +276,10 @@ export default function PublicHero({
     : "[background:var(--hero-footer-surface-bg)]";
   const backgroundImageClass =
     backgroundEmphasis === "low"
-      ? "absolute inset-0 h-full w-full object-cover brightness-[0.48] saturate-[0.78] scale-[1.02]"
+      ? "absolute inset-0 z-0 h-full w-full object-cover brightness-[0.48] saturate-[0.78] scale-[1.02]"
       : backgroundEmphasis === "high"
-        ? "absolute inset-0 h-full w-full object-cover brightness-[1.04] saturate-[1.2] scale-[1.08]"
-        : "absolute inset-0 h-full w-full object-cover brightness-[0.9] saturate-[1.03]";
+        ? "absolute inset-0 z-0 h-full w-full object-cover brightness-[1.04] saturate-[1.2] scale-[1.08]"
+        : "absolute inset-0 z-0 h-full w-full object-cover brightness-[0.9] saturate-[1.03]";
 
   const isMobileNavigation = navigationMode === "mobile";
   const isDesktopNavigation = navigationMode === "desktop";
@@ -399,11 +399,11 @@ export default function PublicHero({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={bg} alt="" className={backgroundImageClass} />
           {!hasLabSceneOverlay ? (
-            <div className="absolute inset-0 [background:var(--hero-overlay-tint-bg)] [opacity:var(--hero-overlay-tint-opacity)]" />
+            <div className="pointer-events-none absolute inset-0 z-[2] [background:var(--hero-overlay-tint-bg)] [opacity:var(--hero-overlay-tint-opacity)]" />
           ) : null}
         </>
       ) : (
-        <div className="absolute inset-0 [background:var(--hero-overlay-no-image-bg)]" />
+        <div className="pointer-events-none absolute inset-0 z-0 [background:var(--hero-overlay-no-image-bg)]" />
       )}
 
       {labSceneOverlayClassName ? (
