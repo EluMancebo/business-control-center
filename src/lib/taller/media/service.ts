@@ -228,10 +228,23 @@ export function formatBytes(bytes: number) {
 }
 
 export async function fetchSystemMediaClient(tagFilter: string): Promise<AssetItem[]> {
+  return fetchSystemMediaClientByQuery({ tag: tagFilter });
+}
+
+export async function fetchSystemMediaClientByQuery(input: {
+  tag?: string;
+  allowedIn?: string;
+  pipelineStatus?: AssetPipelineStatus;
+  variantKey?: AssetVariantKey;
+  status?: AssetStatus;
+}): Promise<AssetItem[]> {
   const qs = new URLSearchParams();
   qs.set("scope", "system");
-  qs.set("status", "active");
-  if (tagFilter.trim()) qs.set("tag", tagFilter.trim());
+  qs.set("status", input.status ?? "active");
+  if (String(input.tag || "").trim()) qs.set("tag", String(input.tag).trim());
+  if (String(input.allowedIn || "").trim()) qs.set("allowedIn", String(input.allowedIn).trim());
+  if (input.pipelineStatus) qs.set("pipelineStatus", input.pipelineStatus);
+  if (input.variantKey) qs.set("variantKey", input.variantKey);
 
   const res = await fetch(`/api/taller/media?${qs.toString()}`, {
     method: "GET",

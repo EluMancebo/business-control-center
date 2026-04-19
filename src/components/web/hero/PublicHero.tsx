@@ -1,6 +1,5 @@
 // src/components/web/hero/PublicHero.tsx
-import type { ChangeEvent, MouseEvent, ReactNode } from "react";
-import CreatedByMini from "@/components/footer/CreatedByMini";
+import { useId, type ChangeEvent, type MouseEvent, type ReactNode } from "react";
 import { resolveHeroAppearance } from "./appearance";
 import type { HeroAppearanceVariant } from "@/lib/web/hero/types";
 import type { PublicHeroPayload } from "@/lib/web/hero/publicPayload";
@@ -10,6 +9,11 @@ export type BusinessPublic = {
   slug: string;
   activeHeroVariantKey?: string;
   logoUrl?: string;
+  address?: string;
+  phone?: string;
+  whatsapp?: string;
+  email?: string;
+  footerSignature?: string;
 };
 
 type PublicHeroProps = {
@@ -30,12 +34,61 @@ type PublicHeroProps = {
   overlayColor?: "blue" | "green" | "amber" | "purple" | "smoke" | "none";
   overlayStyleMode?: "gradient" | "solid" | "none";
   backgroundEmphasis?: "low" | "medium" | "high";
+  labHeadlineTone?:
+    | "white"
+    | "black"
+    | "inverse"
+    | "muted-light"
+    | "warm-light"
+    | "cool-light";
+  navTriggerSize?: "sm" | "md" | "lg";
+  navTriggerAura?: "none" | "soft" | "strong";
+  navTriggerSurface?: "minimal" | "solid" | "glass";
+  navTriggerTone?: "inverse" | "primary" | "muted";
+  navTriggerHover?: "soft" | "lift" | "glow";
+  desktopNavSize?: "sm" | "md" | "lg";
+  desktopNavTone?: "inverse" | "primary" | "muted";
+  desktopNavSurface?: "minimal" | "solid" | "glass";
+  desktopNavHover?: "soft" | "lift" | "glow";
+  desktopNavPresence?: "low" | "medium" | "high";
+  navOpenBehavior?: "overlay" | "drawer" | "fullscreen";
+  navPanelWidth?: "narrow" | "normal" | "wide";
+  navPanelOrigin?: "right" | "left" | "center";
+  navPanelIncludeLogo?: boolean;
+  navPanelStyle?: "solid" | "glass" | "minimal";
+  navOverlayDensity?: "low" | "medium" | "high";
+  navOverlayStyle?: "tinted" | "neutral" | "none";
+  navReadabilityBoost?: "none" | "soft" | "strong";
+  navMenuBlockPosition?: "top" | "center" | "bottom";
+  navMenuAlignment?: "left" | "center" | "right";
+  navMenuItemSize?: "sm" | "md" | "lg";
+  navMenuSafeTopOffset?: "tight" | "normal" | "relaxed";
+  navMenuSafeSideOffset?: "tight" | "normal" | "relaxed";
+  navMenuVerticalSpacing?: "tight" | "normal" | "relaxed";
+  navMenuTextTone?: "inverse" | "muted" | "primary";
+  headerIntegration?: "integrated" | "separated";
+  headerVisualStyle?: "minimal" | "solid" | "glass";
+  headerTopSpacing?: "tight" | "normal" | "relaxed";
+  headerRelation?: "balanced" | "logo-focus" | "nav-focus";
+  footerIntegration?: "integrated" | "separated";
+  footerVisualStyle?: "minimal" | "solid" | "glass";
+  footerDensity?: "compact" | "balanced" | "spacious";
+  footerSignatureSeparation?: "tight" | "normal" | "relaxed";
+  mobileHeadlineScale?: "compact" | "balanced" | "expressive";
+  mobileLogoScale?: "compact" | "balanced" | "expressive";
+  gapLogoHeadline?: "tight" | "normal" | "relaxed";
+  gapHeadlineSubheadline?: "tight" | "normal" | "relaxed";
+  gapTextCta?: "tight" | "normal" | "relaxed";
+  gapCtaFooter?: "tight" | "normal" | "relaxed";
+  gapFooterDataSignature?: "tight" | "normal" | "relaxed";
   isLabMode?: boolean;
   labSceneOverlayClassName?: string;
   onLabMenuOpenChange?: (open: boolean) => void;
 };
 
 type HeroOverlayColor = NonNullable<PublicHeroProps["overlayColor"]>;
+type HeroLabHeadlineTone = NonNullable<PublicHeroProps["labHeadlineTone"]>;
+type HeroLabGapLevel = NonNullable<PublicHeroProps["gapLogoHeadline"]>;
 
 const HERO_APPEARANCE_TOKEN_CLASS: Record<HeroAppearanceVariant, string> = {
   transparent:
@@ -85,10 +138,22 @@ const HERO_SURFACE_MODE_TOKEN_CLASS = {
 } as const;
 
 const HERO_MENU_MODE_TOKEN_CLASS = {
-  lab: "[--hero-menu-backdrop-bg:linear-gradient(to_left,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_96%,transparent),color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_78%,transparent)_36%,color-mix(in_oklab,var(--hero-overlay,var(--foreground))_42%,transparent)_68%,transparent_100%)] [--hero-menu-opaque-bg:color-mix(in_oklab,var(--surface-3,var(--card))_52%,var(--hero-overlay-strong,var(--foreground))_48%)] [--hero-menu-opaque-shadow:var(--elevation-task,var(--panel-shadow-2))] [--hero-menu-border:color-mix(in_oklab,var(--hero-text-inverse)_34%,transparent)] [--hero-menu-text-shadow:0_2px_12px_color-mix(in_oklab,var(--foreground)_46%,transparent)]",
+  lab: "[--hero-menu-backdrop-bg:color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_90%,transparent)] [--hero-menu-opaque-bg:color-mix(in_oklab,var(--surface-3,var(--card))_52%,var(--hero-overlay-strong,var(--foreground))_48%)] [--hero-menu-opaque-shadow:var(--elevation-task,var(--panel-shadow-2))] [--hero-menu-border:color-mix(in_oklab,var(--hero-text-inverse)_34%,transparent)] [--hero-menu-text-shadow:0_2px_12px_color-mix(in_oklab,var(--foreground)_46%,transparent)]",
   runtime:
     "[--hero-menu-backdrop-bg:color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_92%,transparent)] [--hero-menu-opaque-bg:color-mix(in_oklab,var(--surface-3,var(--card))_42%,var(--hero-overlay-strong,var(--foreground))_58%)] [--hero-menu-opaque-shadow:var(--elevation-overlay,var(--panel-shadow-3))] [--hero-menu-border:color-mix(in_oklab,var(--hero-text-inverse)_34%,transparent)] [--hero-menu-text-shadow:0_2px_18px_color-mix(in_oklab,var(--foreground)_56%,transparent)]",
 } as const;
+
+const HERO_LAB_HEADLINE_TONE_TOKEN_CLASS: Record<HeroLabHeadlineTone, string> = {
+  white: "[--hero-lab-headline:#ffffff]",
+  black: "[--hero-lab-headline:#0f172a]",
+  inverse: "[--hero-lab-headline:var(--hero-text-inverse)]",
+  "muted-light":
+    "[--hero-lab-headline:color-mix(in_oklab,var(--hero-text-inverse)_88%,var(--muted,var(--surface-3,var(--card)))_12%)]",
+  "warm-light":
+    "[--hero-lab-headline:color-mix(in_oklab,var(--warning,var(--accent,var(--primary)))_18%,var(--hero-text-inverse)_82%)]",
+  "cool-light":
+    "[--hero-lab-headline:color-mix(in_oklab,var(--processing,var(--accent,var(--primary)))_18%,var(--hero-text-inverse)_82%)]",
+};
 
 const HERO_RUNTIME_FALLBACK_TOKEN_CLASS =
   "[--hero-text-inverse:var(--fg-dark,var(--text-inverse,var(--foreground)))] [--hero-text-90:color-mix(in_oklab,var(--hero-text-inverse)_90%,transparent)] [--hero-text-88:color-mix(in_oklab,var(--hero-text-inverse)_88%,transparent)] [--hero-text-85:color-mix(in_oklab,var(--hero-text-inverse)_85%,transparent)] [--hero-text-82:color-mix(in_oklab,var(--hero-text-inverse)_82%,transparent)] [--hero-text-80:color-mix(in_oklab,var(--hero-text-inverse)_80%,transparent)] [--hero-text-50:color-mix(in_oklab,var(--hero-text-inverse)_50%,transparent)] [--hero-chrome-surface-border-safe:var(--hero-chrome-surface-border,var(--border))] [--hero-cta-primary:var(--cta-primary,var(--primary))] [--hero-cta-primary-foreground:var(--cta-primary-foreground,var(--primary-foreground))] [--hero-cta-primary-hover:var(--cta-primary-hover,var(--primary))] [--hero-cta-secondary:var(--cta-secondary,var(--secondary,var(--background)))] [--hero-cta-secondary-foreground:var(--cta-secondary-foreground,var(--foreground))] [--hero-cta-secondary-hover:var(--cta-secondary-hover,var(--muted))]";
@@ -125,6 +190,15 @@ function splitTitleForAccent(raw: string): { lead: string; accent?: string } {
   return { lead, accent: rest };
 }
 
+function pickFirstString(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const normalized = value.trim();
+    if (normalized) return normalized;
+  }
+  return undefined;
+}
+
 function Pill({
   children,
   className = "",
@@ -148,11 +222,26 @@ function Pill({
 
 function FooterInlineItem({ icon, text }: { icon: string; text: string }) {
   return (
-    <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs [color:var(--hero-text-85)]">
-      <span aria-hidden="true">{icon}</span>
-      <span>{text}</span>
+    <span className="inline-flex max-w-full items-start gap-2 text-xs [color:var(--hero-text-85)]">
+      <span aria-hidden="true" className="pt-0.5">
+        {icon}
+      </span>
+      <span className="min-w-0 break-words">{text}</span>
     </span>
   );
+}
+
+function mapGapLevelToClass(
+  level: HeroLabGapLevel,
+  options: {
+    tight: string;
+    normal: string;
+    relaxed: string;
+  }
+): string {
+  if (level === "tight") return options.tight;
+  if (level === "relaxed") return options.relaxed;
+  return options.normal;
 }
 
 export default function PublicHero({
@@ -173,10 +262,52 @@ export default function PublicHero({
   overlayColor = "blue",
   overlayStyleMode = "gradient",
   backgroundEmphasis = "medium",
+  labHeadlineTone = "white",
+  navTriggerSize = "md",
+  navTriggerAura = "soft",
+  navTriggerSurface = "glass",
+  navTriggerTone = "inverse",
+  navTriggerHover = "soft",
+  desktopNavSize = "md",
+  desktopNavTone = "muted",
+  desktopNavSurface = "solid",
+  desktopNavHover = "soft",
+  desktopNavPresence = "medium",
+  navOpenBehavior = "overlay",
+  navPanelWidth = "normal",
+  navPanelOrigin = "right",
+  navPanelIncludeLogo = true,
+  navPanelStyle = "solid",
+  navOverlayDensity = "medium",
+  navOverlayStyle = "tinted",
+  navReadabilityBoost = "soft",
+  navMenuBlockPosition = "top",
+  navMenuAlignment = "left",
+  navMenuItemSize = "md",
+  navMenuSafeTopOffset = "normal",
+  navMenuSafeSideOffset = "normal",
+  navMenuVerticalSpacing = "normal",
+  navMenuTextTone = "inverse",
+  headerIntegration = "integrated",
+  headerVisualStyle = "solid",
+  headerTopSpacing = "normal",
+  headerRelation = "balanced",
+  footerIntegration = "integrated",
+  footerVisualStyle = "solid",
+  footerDensity = "balanced",
+  footerSignatureSeparation = "normal",
+  mobileHeadlineScale = "balanced",
+  mobileLogoScale = "balanced",
+  gapLogoHeadline = "normal",
+  gapHeadlineSubheadline = "normal",
+  gapTextCta = "normal",
+  gapCtaFooter = "normal",
+  gapFooterDataSignature = "normal",
   isLabMode = false,
   labSceneOverlayClassName,
   onLabMenuOpenChange,
 }: PublicHeroProps) {
+  const mobileMenuInputId = useId();
   const titleRaw = data.title ?? "El centro de mando de tu negocio";
   const { lead: titleLead, accent: titleAccent } = splitTitleForAccent(titleRaw);
 
@@ -191,6 +322,7 @@ export default function PublicHero({
   const cta2 = (data.secondaryCtaLabel as string) ?? "Servicios";
   const href1 = (data.primaryCtaHref as string) ?? "#";
   const href2 = (data.secondaryCtaHref as string) ?? "#";
+  const dataRecord = data as unknown as Record<string, unknown>;
 
   const bg = normalizeAssetUrl(data.backgroundImageUrl);
   const hasLabSceneOverlay = Boolean(labSceneOverlayClassName?.trim());
@@ -209,11 +341,60 @@ export default function PublicHero({
   const heroMenuModeTokenClassName = HERO_MENU_MODE_TOKEN_CLASS[
     isLabMode ? "lab" : "runtime"
   ];
+  const heroLabHeadlineToneTokenClassName = isLabMode
+    ? HERO_LAB_HEADLINE_TONE_TOKEN_CLASS[labHeadlineTone]
+    : "";
+  const headlineToneClassName = isLabMode
+    ? "[color:var(--hero-lab-headline,var(--hero-text-inverse))]"
+    : "[color:var(--hero-text-inverse)]";
 
   const headerLogoUrl =
     normalizeAssetUrl(business?.logoUrl) ?? normalizeAssetUrl(data.logoUrl);
   const heroLogoUrl =
     normalizeAssetUrl(data.logoUrl) ?? normalizeAssetUrl(business?.logoUrl);
+  const footerLogoUrl = heroLogoUrl ?? headerLogoUrl;
+  const footerBusinessName = pickFirstString(
+    dataRecord.footerBusinessName,
+    dataRecord.businessName,
+    business?.name,
+    "Caballeros Barbería"
+  ) as string;
+  const footerSignatureText = pickFirstString(
+    dataRecord.footerSignature,
+    dataRecord.signature,
+    business?.footerSignature,
+    "Created by ELU"
+  ) as string;
+  const footerAddress = pickFirstString(
+    dataRecord.footerAddress,
+    dataRecord.address,
+    business?.address,
+    "Dirección (pendiente)"
+  ) as string;
+  const footerPhone = pickFirstString(
+    dataRecord.footerPhone,
+    dataRecord.phone,
+    business?.phone,
+    "Teléfono"
+  ) as string;
+  const footerWhatsapp = pickFirstString(
+    dataRecord.footerWhatsapp,
+    dataRecord.whatsapp,
+    business?.whatsapp,
+    "WhatsApp"
+  ) as string;
+  const footerEmail = pickFirstString(
+    dataRecord.footerEmail,
+    dataRecord.email,
+    business?.email,
+    "email@cliente.com"
+  ) as string;
+  const footerContactItems = [
+    { id: "address", icon: "📍", text: footerAddress },
+    { id: "phone", icon: "☎️", text: footerPhone },
+    { id: "whatsapp", icon: "💬", text: footerWhatsapp },
+    { id: "email", icon: "✉️", text: footerEmail },
+  ];
   const isMenuControlled = typeof forceMobileMenuOpen === "boolean";
   const shouldBindLabMenuHandlers = isLabMode && isMenuControlled;
   const resolvedCopyPosition = copyBlockPosition ?? contentPosition;
@@ -235,8 +416,73 @@ export default function PublicHero({
   const menuLayerPositionClass = isLabMode ? "absolute" : "fixed";
   const menuBackdropZClass = isLabMode ? "z-20" : "z-40";
   const menuPanelZClass = isLabMode ? "z-30" : "z-50";
-  const opaqueMenuWidthClass = isLabMode ? "w-full max-w-[26rem]" : "w-[min(100vw,26rem)]";
-  const integratedMenuWidthClass = isLabMode ? "w-[min(92%,24rem)]" : "w-[min(92vw,24rem)]";
+  const effectiveNavTriggerSize = isLabMode ? navTriggerSize : "md";
+  const effectiveNavTriggerAura = isLabMode ? navTriggerAura : "none";
+  const effectiveNavTriggerSurface = isLabMode
+    ? navTriggerSurface
+    : mobileMenuStyle === "opaque"
+      ? "solid"
+      : "minimal";
+  const effectiveNavTriggerTone = isLabMode ? navTriggerTone : "inverse";
+  const effectiveNavTriggerHover = isLabMode ? navTriggerHover : "soft";
+  const effectiveNavOpenBehavior = isLabMode ? navOpenBehavior : "overlay";
+  const effectiveNavPanelWidth = isLabMode ? navPanelWidth : "normal";
+  const effectiveNavPanelOrigin = isLabMode ? navPanelOrigin : "right";
+  const effectiveNavPanelIncludeLogo = isLabMode ? navPanelIncludeLogo : true;
+  const effectiveNavPanelStyle = isLabMode
+    ? navPanelStyle
+    : mobileMenuStyle === "opaque"
+      ? "solid"
+      : "minimal";
+  const effectiveNavOverlayDensity = isLabMode ? navOverlayDensity : "medium";
+  const effectiveNavOverlayStyle = isLabMode
+    ? navOverlayStyle
+    : mobileMenuStyle === "opaque"
+      ? "tinted"
+      : "none";
+  const effectiveNavReadabilityBoost = isLabMode ? navReadabilityBoost : "soft";
+  const effectiveNavMenuBlockPosition = isLabMode ? navMenuBlockPosition : "top";
+  const effectiveNavMenuAlignment = isLabMode ? navMenuAlignment : "left";
+  const effectiveNavMenuItemSize = isLabMode ? navMenuItemSize : "md";
+  const effectiveNavMenuSafeTopOffset = isLabMode ? navMenuSafeTopOffset : "normal";
+  const effectiveNavMenuSafeSideOffset = isLabMode ? navMenuSafeSideOffset : "normal";
+  const effectiveNavMenuVerticalSpacing = isLabMode ? navMenuVerticalSpacing : "normal";
+  const effectiveNavMenuTextTone = isLabMode ? navMenuTextTone : "inverse";
+  const effectiveHeaderIntegration = isLabMode ? headerIntegration : "integrated";
+  const effectiveHeaderVisualStyle = isLabMode ? headerVisualStyle : "solid";
+  const effectiveHeaderTopSpacing = isLabMode ? headerTopSpacing : "normal";
+  const effectiveHeaderRelation = isLabMode ? headerRelation : "balanced";
+  const effectiveFooterIntegration = isLabMode ? footerIntegration : "integrated";
+  const effectiveFooterVisualStyle = isLabMode ? footerVisualStyle : "solid";
+  const effectiveFooterDensity = isLabMode ? footerDensity : "balanced";
+  const effectiveFooterSignatureSeparation = isLabMode ? footerSignatureSeparation : "normal";
+  const isHeaderIntegrated = effectiveHeaderIntegration === "integrated";
+  const isFooterIntegrated = effectiveFooterIntegration === "integrated";
+  const normalizedHeaderVisualStyle =
+    isHeaderIntegrated ? "minimal" : effectiveHeaderVisualStyle;
+  const normalizedFooterVisualStyle =
+    isFooterIntegrated ? "minimal" : effectiveFooterVisualStyle;
+  const isHeaderSeparated = !isHeaderIntegrated;
+  const isFooterSeparated = !isFooterIntegrated;
+  const hasHeaderRootSurface =
+    isHeaderSeparated && normalizedHeaderVisualStyle !== "minimal";
+  const effectiveDesktopNavSize = isLabMode ? desktopNavSize : "md";
+  const effectiveDesktopNavTone = isLabMode ? desktopNavTone : "muted";
+  const effectiveDesktopNavSurface = isLabMode ? desktopNavSurface : "solid";
+  const effectiveDesktopNavHover = isLabMode ? desktopNavHover : "soft";
+  const effectiveDesktopNavPresence = isLabMode ? desktopNavPresence : "medium";
+  const navPanelWidthClass =
+    effectiveNavPanelWidth === "narrow"
+      ? isLabMode
+        ? "w-full max-w-[20rem]"
+        : "w-[min(100vw,20rem)]"
+      : effectiveNavPanelWidth === "wide"
+        ? isLabMode
+          ? "w-full max-w-[30rem]"
+          : "w-[min(100vw,30rem)]"
+        : isLabMode
+          ? "w-full max-w-[24rem]"
+          : "w-[min(100vw,24rem)]";
   const heroRootClass = isLabMode
     ? "relative isolate h-full w-full overflow-hidden"
     : "relative isolate min-h-svh w-full overflow-hidden";
@@ -244,42 +490,154 @@ export default function PublicHero({
     ? "relative z-10 mx-auto flex h-full w-full max-w-6xl flex-col px-6"
     : "relative z-10 mx-auto flex min-h-svh w-full max-w-6xl flex-col px-6";
 
+  const navOverlayOpacityClass =
+    effectiveNavOverlayDensity === "low"
+      ? "peer-checked:opacity-45"
+      : effectiveNavOverlayDensity === "high"
+        ? "peer-checked:opacity-95"
+        : "peer-checked:opacity-75";
+  const navOverlayStyleClass =
+    effectiveNavOverlayStyle === "none"
+      ? "bg-transparent"
+      : effectiveNavOverlayStyle === "neutral"
+        ? "[background:color-mix(in_oklab,var(--foreground)_72%,transparent)]"
+        : "[background:var(--hero-menu-backdrop-bg)]";
+  const navOverlayReadabilityClass =
+    effectiveNavReadabilityBoost === "none"
+      ? ""
+      : effectiveNavReadabilityBoost === "strong"
+        ? "backdrop-blur-[4px] saturate-[1.12]"
+        : "backdrop-blur-[2px]";
   const menuBackdropClass =
-    mobileMenuStyle === "opaque"
-      ? isLabMode
-        ? `pointer-events-none ${menuLayerPositionClass} inset-0 ${menuBackdropZClass} opacity-0 transition-opacity duration-300 peer-checked:pointer-events-auto peer-checked:opacity-100 [background:var(--hero-menu-backdrop-bg)]`
-        : `pointer-events-none ${menuLayerPositionClass} inset-0 ${menuBackdropZClass} opacity-0 transition-opacity duration-300 peer-checked:pointer-events-auto peer-checked:opacity-100 [background:var(--hero-menu-backdrop-bg)] backdrop-blur-[2px]`
-      : `pointer-events-none ${menuLayerPositionClass} inset-0 ${menuBackdropZClass} opacity-0 transition-opacity duration-300 peer-checked:pointer-events-auto peer-checked:opacity-100 bg-transparent`;
+    effectiveNavOpenBehavior === "drawer"
+      ? "pointer-events-none hidden"
+      : `pointer-events-none invisible ${menuLayerPositionClass} inset-0 ${menuBackdropZClass} opacity-0 transition-opacity duration-300 peer-checked:pointer-events-auto peer-checked:visible ${navOverlayOpacityClass} ${navOverlayStyleClass} ${navOverlayReadabilityClass}`;
 
-  const opaqueMenuSurfaceClass =
-    "[background:var(--hero-menu-opaque-bg)] [box-shadow:var(--hero-menu-opaque-shadow)]";
-  const integratedMenuTextShadowClass = "[text-shadow:var(--hero-menu-text-shadow)]";
+  const navTriggerSizeClass =
+    effectiveNavTriggerSize === "sm"
+      ? "rounded-md p-1"
+      : effectiveNavTriggerSize === "lg"
+        ? "rounded-xl p-2.5"
+        : "rounded-lg p-2";
+  const navTriggerBarClass =
+    effectiveNavTriggerSize === "sm"
+      ? "h-0.5 w-5"
+      : effectiveNavTriggerSize === "lg"
+        ? "h-0.5 w-7"
+        : "h-0.5 w-6";
+  const navTriggerAuraClass =
+    hasHeaderRootSurface || effectiveNavTriggerAura === "none"
+      ? "shadow-none"
+      : effectiveNavTriggerAura === "strong"
+        ? "[box-shadow:0_0_0_1px_color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_72%,transparent),var(--hero-menu-opaque-shadow)]"
+        : "[box-shadow:var(--elevation-base,var(--panel-shadow-1))]";
+  const navTriggerSurfaceClass =
+    hasHeaderRootSurface || effectiveNavTriggerSurface === "minimal"
+      ? "border border-transparent [background:transparent]"
+      : effectiveNavTriggerSurface === "glass"
+        ? "border [border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_72%,transparent)] [background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_54%,transparent)] backdrop-blur-[2px]"
+        : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)]";
+  const isMinimalTriggerSurface =
+    hasHeaderRootSurface || effectiveNavTriggerSurface === "minimal";
+  const navTriggerToneClass =
+    effectiveNavTriggerTone === "primary"
+      ? "[--hero-nav-trigger-fg:var(--accent-strong,var(--primary))]"
+      : effectiveNavTriggerTone === "muted"
+        ? "[--hero-nav-trigger-fg:var(--hero-text-85)]"
+        : "[--hero-nav-trigger-fg:var(--hero-text-inverse)]";
+  const navTriggerHoverClass =
+    effectiveNavTriggerHover === "lift"
+      ? isMinimalTriggerSurface
+        ? "hover:-translate-y-0.5"
+        : "hover:-translate-y-0.5 hover:[background:var(--hero-chrome-surface-hover-bg)]"
+      : effectiveNavTriggerHover === "glow"
+        ? isMinimalTriggerSurface
+          ? "hover:[filter:drop-shadow(0_2px_10px_color-mix(in_oklab,var(--hero-text-inverse)_24%,transparent))]"
+          : "hover:[background:var(--hero-chrome-surface-hover-bg)] hover:[box-shadow:0_0_0_1px_color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_68%,transparent),var(--hero-menu-opaque-shadow)]"
+        : isMinimalTriggerSurface
+          ? "hover:opacity-90"
+          : "hover:[background:var(--hero-chrome-surface-hover-bg)]";
+  const menuTriggerClass = `cursor-pointer transition duration-200 peer-checked:pointer-events-none peer-checked:hidden ${navTriggerSizeClass} ${navTriggerAuraClass} ${navTriggerSurfaceClass} ${navTriggerToneClass} ${navTriggerHoverClass}`;
+  const menuCloseClass =
+    "cursor-pointer rounded-lg border px-3 py-1 text-xs transition [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)] hover:[background:var(--hero-chrome-surface-hover-bg)]";
+  const desktopNavSizeClass =
+    effectiveDesktopNavSize === "sm"
+      ? "px-3 py-1.5 text-[11px]"
+      : effectiveDesktopNavSize === "lg"
+        ? "px-5 py-2.5 text-sm"
+        : "px-4 py-2 text-xs";
+  const desktopNavToneClass =
+    effectiveDesktopNavTone === "primary"
+      ? "[color:var(--accent-strong,var(--primary))]"
+      : effectiveDesktopNavTone === "inverse"
+        ? "[color:var(--hero-text-inverse)]"
+        : "[color:var(--hero-text-90)]";
+  const desktopNavSurfaceClass =
+    hasHeaderRootSurface || effectiveDesktopNavSurface === "minimal"
+      ? "border border-transparent [background:transparent]"
+      : effectiveDesktopNavSurface === "glass"
+        ? "border [border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_70%,transparent)] [background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_58%,transparent)] backdrop-blur-[2px]"
+        : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)]";
+  const desktopNavPresenceClass =
+    hasHeaderRootSurface
+      ? ""
+      : effectiveDesktopNavPresence === "low"
+      ? "opacity-[0.84]"
+      : effectiveDesktopNavPresence === "high"
+        ? "[box-shadow:0_0_0_1px_color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_56%,transparent),var(--elevation-base,var(--panel-shadow-1))]"
+        : "";
+  const desktopNavHoverClass =
+    hasHeaderRootSurface
+      ? "hover:opacity-90"
+      : effectiveDesktopNavHover === "lift"
+      ? "hover:-translate-y-0.5 hover:[background:var(--hero-chrome-surface-hover-bg)]"
+      : effectiveDesktopNavHover === "glow"
+        ? "hover:[background:var(--hero-chrome-surface-hover-bg)] hover:[box-shadow:0_0_0_1px_color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_58%,transparent),var(--elevation-base,var(--panel-shadow-1))]"
+        : "hover:[background:var(--hero-chrome-surface-hover-bg)]";
+  const desktopNavItemClass =
+    `rounded-full font-semibold transition ${desktopNavSizeClass} ${desktopNavToneClass} ${desktopNavSurfaceClass} ${desktopNavPresenceClass} ${desktopNavHoverClass}`;
 
+  const navPanelVisualClass =
+    effectiveNavPanelStyle === "minimal"
+      ? "[background:transparent] shadow-none border-transparent"
+      : effectiveNavPanelStyle === "glass"
+        ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_72%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_78%,transparent)] backdrop-blur-[3px]"
+        : "[background:var(--hero-menu-opaque-bg)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:var(--hero-menu-border)]";
   const menuPanelClass =
-    mobileMenuStyle === "opaque"
-      ? `${menuLayerPositionClass} inset-y-0 right-0 ${menuPanelZClass} ${opaqueMenuWidthClass} translate-x-full border-l [border-color:var(--hero-menu-border)] p-4 transition-transform duration-300 ease-out peer-checked:translate-x-0 [color:var(--hero-text-inverse)] ${opaqueMenuSurfaceClass}`
-      : `${menuLayerPositionClass} inset-y-0 right-0 ${menuPanelZClass} ${integratedMenuWidthClass} translate-x-full border-transparent p-4 shadow-none transition-transform duration-300 ease-out peer-checked:translate-x-0 [background:transparent] [color:var(--hero-text-inverse)] ${integratedMenuTextShadowClass}`;
+    `${menuLayerPositionClass} ${effectiveNavOpenBehavior === "fullscreen"
+      ? "inset-0 w-full max-w-none translate-y-full peer-checked:translate-y-0"
+      : effectiveNavPanelOrigin === "left"
+        ? `inset-y-0 left-0 ${navPanelWidthClass} -translate-x-full peer-checked:translate-x-0`
+        : effectiveNavPanelOrigin === "center"
+          ? `top-3 bottom-3 left-1/2 ${navPanelWidthClass} -translate-x-1/2 opacity-0 scale-[0.98] peer-checked:opacity-100 peer-checked:scale-100`
+          : `inset-y-0 right-0 ${navPanelWidthClass} translate-x-full peer-checked:translate-x-0`} ${menuPanelZClass} invisible flex flex-col overflow-y-auto border p-4 transition-all duration-300 ease-out peer-checked:visible [color:var(--hero-text-inverse)] ${navPanelVisualClass}`;
 
   const copyWidthClass =
     copyWidth === "narrow" ? "max-w-lg" : copyWidth === "wide" ? "max-w-2xl" : "max-w-xl";
-  const heroGridClass = isMediaHeavyComposition
-    ? "grid grid-cols-1 items-center gap-5 md:grid-cols-[0.82fr_1.18fr] md:gap-9"
-    : isSplitComposition
-      ? "grid grid-cols-1 items-center gap-5 md:grid-cols-2 md:gap-10"
-      : "grid grid-cols-1 items-center gap-5 md:grid-cols-2 md:gap-8";
+  const useLabMobileComposition = isLabMode && navigationMode === "mobile";
+  const heroGridClass = useLabMobileComposition
+    ? "grid grid-cols-1 items-start gap-4"
+    : isMediaHeavyComposition
+      ? "grid grid-cols-1 items-center gap-5 md:grid-cols-[0.82fr_1.18fr] md:gap-9"
+      : isSplitComposition
+        ? "grid grid-cols-1 items-center gap-5 md:grid-cols-2 md:gap-10"
+        : "grid grid-cols-1 items-center gap-5 md:grid-cols-2 md:gap-8";
   const frameSurfaceClass = isLabMode
     ? "[background:transparent]"
     : "[background:var(--hero-frame-surface-bg)]";
   const visualFrameSurfaceClass = frameSurfaceClass;
-  const footerSurfaceClass = isLabMode
-    ? "[background:transparent]"
-    : "[background:var(--hero-footer-surface-bg)]";
   const backgroundImageClass =
     backgroundEmphasis === "low"
       ? "absolute inset-0 z-0 h-full w-full object-cover brightness-[0.48] saturate-[0.78] scale-[1.02]"
       : backgroundEmphasis === "high"
         ? "absolute inset-0 z-0 h-full w-full object-cover brightness-[1.04] saturate-[1.2] scale-[1.08]"
         : "absolute inset-0 z-0 h-full w-full object-cover brightness-[0.9] saturate-[1.03]";
+  const headerNavRelationClass =
+    effectiveHeaderRelation === "logo-focus"
+      ? "opacity-90"
+      : effectiveHeaderRelation === "nav-focus"
+        ? "opacity-100"
+        : "";
 
   const isMobileNavigation = navigationMode === "mobile";
   const isDesktopNavigation = navigationMode === "desktop";
@@ -292,8 +650,8 @@ export default function PublicHero({
   const desktopNavClass = isMobileNavigation
     ? "hidden"
     : isDesktopNavigation
-      ? `flex items-center gap-3 ${navDesktopPositionClass}`
-      : `hidden items-center gap-3 md:flex ${navDesktopPositionClass}`;
+      ? `flex items-center gap-3 ${navDesktopPositionClass} ${headerNavRelationClass}`
+      : `hidden items-center gap-3 md:flex ${navDesktopPositionClass} ${headerNavRelationClass}`;
   const mobileNavClass = isDesktopNavigation ? "hidden" : isMobileNavigation ? "block" : "md:hidden";
 
   const copyPositionClass =
@@ -311,7 +669,118 @@ export default function PublicHero({
         ? "md:ml-auto text-right"
         : "text-left";
   const ctaDesktopAlignClass = ctaPosition === "center" ? "justify-center" : ctaPosition === "end" ? "justify-end" : "justify-start";
-  const ctaMobilePositionClass = ctaPosition === "center" ? "mx-auto max-w-sm" : ctaPosition === "end" ? "ml-auto max-w-sm" : "mr-auto max-w-sm";
+  const ctaMobilePositionClass =
+    ctaPosition === "center"
+      ? "mx-auto max-w-sm sm:max-w-md"
+      : ctaPosition === "end"
+        ? "ml-auto max-w-sm sm:max-w-md"
+        : "mr-auto max-w-sm sm:max-w-md";
+  const logoHeadlineGapClass = mapGapLevelToClass(gapLogoHeadline, {
+    tight: "mb-2",
+    normal: "mb-4",
+    relaxed: "mb-6",
+  });
+  const headlineSubheadlineGapClass = mapGapLevelToClass(gapHeadlineSubheadline, {
+    tight: "mt-1",
+    normal: "mt-2",
+    relaxed: "mt-4",
+  });
+  const textCtaGapClass = mapGapLevelToClass(gapTextCta, {
+    tight: "mt-2",
+    normal: "mt-4",
+    relaxed: "mt-6",
+  });
+  const ctaFooterGapClass = mapGapLevelToClass(gapCtaFooter, {
+    tight: "pb-5",
+    normal: "pb-8",
+    relaxed: "pb-11",
+  });
+  const footerDataSignatureGapClass = mapGapLevelToClass(gapFooterDataSignature, {
+    tight: "mt-2 gap-1.5",
+    normal: "mt-3 gap-2",
+    relaxed: "mt-5 gap-3",
+  });
+  const ctaMobileLayoutClass = useLabMobileComposition
+    ? `${textCtaGapClass} mb-6 grid grid-cols-1 gap-2 sm:grid-cols-2 ${ctaMobilePositionClass}`
+    : `mt-4 mb-6 grid grid-cols-2 gap-3 md:hidden ${ctaMobilePositionClass}`;
+  const mobileSubtitleClass = useLabMobileComposition
+    ? `${headlineSubheadlineGapClass} max-w-xl rounded-xl px-3 py-2 text-[13px] leading-snug ${frameSurfaceClass} [color:var(--hero-text-90)]`
+    : `mt-0.5 max-w-lg rounded-xl px-3 py-2 text-[13px] leading-snug md:hidden ${frameSurfaceClass} [color:var(--hero-text-90)]`;
+  const desktopSubtitleClass = useLabMobileComposition
+    ? "hidden"
+    : "mt-3 hidden max-w-lg text-sm sm:text-base md:block md:text-lg [color:var(--hero-text-82)]";
+  const desktopCtaClass = useLabMobileComposition
+    ? "hidden"
+    : `mt-5 hidden flex-wrap items-center gap-3 md:flex ${ctaDesktopAlignClass}`;
+  const headerTopSpacingClass =
+    effectiveHeaderTopSpacing === "tight"
+      ? "pt-3"
+      : effectiveHeaderTopSpacing === "relaxed"
+        ? "pt-7"
+        : "pt-5";
+  const headerVisualClass =
+    normalizedHeaderVisualStyle === "minimal"
+      ? "border-0 [background:transparent] shadow-none"
+      : normalizedHeaderVisualStyle === "glass"
+        ? "border [border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_58%,transparent)] [background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_52%,transparent)] shadow-none"
+        : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)] [box-shadow:var(--elevation-base,var(--panel-shadow-1))]";
+  const headerRegionClass =
+    isHeaderSeparated
+      ? `rounded-2xl px-3 py-2 ${headerVisualClass}`
+      : "px-0 py-0 border-0 [background:transparent]";
+  const headerLogoGroupClass =
+    effectiveHeaderRelation === "logo-focus"
+      ? "flex items-center gap-4"
+      : effectiveHeaderRelation === "nav-focus"
+        ? "flex items-center gap-2 opacity-90"
+        : "flex items-center gap-3";
+  const heroMainClass = useLabMobileComposition
+    ? `min-h-0 flex-1 pt-6 ${ctaFooterGapClass}`
+    : "min-h-0 flex-1 pt-5 pb-36 md:pb-0";
+  const footerShellClass =
+    isFooterSeparated
+      ? "mt-auto pt-4 pb-3"
+      : "mt-auto pt-3 pb-3";
+  const footerVisualClass =
+    normalizedFooterVisualStyle === "minimal"
+      ? "border-0 [background:transparent] shadow-none"
+      : normalizedFooterVisualStyle === "glass"
+        ? "border [border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_58%,transparent)] [background:color-mix(in_oklab,var(--hero-footer-surface-bg)_58%,transparent)] shadow-none"
+        : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-footer-surface-bg)] [box-shadow:var(--elevation-base,var(--panel-shadow-1))]";
+  const footerRadiusClass = isFooterSeparated ? "rounded-2xl" : "rounded-none";
+  const footerDensityClass =
+    effectiveFooterDensity === "compact"
+      ? "px-3 py-2"
+      : effectiveFooterDensity === "spacious"
+        ? "px-5 py-4"
+        : "px-4 py-3";
+  const footerSignatureSeparationClass =
+    effectiveFooterSignatureSeparation === "tight"
+      ? "mt-2"
+      : effectiveFooterSignatureSeparation === "relaxed"
+        ? "mt-5"
+        : "mt-3";
+  const footerMetaDividerClass = "border-0";
+  const footerMetaRowClass = useLabMobileComposition
+    ? `${footerDataSignatureGapClass} ${footerSignatureSeparationClass} flex flex-col items-center gap-2 pt-3 text-[11px] ${footerMetaDividerClass} sm:flex-row sm:justify-between sm:gap-3 md:text-xs`
+    : `${footerDataSignatureGapClass} ${footerSignatureSeparationClass} flex items-center justify-between gap-3 pt-3 text-[11px] ${footerMetaDividerClass} md:text-xs`;
+  const footerBrandClass = useLabMobileComposition
+    ? "min-w-0 text-center sm:text-left"
+    : footerPosition === "left"
+      ? "min-w-0 text-left"
+      : footerPosition === "right"
+        ? "min-w-0 text-right"
+        : "min-w-0 text-center";
+  const footerIdentityClass = useLabMobileComposition
+    ? "flex min-w-0 max-w-full flex-wrap items-center justify-center gap-2 text-center sm:justify-start sm:text-left"
+    : footerPosition === "left"
+      ? "flex min-w-0 max-w-full items-center gap-2 text-left"
+      : footerPosition === "right"
+        ? "ml-auto flex min-w-0 max-w-full items-center justify-end gap-2 text-right"
+        : "mx-auto flex min-w-0 max-w-full items-center justify-center gap-2 text-center";
+  const footerContactGridClass = useLabMobileComposition
+    ? "grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-2"
+    : "grid w-full max-w-5xl grid-cols-2 gap-x-6 gap-y-2 md:grid-cols-4";
   const copyPaneOrderClass = visualPosition === "left" ? "md:order-2" : "md:order-1";
   const copyPaneSpacingClass = isSplitComposition
     ? "md:pr-6"
@@ -321,8 +790,9 @@ export default function PublicHero({
   const logoAlignClass = logoPosition === "left" ? "justify-start" : logoPosition === "right" ? "justify-end" : "justify-center";
   const logoTextAlignClass = logoPosition === "left" ? "text-left" : logoPosition === "right" ? "text-right" : "text-center";
   const logoFramePaddingClass = logoPosition === "center" ? "" : "px-6";
-  const visualPaneClass =
-    visualPosition === "left"
+  const visualPaneClass = useLabMobileComposition
+    ? "hidden"
+    : visualPosition === "left"
       ? isMediaHeavyComposition
         ? "mx-auto hidden w-full max-w-md md:order-1 md:-ml-6 md:block md:w-[112%] md:max-w-none"
         : "mx-auto hidden w-full max-w-md md:order-1 md:mr-auto md:block md:max-w-xl"
@@ -334,14 +804,36 @@ export default function PublicHero({
   const headlineSizeClass = isLogoFocusComposition
     ? "text-balance text-2xl font-bold leading-[1.06] tracking-tight sm:text-4xl md:text-5xl"
     : "text-balance text-3xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl md:text-6xl";
+  const mobileHeadlineSizeClass = isLogoFocusComposition
+    ? "text-balance font-bold leading-[1.14] tracking-tight"
+    : isMediaHeavyComposition
+      ? "text-balance font-extrabold leading-[1.12] tracking-tight"
+      : "text-balance font-extrabold leading-[1.12] tracking-tight";
+  const mobileHeadlineScaleClass = mobileHeadlineScale === "compact"
+    ? "text-[1.48rem] sm:text-[1.7rem]"
+    : mobileHeadlineScale === "expressive"
+      ? "text-[1.86rem] sm:text-[2.14rem]"
+      : "text-[1.66rem] sm:text-[1.92rem]";
+  const resolvedHeadlineSizeClass = useLabMobileComposition
+    ? `${mobileHeadlineSizeClass} ${mobileHeadlineScaleClass}`
+    : headlineSizeClass;
   const visualFrameAspectClass = isLogoFocusComposition
     ? "sm:aspect-[2/1] md:aspect-[12/5]"
     : isMediaHeavyComposition
       ? "sm:aspect-[16/9] md:aspect-[16/9]"
       : "sm:aspect-video md:aspect-[16/10]";
-  const logoMobileSizeClass = isLogoFocusComposition
-    ? "max-h-40 w-auto opacity-95"
-    : "max-h-32 w-auto opacity-95";
+  const logoMobileSizeClass = mobileLogoScale === "compact"
+    ? "max-h-14 w-auto opacity-95 sm:max-h-16"
+    : mobileLogoScale === "expressive"
+      ? "max-h-24 w-auto opacity-95 sm:max-h-28"
+      : isLogoFocusComposition
+        ? "max-h-20 w-auto opacity-95 sm:max-h-24"
+        : "max-h-16 w-auto opacity-95 sm:max-h-20";
+  const mobileLogoFrameClass = isLogoFocusComposition
+    ? "aspect-[16/8] max-w-sm"
+    : isMediaHeavyComposition
+      ? "aspect-[16/6] max-w-[18rem]"
+      : "aspect-[16/7] max-w-xs sm:max-w-sm";
   const logoDesktopSizeClass = isLogoFocusComposition
     ? "max-h-56 w-auto opacity-95 md:max-h-80"
     : isMediaHeavyComposition
@@ -353,22 +845,56 @@ export default function PublicHero({
       : footerPosition === "right"
         ? "md:justify-end"
         : "md:justify-center";
-  const footerBottomAlignClass =
-    footerPosition === "left"
-      ? "justify-start"
-      : footerPosition === "right"
+  const menuContentPositionClass =
+    effectiveNavMenuBlockPosition === "center"
+      ? "justify-center"
+      : effectiveNavMenuBlockPosition === "bottom"
         ? "justify-end"
-        : "justify-center";
-  const footerBrandAlignClass =
-    footerPosition === "left"
-      ? "text-left"
-      : footerPosition === "right"
-        ? "text-right"
-        : "text-center";
+        : "justify-start";
+  const menuContentAlignClass =
+    effectiveNavMenuAlignment === "center"
+      ? "items-center text-center"
+      : effectiveNavMenuAlignment === "right"
+        ? "items-end text-right"
+        : "items-start text-left";
+  const menuItemWidthClass =
+    effectiveNavMenuAlignment === "center" ? "w-fit min-w-[10rem]" : "w-full";
+  const menuItemSizeClass =
+    effectiveNavMenuItemSize === "sm"
+      ? "px-2 py-1.5 text-xs"
+      : effectiveNavMenuItemSize === "lg"
+        ? "px-4 py-3 text-base"
+        : "px-3 py-2 text-sm";
+  const menuSafeTopClass =
+    effectiveNavMenuSafeTopOffset === "tight"
+      ? "pt-1"
+      : effectiveNavMenuSafeTopOffset === "relaxed"
+        ? "pt-6"
+        : "pt-3";
+  const menuSafeSideClass =
+    effectiveNavMenuSafeSideOffset === "tight"
+      ? "px-1"
+      : effectiveNavMenuSafeSideOffset === "relaxed"
+        ? "px-5"
+        : "px-3";
+  const menuVerticalSpacingClass =
+    effectiveNavMenuVerticalSpacing === "tight"
+      ? "gap-1.5"
+      : effectiveNavMenuVerticalSpacing === "relaxed"
+        ? "gap-4"
+        : "gap-2.5";
+  const menuItemToneClass =
+    effectiveNavMenuTextTone === "primary"
+      ? "[color:var(--accent-strong,var(--primary))]"
+      : effectiveNavMenuTextTone === "muted"
+        ? "[color:var(--hero-text-88)]"
+        : "[color:var(--hero-text-inverse)]";
   const menuItemClass =
-    mobileMenuStyle === "integrated"
-      ? "block rounded-xl px-2 py-2 transition hover:opacity-85"
-      : "block rounded-xl px-3 py-2 transition hover:[background:var(--hero-chrome-surface-bg)]";
+    effectiveNavPanelStyle === "minimal"
+      ? `block rounded-xl transition hover:opacity-85 ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`
+      : effectiveNavPanelStyle === "glass"
+        ? `block rounded-xl border border-transparent transition hover:[border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_68%,transparent)] hover:[background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_58%,transparent)] ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`
+        : `block rounded-xl border border-transparent transition hover:[background:var(--hero-chrome-surface-bg)] ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`;
 
   const handleMenuStateChange = (open: boolean) => {
     if (isMenuControlled) onLabMenuOpenChange?.(open);
@@ -388,6 +914,7 @@ export default function PublicHero({
         heroOverlayTintTokenClassName,
         heroSurfaceModeTokenClassName,
         heroMenuModeTokenClassName,
+        heroLabHeadlineToneTokenClassName,
         HERO_RUNTIME_FALLBACK_TOKEN_CLASS,
       ]
         .filter(Boolean)
@@ -413,118 +940,174 @@ export default function PublicHero({
       ) : null}
 
       <div className={heroContentClass}>
-        <header className="flex items-center justify-between pt-5">
-          <div className="flex items-center gap-3">
-            {headerLogoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={headerLogoUrl}
-                alt={business?.name ?? "Logo"}
-                className="h-11 w-auto opacity-95 sm:h-12"
-              />
-            ) : null}
-
-            <div className="hidden text-sm font-semibold [color:var(--hero-text-90)] sm:block">
-              {business?.name ?? "Business Control Center"}
-            </div>
-          </div>
-
-          <nav className={desktopNavClass}>
-            <a
-              href="#"
-              className="rounded-full border px-4 py-2 text-xs font-semibold transition [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)] [color:var(--hero-text-90)] hover:[background:var(--hero-chrome-surface-hover-bg)]"
-            >
-              Home
-            </a>
-            <a
-              href="#"
-              className="rounded-full border px-4 py-2 text-xs font-semibold transition [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)] [color:var(--hero-text-90)] hover:[background:var(--hero-chrome-surface-hover-bg)]"
-            >
-              Services
-            </a>
-            <a
-              href="#"
-              className="rounded-full border px-4 py-2 text-xs font-semibold transition [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)] [color:var(--hero-text-90)] hover:[background:var(--hero-chrome-surface-hover-bg)]"
-            >
-              Contact
-            </a>
-          </nav>
-
-          <div className={mobileNavClass}>
-            <input
-              id="bcc-mobile-menu"
-              type="checkbox"
-              className="peer sr-only"
-              {...(shouldBindLabMenuHandlers
-                ? {
-                    checked: Boolean(forceMobileMenuOpen),
-                    onChange: (event: ChangeEvent<HTMLInputElement>) =>
-                      handleMenuStateChange(event.target.checked),
+        <header className={headerTopSpacingClass}>
+          <div className={`flex items-center justify-between overflow-hidden ${headerRegionClass}`}>
+            <div className={headerLogoGroupClass}>
+              {headerLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={headerLogoUrl}
+                  alt={business?.name ?? "Logo"}
+                  className={
+                    useLabMobileComposition
+                      ? "hidden h-10 w-auto opacity-95 sm:block sm:h-11"
+                      : "h-11 w-auto opacity-95 sm:h-12"
                   }
-                : {})}
-            />
+                />
+              ) : null}
+
+              <div
+                className={
+                  useLabMobileComposition
+                    ? "hidden"
+                    : "hidden text-sm font-semibold [color:var(--hero-text-90)] sm:block"
+                }
+              >
+                {business?.name ?? "Business Control Center"}
+              </div>
+            </div>
+
+            <nav className={desktopNavClass}>
+              <a
+                href="#"
+                className={desktopNavItemClass}
+              >
+                Home
+              </a>
+              <a
+                href="#"
+                className={desktopNavItemClass}
+              >
+                Services
+              </a>
+              <a
+                href="#"
+                className={desktopNavItemClass}
+              >
+                Contact
+              </a>
+            </nav>
+
+            <div className={mobileNavClass}>
+              <input
+                id={mobileMenuInputId}
+                type="checkbox"
+                className="peer sr-only"
+                {...(shouldBindLabMenuHandlers
+                  ? {
+                      checked: Boolean(forceMobileMenuOpen),
+                      onChange: (event: ChangeEvent<HTMLInputElement>) =>
+                        handleMenuStateChange(event.target.checked),
+                    }
+                  : {})}
+              />
 
             <label
-              htmlFor="bcc-mobile-menu"
-              className="cursor-pointer rounded-xl border p-2 transition peer-checked:pointer-events-none peer-checked:opacity-0 [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)] hover:[background:var(--hero-chrome-surface-hover-bg)]"
+              htmlFor={mobileMenuInputId}
+              className={menuTriggerClass}
               aria-label="Abrir menú"
             >
-              <span className="block h-0.5 w-6 [background:var(--hero-text-inverse)]" />
-              <span className="mt-1 block h-0.5 w-6 [background:var(--hero-text-inverse)]" />
-              <span className="mt-1 block h-0.5 w-6 [background:var(--hero-text-inverse)]" />
+              <span
+                className={`block ${navTriggerBarClass} [background:var(--hero-nav-trigger-fg,var(--hero-text-inverse))]`}
+              />
+              <span
+                className={`mt-1 block ${navTriggerBarClass} [background:var(--hero-nav-trigger-fg,var(--hero-text-inverse))]`}
+              />
+              <span
+                className={`mt-1 block ${navTriggerBarClass} [background:var(--hero-nav-trigger-fg,var(--hero-text-inverse))]`}
+              />
             </label>
 
             <label
-              htmlFor="bcc-mobile-menu"
+              htmlFor={mobileMenuInputId}
               className={menuBackdropClass}
               aria-label="Cerrar menú"
             />
 
             <div className={menuPanelClass}>
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">{business?.name ?? "Menú"}</div>
+                <div className="flex items-center gap-2">
+                  {effectiveNavPanelIncludeLogo && headerLogoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={headerLogoUrl}
+                      alt={business?.name ?? "Logo"}
+                      className="h-7 w-auto opacity-95"
+                    />
+                  ) : null}
+                  <div className="text-sm font-semibold">{business?.name ?? "Menú"}</div>
+                </div>
 
                 <label
-                  htmlFor="bcc-mobile-menu"
-                  className="cursor-pointer rounded-lg border px-3 py-1 text-xs transition [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)] hover:[background:var(--hero-chrome-surface-hover-bg)]"
+                  htmlFor={mobileMenuInputId}
+                  className={menuCloseClass}
                 >
                   Cerrar
                 </label>
               </div>
 
-              <div className="mt-4 space-y-2">
-                <a
-                  href="#"
-                  className={menuItemClass}
-                  {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
-                >
-                  Home
-                </a>
-                <a
-                  href="#"
-                  className={menuItemClass}
-                  {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
-                >
-                  Services
-                </a>
-                <a
-                  href="#"
-                  className={menuItemClass}
-                  {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
-                >
-                  Contact
-                </a>
+              <div
+                className={`mt-2 flex flex-1 flex-col ${menuContentPositionClass} ${menuSafeTopClass} ${menuSafeSideClass}`}
+              >
+                <div className={`flex w-full flex-col ${menuContentAlignClass} ${menuVerticalSpacingClass}`}>
+                  <a
+                    href="#"
+                    className={menuItemClass}
+                    {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
+                  >
+                    Home
+                  </a>
+                  <a
+                    href="#"
+                    className={menuItemClass}
+                    {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
+                  >
+                    Services
+                  </a>
+                  <a
+                    href="#"
+                    className={menuItemClass}
+                    {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
+                  >
+                    Contact
+                  </a>
+                </div>
               </div>
             </div>
           </div>
+          </div>
         </header>
 
-        <main className="min-h-0 flex-1 pt-5 pb-36 md:pb-0">
+        <main className={heroMainClass}>
           <div className={heroGridClass}>
             <div className={`${copyPositionClass} ${copyPaneOrderClass} ${copyPaneSpacingClass}`}>
-              {showBadge ? <Pill className="mb-3">{badge}</Pill> : null}
+              {useLabMobileComposition ? (
+                <div className={logoHeadlineGapClass}>
+                  <div
+                    className={`relative mx-auto flex w-full items-center rounded-3xl ${mobileLogoFrameClass} ${logoAlignClass} ${logoFramePaddingClass} ${visualFrameSurfaceClass}`}
+                  >
+                    {heroLogoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={heroLogoUrl}
+                        alt={business?.name ?? "Logo"}
+                        className={logoMobileSizeClass}
+                      />
+                    ) : (
+                      <div className={`${logoTextAlignClass} [color:var(--hero-text-80)]`}>
+                        <div className="text-sm">Logo principal</div>
+                        <div className="mt-2 text-xs [color:var(--hero-text-50)]">
+                          (pendiente de asset)
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
 
-              <h1 className={`${headlineSizeClass} [color:var(--hero-text-inverse)] ${headlinePositionClass}`}>
+              {showBadge ? <Pill className={useLabMobileComposition ? logoHeadlineGapClass : "mb-3"}>{badge}</Pill> : null}
+
+              <h1 className={`${resolvedHeadlineSizeClass} ${headlineToneClassName} ${headlinePositionClass}`}>
                 <span>{titleLead || titleRaw}</span>
                 {titleAccent ? (
                   <>
@@ -536,7 +1119,7 @@ export default function PublicHero({
                 ) : null}
               </h1>
 
-              <div className="mt-1.5 md:hidden">
+              <div className={useLabMobileComposition ? "hidden" : "mt-1.5 md:hidden"}>
                 <div className={`relative mx-auto flex aspect-[16/7] w-full max-w-sm items-center rounded-3xl ${logoAlignClass} ${logoFramePaddingClass} ${visualFrameSurfaceClass}`}>
                   {heroLogoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -556,11 +1139,11 @@ export default function PublicHero({
                 </div>
               </div>
 
-              <p className={`mt-0.5 max-w-lg rounded-xl px-3 py-2 text-[13px] leading-snug md:hidden ${frameSurfaceClass} [color:var(--hero-text-90)]`}>
+              <p className={mobileSubtitleClass}>
                 {subtitle}
               </p>
 
-              <div className={`mt-4 mb-6 grid grid-cols-2 gap-3 md:hidden ${ctaMobilePositionClass}`}>
+              <div className={ctaMobileLayoutClass}>
                 <a
                   href={href1}
                   className="inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition [background:var(--hero-cta-primary)] [color:var(--hero-cta-primary-foreground)] hover:[background:var(--hero-cta-primary-hover)]"
@@ -576,11 +1159,11 @@ export default function PublicHero({
                 </a>
               </div>
 
-              <p className="mt-3 hidden max-w-lg text-sm sm:text-base md:block md:text-lg [color:var(--hero-text-82)]">
+              <p className={desktopSubtitleClass}>
                 {subtitle}
               </p>
 
-              <div className={`mt-5 hidden flex-wrap items-center gap-3 md:flex ${ctaDesktopAlignClass}`}>
+              <div className={desktopCtaClass}>
                 <a
                   href={href1}
                   className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition [background:var(--hero-cta-primary)] [color:var(--hero-cta-primary-foreground)] hover:[background:var(--hero-cta-primary-hover)]"
@@ -619,42 +1202,44 @@ export default function PublicHero({
           </div>
         </main>
 
-        <footer className="mt-auto pb-3">
-          <div className={`rounded-2xl px-4 py-3 ${footerSurfaceClass} [color:var(--hero-text-88)]`}>
-            <div className={`mx-auto flex max-w-5xl flex-col items-center gap-2 md:flex-row md:gap-6 ${footerDesktopAlignClass}`}>
-              <div className="grid w-full max-w-md grid-cols-2 gap-x-4 gap-y-2 md:hidden">
-                <div className="flex justify-center">
-                  <FooterInlineItem icon="📍" text="Dirección (pendiente)" />
-                </div>
-                <div className="flex justify-center">
-                  <FooterInlineItem icon="☎️" text="Teléfono" />
-                </div>
-                <div className="flex justify-center">
-                  <FooterInlineItem icon="💬" text="WhatsApp" />
-                </div>
-                <div className="flex justify-center">
-                  <FooterInlineItem icon="✉️" text="email@cliente.com" />
-                </div>
-              </div>
-
-              <div className="hidden flex-wrap items-center justify-center gap-6 md:flex">
-                <FooterInlineItem icon="📍" text="Dirección (pendiente)" />
-                <FooterInlineItem icon="☎️" text="Teléfono" />
-                <FooterInlineItem icon="💬" text="WhatsApp" />
-                <FooterInlineItem icon="✉️" text="email@cliente.com" />
+        <footer className={footerShellClass}>
+          <div className={`${footerRadiusClass} ${footerDensityClass} ${footerVisualClass} [color:var(--hero-text-88)]`}>
+            <div className={`mx-auto flex w-full max-w-5xl flex-col gap-2 ${footerDesktopAlignClass}`}>
+              <div className={footerContactGridClass}>
+                {footerContactItems.map((item) => (
+                  <div
+                    key={item.id}
+                    data-footer-part={item.id}
+                    className={useLabMobileComposition ? "min-w-0 text-center sm:text-left" : "min-w-0"}
+                  >
+                    <FooterInlineItem icon={item.icon} text={item.text} />
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className={`mt-3 flex items-center gap-3 text-[11px] md:text-xs ${footerBottomAlignClass}`}>
-              <div className={`min-w-0 truncate whitespace-nowrap ${footerBrandAlignClass}`}>
-                © 2026{" "}
-                <span className="font-semibold [color:var(--hero-text-inverse)]">
-                  {business?.name ?? "Caballeros Barbería"}
+            <div className={footerMetaRowClass}>
+              <div className={`${footerBrandClass} ${footerIdentityClass}`} data-footer-part="identity">
+                {footerLogoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={footerLogoUrl}
+                    alt={footerBusinessName}
+                    className="h-5 w-auto opacity-90"
+                  />
+                ) : null}
+                <span className="min-w-0 break-words">
+                  © 2026{" "}
+                  <span className="font-semibold [color:var(--hero-text-inverse)]">
+                    {footerBusinessName}
+                  </span>
                 </span>
               </div>
 
-              <div className="shrink-0">
-                <CreatedByMini />
+              <div className="min-w-0 shrink-0 text-right" data-footer-part="signature">
+                <span className="text-[11px] [color:var(--hero-text-80)]">
+                  {footerSignatureText}
+                </span>
               </div>
             </div>
           </div>

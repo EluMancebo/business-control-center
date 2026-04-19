@@ -216,3 +216,80 @@ export function getTallerPanelVisualCssVars(): Record<`--taller-${string}`, stri
     "--taller-popover-foreground": tokens.popoverForeground,
   };
 }
+
+export type TallerLabVisualTokensV1 = {
+  workspaceTopStrip: string;
+  sidebarFrame: string;
+  sidebarCard: string;
+  chipSurface: string;
+  chipBorder: string;
+  accent: string;
+  accentForeground: string;
+  accentSoft: string;
+  accentBorder: string;
+  accentStrong: string;
+  controlSurface: string;
+  controlBorder: string;
+  controlShadow: string;
+  canvasBackdrop: string;
+  canvasStage: string;
+  canvasTexture: string;
+  canvasTextureSize: string;
+};
+
+export function resolveTallerLabVisualTokensV1(): TallerLabVisualTokensV1 {
+  return {
+    workspaceTopStrip:
+      "color-mix(in oklab, var(--panel-topbar,var(--panel-surface-1,var(--background))) 68%, var(--foreground) 32%)",
+    sidebarFrame:
+      "color-mix(in oklab, var(--panel-sidebar,var(--surface-2,var(--card))) 74%, var(--panel-surface-3,var(--surface-3,var(--card))) 26%)",
+    sidebarCard:
+      "color-mix(in oklab, var(--panel-surface-3,var(--surface-3,var(--card))) 66%, var(--panel-surface-1,var(--background)) 34%)",
+    chipSurface:
+      "color-mix(in oklab, var(--panel-surface-3,var(--surface-3,var(--card))) 72%, var(--foreground) 28%)",
+    chipBorder: "color-mix(in oklab, var(--border) 84%, transparent)",
+    accent: "var(--accent,var(--processing,var(--primary)))",
+    accentForeground: "var(--accent-foreground,var(--processing-foreground,var(--foreground)))",
+    accentSoft:
+      "color-mix(in oklab, var(--accent,var(--processing,var(--primary))) 24%, var(--panel-surface-3,var(--surface-3,var(--card))) 76%)",
+    accentBorder:
+      "color-mix(in oklab, var(--accent,var(--processing,var(--primary))) 46%, transparent)",
+    accentStrong:
+      "color-mix(in oklab, var(--accent,var(--processing,var(--primary))) 74%, var(--foreground) 26%)",
+    controlSurface:
+      "color-mix(in oklab, var(--surface-2,var(--card)) 72%, var(--panel-surface-3,var(--surface-3,var(--card))) 28%)",
+    controlBorder: "color-mix(in oklab, var(--border) 92%, transparent)",
+    controlShadow:
+      "0 1px 0 color-mix(in oklab, var(--foreground) 12%, transparent), 0 0 0 1px color-mix(in oklab, var(--foreground) 9%, transparent), var(--elevation-interactive, var(--panel-shadow-2))",
+    canvasBackdrop:
+      "color-mix(in oklab, var(--background) 76%, var(--panel-surface-2,var(--surface-2,var(--card))) 24%)",
+    canvasStage:
+      "color-mix(in oklab, var(--background) 90%, var(--panel-surface-1,var(--background)) 10%)",
+    canvasTexture:
+      "radial-gradient(circle at 1px 1px, color-mix(in oklab, var(--foreground) 10%, transparent) 0.72px, transparent 0.94px),radial-gradient(circle at 3px 3px, color-mix(in oklab, var(--foreground) 6%, transparent) 0.5px, transparent 0.82px)",
+    canvasTextureSize: "7px 7px",
+  };
+}
+
+export function getTallerLabVisualCssVars(): Record<`--taller-lab-${string}`, string> {
+  const tokens = resolveTallerLabVisualTokensV1();
+  return {
+    "--taller-lab-workspace-top-strip": tokens.workspaceTopStrip,
+    "--taller-lab-sidebar-frame": tokens.sidebarFrame,
+    "--taller-lab-sidebar-card": tokens.sidebarCard,
+    "--taller-lab-chip-surface": tokens.chipSurface,
+    "--taller-lab-chip-border": tokens.chipBorder,
+    "--taller-lab-accent": tokens.accent,
+    "--taller-lab-accent-foreground": tokens.accentForeground,
+    "--taller-lab-accent-soft": tokens.accentSoft,
+    "--taller-lab-accent-border": tokens.accentBorder,
+    "--taller-lab-accent-strong": tokens.accentStrong,
+    "--taller-lab-control-surface": tokens.controlSurface,
+    "--taller-lab-control-border": tokens.controlBorder,
+    "--taller-lab-control-shadow": tokens.controlShadow,
+    "--taller-lab-canvas-backdrop": tokens.canvasBackdrop,
+    "--taller-lab-canvas-stage": tokens.canvasStage,
+    "--taller-lab-canvas-texture": tokens.canvasTexture,
+    "--taller-lab-canvas-texture-size": tokens.canvasTextureSize,
+  };
+}

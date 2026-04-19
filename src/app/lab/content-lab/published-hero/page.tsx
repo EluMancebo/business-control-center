@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactElement,
+} from "react";
 import PublicHero from "@/components/web/hero/PublicHero";
 import BrandHydrator from "@/components/brand/BrandHydrator";
 import type { BrandScope } from "@/lib/brand/storage";
@@ -13,6 +20,12 @@ import {
 import { mapPublishedSnapshotToContentPayload } from "@/lib/content-lab/published/mapPublishedSnapshotToContentPayload";
 import type { PublishedPieceSnapshot } from "@/lib/content-lab/published/types";
 import type { HeroAppearanceVariant } from "@/lib/web/hero/types";
+import type { AssetItem } from "@/lib/taller/media/types";
+import { fetchSystemMediaClientByQuery } from "@/lib/taller/media/service";
+import {
+  getTallerLabVisualCssVars,
+  getTallerPanelVisualCssVars,
+} from "@/lib/panel/tallerVisualContract";
 
 type CandidateId = "barber-pro" | "urban-studio";
 type PreviewViewport = FreeLayoutViewportId;
@@ -23,6 +36,13 @@ type CopyBlockPosition = "left" | "center-left" | "center" | "right";
 type CtaPosition = "start" | "center" | "end";
 type OverlayColor = "blue" | "green" | "amber" | "purple" | "smoke";
 type OverlayStyleMode = "gradient" | "solid" | "none";
+type LabHeadlineTone =
+  | "white"
+  | "black"
+  | "inverse"
+  | "muted-light"
+  | "warm-light"
+  | "cool-light";
 type PositionXOverride = PositionX | "auto";
 type CopyBlockPositionOverride = CopyBlockPosition | "auto";
 type BackgroundEmphasis = "low" | "medium" | "high";
@@ -32,6 +52,41 @@ type LabComponentType = "hero" | "banner" | "landing";
 type HeroLayoutType = "centered" | "split" | "logo-focus" | "media-heavy";
 type ActionPriority = "alta" | "media" | "baja";
 type CanvasMode = "preview" | "layout";
+type SourceMode = "preset" | "hero-safe-media";
+type HierarchyScale = "compact" | "balanced" | "expressive";
+type SeparationLevel = "tight" | "normal" | "relaxed";
+type NavTriggerSize = "sm" | "md" | "lg";
+type NavTriggerAura = "none" | "soft" | "strong";
+type NavTriggerSurface = "minimal" | "solid" | "glass";
+type NavTriggerTone = "inverse" | "primary" | "muted";
+type NavTriggerHover = "soft" | "lift" | "glow";
+type DesktopNavSize = "sm" | "md" | "lg";
+type DesktopNavTone = "inverse" | "primary" | "muted";
+type DesktopNavSurface = "minimal" | "solid" | "glass";
+type DesktopNavHover = "soft" | "lift" | "glow";
+type DesktopNavPresence = "low" | "medium" | "high";
+type NavigationEditTarget = "auto" | "desktop" | "burger";
+type NavOpenBehavior = "overlay" | "drawer" | "fullscreen";
+type NavPanelWidth = "narrow" | "normal" | "wide";
+type NavPanelOrigin = "right" | "left" | "center";
+type NavPanelStyle = "solid" | "glass" | "minimal";
+type NavOverlayDensity = "low" | "medium" | "high";
+type NavOverlayStyle = "tinted" | "neutral" | "none";
+type NavReadabilityBoost = "none" | "soft" | "strong";
+type NavMenuBlockPosition = "top" | "center" | "bottom";
+type NavMenuAlignment = "left" | "center" | "right";
+type NavMenuItemSize = "sm" | "md" | "lg";
+type NavMenuSafeOffset = "tight" | "normal" | "relaxed";
+type NavMenuVerticalSpacing = "tight" | "normal" | "relaxed";
+type NavMenuTextTone = "inverse" | "muted" | "primary";
+type HeaderIntegration = "integrated" | "separated";
+type HeaderVisualStyle = "minimal" | "solid" | "glass";
+type HeaderTopSpacing = "tight" | "normal" | "relaxed";
+type HeaderRelation = "balanced" | "logo-focus" | "nav-focus";
+type FooterIntegration = "integrated" | "separated";
+type FooterVisualStyle = "minimal" | "solid" | "glass";
+type FooterDensity = "compact" | "balanced" | "spacious";
+type FooterSignatureSeparation = "tight" | "normal" | "relaxed";
 type BriefObjective = "bookings" | "services" | "campaign";
 type BriefTone = "premium" | "close" | "urgent";
 type BriefAudience = "new-clients" | "returning-clients" | "mixed";
@@ -68,6 +123,21 @@ type QualityScoreItem = {
   label: string;
   score: number;
   note: string;
+};
+
+type HeroSafeMediaSource = {
+  id: string;
+  label: string;
+  url: string;
+  thematic: string;
+  sector: string;
+  component: string;
+  derived: string;
+  format: string;
+  ratio: string;
+  scope: string;
+  allowedComponents: string;
+  reviewState: string;
 };
 
 const BRIEF_OBJECTIVE_LABEL: Record<BriefObjective, string> = {
@@ -234,6 +304,15 @@ const OVERLAY_TINT_PREVIEW_CLASS: Record<OverlayColor, string> = {
   smoke: "bg-gradient-to-r from-slate-700 to-slate-950",
 };
 
+const LAB_HEADLINE_TONE_LABEL: Record<LabHeadlineTone, string> = {
+  white: "white",
+  black: "black",
+  inverse: "inverse",
+  "muted-light": "muted light",
+  "warm-light": "warm light",
+  "cool-light": "cool light",
+};
+
 const HERO_CANDIDATES: Record<CandidateId, PublishedPieceSnapshot> = {
   "barber-pro": {
     id: "snapshot-lab-hero-001",
@@ -307,6 +386,96 @@ const VIEWPORTS: Record<
 const SHOW_LAYOUT_GUIDES = false;
 const PREVIEW_STAGE_HORIZONTAL_PADDING = 24;
 const PREVIEW_STAGE_VERTICAL_PADDING = 40;
+const WORKSPACE_VIEWPORT_BOTTOM_GUTTER = 12;
+const HERO_SOURCE_ALLOWED_CONTEXT = "home.hero.background";
+const HERO_SOURCE_ALLOWED_CONTEXT_LEGACY = "hero.background";
+
+function greatestCommonDivisor(a: number, b: number): number {
+  let x = Math.max(1, Math.abs(Math.round(a)));
+  let y = Math.max(1, Math.abs(Math.round(b)));
+  while (y !== 0) {
+    const temp = y;
+    y = x % y;
+    x = temp;
+  }
+  return x;
+}
+
+function toRatioLabel(width: number, height: number): string {
+  if (!width || !height) return "n/a";
+  const divisor = greatestCommonDivisor(width, height);
+  const ratioW = Math.max(1, Math.round(width / divisor));
+  const ratioH = Math.max(1, Math.round(height / divisor));
+  return `${ratioW}:${ratioH}`;
+}
+
+function readTag(tags: string[], prefix: string): string {
+  const match = tags.find((tag) => tag.startsWith(prefix));
+  if (!match) return "";
+  return match.slice(prefix.length).trim();
+}
+
+function includesHeroAllowedContext(allowedIn: string[]): boolean {
+  return allowedIn.some(
+    (item) => item === HERO_SOURCE_ALLOWED_CONTEXT || item === HERO_SOURCE_ALLOWED_CONTEXT_LEGACY
+  );
+}
+
+function variantScore(item: AssetItem): number {
+  if (item.variantKey === "optimized") return 40;
+  if (item.variantKey === "original") return 30;
+  if (item.variantKey === "thumbnail") return 20;
+  return 10;
+}
+
+function toHeroSafeMediaSources(items: AssetItem[]): HeroSafeMediaSource[] {
+  const groupedBySource = new Map<string, AssetItem>();
+
+  items.forEach((item) => {
+    const isEligible =
+      item.status === "active" &&
+      item.pipelineStatus === "ready" &&
+      item.kind !== "video" &&
+      Boolean(item.url?.trim()) &&
+      includesHeroAllowedContext(item.allowedIn);
+    if (!isEligible) return;
+
+    const rootId = item.sourceAssetId || item._id;
+    const previous = groupedBySource.get(rootId);
+    if (!previous || variantScore(item) > variantScore(previous)) {
+      groupedBySource.set(rootId, item);
+    }
+  });
+
+  return Array.from(groupedBySource.values())
+    .sort((a, b) => {
+      if (variantScore(a) !== variantScore(b)) return variantScore(b) - variantScore(a);
+      return b.updatedAt?.localeCompare(a.updatedAt || "") || 0;
+    })
+    .map((item) => {
+      const thematic = readTag(item.tags, "intent:") || readTag(item.tags, "style:") || "general";
+      const sector = readTag(item.tags, "sector:") || "general";
+      const component = readTag(item.tags, "visual:") || "photo";
+      const mimeParts = item.mime.split("/");
+      const format = mimeParts[mimeParts.length - 1] || "unknown";
+
+      return {
+        id: item._id,
+        label: item.label || "Asset sin nombre",
+        url: item.url,
+        thematic,
+        sector,
+        component,
+        derived: item.variantKey,
+        format,
+        ratio: toRatioLabel(item.width, item.height),
+        scope: item.scope,
+        allowedComponents:
+          item.allowedIn.length > 0 ? item.allowedIn.join(", ") : HERO_SOURCE_ALLOWED_CONTEXT,
+        reviewState: `${item.status} / ${item.pipelineStatus}`,
+      };
+    });
+}
 
 const SCENE_OVERLAY_GRADIENT_TINT_CLASS: Record<OverlayColor, string> = {
   blue:
@@ -398,6 +567,13 @@ export default function PublishedHeroLabPage({
   const [sessionRole, setSessionRole] = useState<SessionRole>(null);
   const [componentType, setComponentType] = useState<LabComponentType>("hero");
   const [candidateId, setCandidateId] = useState<CandidateId>("barber-pro");
+  const [sourceMode, setSourceMode] = useState<SourceMode>("preset");
+  const [heroSafeMediaSources, setHeroSafeMediaSources] = useState<HeroSafeMediaSource[]>([]);
+  const [heroSafeMediaSourceId, setHeroSafeMediaSourceId] = useState<string>("");
+  const [heroSafeMediaState, setHeroSafeMediaState] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("loading");
+  const [heroSafeMediaError, setHeroSafeMediaError] = useState<string>("");
   const [brief, setBrief] = useState<HeroBrief>({
     objective: "bookings",
     tone: "premium",
@@ -408,13 +584,61 @@ export default function PublishedHeroLabPage({
   const [viewport, setViewport] = useState<PreviewViewport>("mobile");
   const [canvasMode, setCanvasMode] = useState<CanvasMode>("preview");
   const [heroLayoutType, setHeroLayoutType] = useState<HeroLayoutType>("split");
-  const [menuStyle, setMenuStyle] = useState<MenuStyle>("integrated");
-  const [menuOpen, setMenuOpen] = useState<boolean>(true);
+  const [menuStyle] = useState<MenuStyle>("integrated");
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  const [navigationEditTarget, setNavigationEditTarget] = useState<NavigationEditTarget>("auto");
+  const [navTriggerSize, setNavTriggerSize] = useState<NavTriggerSize>("md");
+  const [navTriggerAura, setNavTriggerAura] = useState<NavTriggerAura>("none");
+  const [navTriggerSurface, setNavTriggerSurface] = useState<NavTriggerSurface>("minimal");
+  const [navTriggerTone, setNavTriggerTone] = useState<NavTriggerTone>("inverse");
+  const [navTriggerHover, setNavTriggerHover] = useState<NavTriggerHover>("soft");
+  const [desktopNavSize, setDesktopNavSize] = useState<DesktopNavSize>("md");
+  const [desktopNavTone, setDesktopNavTone] = useState<DesktopNavTone>("muted");
+  const [desktopNavSurface, setDesktopNavSurface] = useState<DesktopNavSurface>("solid");
+  const [desktopNavHover, setDesktopNavHover] = useState<DesktopNavHover>("soft");
+  const [desktopNavPresence, setDesktopNavPresence] = useState<DesktopNavPresence>("medium");
+  const [navOpenBehavior, setNavOpenBehavior] = useState<NavOpenBehavior>("overlay");
+  const [navPanelWidth, setNavPanelWidth] = useState<NavPanelWidth>("normal");
+  const [navPanelOrigin, setNavPanelOrigin] = useState<NavPanelOrigin>("right");
+  const [navPanelIncludeLogo, setNavPanelIncludeLogo] = useState<boolean>(true);
+  const [navPanelStyle, setNavPanelStyle] = useState<NavPanelStyle>("solid");
+  const [navOverlayDensity, setNavOverlayDensity] = useState<NavOverlayDensity>("medium");
+  const [navOverlayStyle, setNavOverlayStyle] = useState<NavOverlayStyle>("tinted");
+  const [navReadabilityBoost, setNavReadabilityBoost] = useState<NavReadabilityBoost>("soft");
+  const [navMenuBlockPosition, setNavMenuBlockPosition] =
+    useState<NavMenuBlockPosition>("top");
+  const [navMenuAlignment, setNavMenuAlignment] = useState<NavMenuAlignment>("left");
+  const [navMenuItemSize, setNavMenuItemSize] = useState<NavMenuItemSize>("md");
+  const [navMenuSafeTopOffset, setNavMenuSafeTopOffset] =
+    useState<NavMenuSafeOffset>("normal");
+  const [navMenuSafeSideOffset, setNavMenuSafeSideOffset] =
+    useState<NavMenuSafeOffset>("normal");
+  const [navMenuVerticalSpacing, setNavMenuVerticalSpacing] =
+    useState<NavMenuVerticalSpacing>("normal");
+  const [navMenuTextTone, setNavMenuTextTone] = useState<NavMenuTextTone>("inverse");
+  const [headerIntegration, setHeaderIntegration] = useState<HeaderIntegration>("integrated");
+  const [headerVisualStyle, setHeaderVisualStyle] = useState<HeaderVisualStyle>("solid");
+  const [headerTopSpacing, setHeaderTopSpacing] = useState<HeaderTopSpacing>("normal");
+  const [headerRelation, setHeaderRelation] = useState<HeaderRelation>("balanced");
+  const [footerIntegration, setFooterIntegration] = useState<FooterIntegration>("integrated");
+  const [footerVisualStyle, setFooterVisualStyle] = useState<FooterVisualStyle>("solid");
+  const [footerDensity, setFooterDensity] = useState<FooterDensity>("balanced");
+  const [footerSignatureSeparation, setFooterSignatureSeparation] =
+    useState<FooterSignatureSeparation>("normal");
+  const [footerPositionOverride, setFooterPositionOverride] = useState<PositionXOverride>("auto");
   const [copyWidth, setCopyWidth] = useState<CopyWidth>("balanced");
+  const [mobileHeadlineScale, setMobileHeadlineScale] = useState<HierarchyScale>("balanced");
+  const [mobileLogoScale, setMobileLogoScale] = useState<HierarchyScale>("balanced");
+  const [gapLogoHeadline, setGapLogoHeadline] = useState<SeparationLevel>("normal");
+  const [gapHeadlineSubheadline, setGapHeadlineSubheadline] = useState<SeparationLevel>("normal");
+  const [gapTextCta, setGapTextCta] = useState<SeparationLevel>("normal");
+  const [gapCtaFooter, setGapCtaFooter] = useState<SeparationLevel>("normal");
+  const [gapFooterDataSignature, setGapFooterDataSignature] = useState<SeparationLevel>("normal");
   const [ctaMode, setCtaMode] = useState<CtaMode>("balanced");
   const [overlayMode, setOverlayMode] = useState<HeroAppearanceVariant>("soft");
   const [overlayStyleMode, setOverlayStyleMode] = useState<OverlayStyleMode>("gradient");
   const [overlayColor, setOverlayColor] = useState<OverlayColor>("blue");
+  const [labHeadlineTone, setLabHeadlineTone] = useState<LabHeadlineTone>("white");
   const [backgroundEmphasis, setBackgroundEmphasis] = useState<BackgroundEmphasis>("medium");
   const [navPositionOverride, setNavPositionOverride] = useState<PositionXOverride>("auto");
   const [logoPositionOverride, setLogoPositionOverride] = useState<PositionXOverride>("auto");
@@ -426,6 +650,8 @@ export default function PublishedHeroLabPage({
   const [subheadlineDraft, setSubheadlineDraft] = useState<string>("");
   const [primaryCtaDraft, setPrimaryCtaDraft] = useState<string>("");
   const [secondaryCtaDraft, setSecondaryCtaDraft] = useState<string>("");
+  const workspaceViewportRef = useRef<HTMLElement | null>(null);
+  const [workspaceViewportHeight, setWorkspaceViewportHeight] = useState<number | null>(null);
   const previewStageRef = useRef<HTMLDivElement | null>(null);
   const [previewStageSize, setPreviewStageSize] = useState<{ width: number; height: number }>({
     width: 0,
@@ -435,9 +661,26 @@ export default function PublishedHeroLabPage({
   const viewportConfig = VIEWPORTS[viewport];
   const canvasWidth = viewportConfig.width;
   const canvasHeight = viewportConfig.height;
-  const menuToggleEnabled =
-    viewportConfig.navigationMode === "mobile" && (viewport === "mobile" || viewport === "tablet");
+  const canEditDesktopNavigation = viewportConfig.navigationMode === "desktop";
+  const canEditBurgerNavigation = viewportConfig.navigationMode === "mobile";
+  const governedNavigationEditTarget =
+    navigationEditTarget === "desktop" && !canEditDesktopNavigation
+      ? "auto"
+      : navigationEditTarget === "burger" && !canEditBurgerNavigation
+        ? "auto"
+        : navigationEditTarget;
+  const resolvedNavigationEditTarget =
+    governedNavigationEditTarget === "auto"
+      ? viewportConfig.navigationMode === "mobile"
+        ? "burger"
+        : "desktop"
+      : governedNavigationEditTarget;
+  const previewNavigationMode = resolvedNavigationEditTarget === "burger" ? "mobile" : "desktop";
+  const menuToggleEnabled = previewNavigationMode === "mobile";
   const effectiveMenuOpen = menuToggleEnabled ? menuOpen : false;
+  const desktopNavigationControlsVisible = resolvedNavigationEditTarget === "desktop";
+  const burgerNavigationControlsVisible = resolvedNavigationEditTarget === "burger";
+  const burgerControlsLiveOnViewport = previewNavigationMode === "mobile";
 
   useEffect(() => {
     let active = true;
@@ -460,6 +703,79 @@ export default function PublishedHeroLabPage({
 
     return () => {
       active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    (async () => {
+      try {
+        const [heroScoped, legacyHeroScoped] = await Promise.all([
+          fetchSystemMediaClientByQuery({
+            allowedIn: HERO_SOURCE_ALLOWED_CONTEXT,
+            pipelineStatus: "ready",
+            status: "active",
+          }),
+          fetchSystemMediaClientByQuery({
+            allowedIn: HERO_SOURCE_ALLOWED_CONTEXT_LEGACY,
+            pipelineStatus: "ready",
+            status: "active",
+          }),
+        ]);
+
+        if (!active) return;
+        const semantizedSources = toHeroSafeMediaSources([...heroScoped, ...legacyHeroScoped]);
+        setHeroSafeMediaSources(semantizedSources);
+        setHeroSafeMediaSourceId((previous) => {
+          if (previous && semantizedSources.some((item) => item.id === previous)) return previous;
+          return semantizedSources[0]?.id || "";
+        });
+        setHeroSafeMediaState("ready");
+      } catch (error) {
+        if (!active) return;
+        setHeroSafeMediaSources([]);
+        setHeroSafeMediaState("error");
+        setHeroSafeMediaError(
+          error instanceof Error ? error.message : "No se pudieron cargar los sources hero-safe."
+        );
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const workspace = workspaceViewportRef.current;
+    if (!workspace) return;
+
+    let frameId = 0;
+    const measureWorkspaceHeight = () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+      frameId = requestAnimationFrame(() => {
+        const rect = workspace.getBoundingClientRect();
+        const availableHeight = Math.max(
+          Math.floor(window.innerHeight - rect.top - WORKSPACE_VIEWPORT_BOTTOM_GUTTER),
+          0
+        );
+        setWorkspaceViewportHeight((previous) =>
+          previous === availableHeight ? previous : availableHeight
+        );
+      });
+    };
+
+    measureWorkspaceHeight();
+    window.addEventListener("resize", measureWorkspaceHeight);
+
+    return () => {
+      window.removeEventListener("resize", measureWorkspaceHeight);
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
     };
   }, []);
 
@@ -511,6 +827,18 @@ export default function PublishedHeroLabPage({
   const scaledCanvasWidth = canvasWidth * canvasScale;
   const scaledCanvasHeight = canvasHeight * canvasScale;
   const heroCopyWidth = copyWidth === "compact" ? "narrow" : copyWidth === "expanded" ? "wide" : "normal";
+  const selectedHeroSafeMediaSource = useMemo(
+    () => heroSafeMediaSources.find((item) => item.id === heroSafeMediaSourceId) || null,
+    [heroSafeMediaSourceId, heroSafeMediaSources]
+  );
+  const labVisualCssVars = useMemo(
+    () =>
+      ({
+        ...getTallerPanelVisualCssVars(),
+        ...getTallerLabVisualCssVars(),
+      }) as CSSProperties,
+    []
+  );
   const freeLayoutDraft = useMemo<FreeLayoutDraft>(() => createDefaultFreeLayout(), []);
   const activeFreeLayoutViewport = useMemo(
     () => freeLayoutDraft.viewports.find((item) => item.viewport === viewport),
@@ -531,7 +859,8 @@ export default function PublishedHeroLabPage({
       ? heroLayoutClass.copyBlockPosition
       : copyBlockPositionOverride;
   const ctaPosition = heroLayoutClass.ctaPosition;
-  const footerPosition = heroLayoutClass.footerPosition;
+  const footerPosition =
+    footerPositionOverride === "auto" ? heroLayoutClass.footerPosition : footerPositionOverride;
   const visualPosition =
     visualPositionOverride === "auto" ? heroLayoutClass.visualPosition : visualPositionOverride;
   const logoPosition =
@@ -670,7 +999,12 @@ export default function PublishedHeroLabPage({
       primaryCtaLabel: resolvedPrimaryCta || hero.primaryCtaLabel,
       secondaryCtaLabel: resolvedSecondaryCta || hero.secondaryCtaLabel,
       heroAppearanceVariant: overlayMode,
-      backgroundImageUrl: snapshotForPreview.payload.media?.url ?? hero.backgroundImageUrl,
+      backgroundImageUrl:
+        sourceMode === "hero-safe-media"
+          ? selectedHeroSafeMediaSource?.url ||
+            snapshotForPreview.payload.media?.url ||
+            hero.backgroundImageUrl
+          : snapshotForPreview.payload.media?.url || hero.backgroundImageUrl,
     };
   }, [
     badgeVisible,
@@ -678,6 +1012,8 @@ export default function PublishedHeroLabPage({
     overlayMode,
     primaryCtaDraft,
     secondaryCtaDraft,
+    selectedHeroSafeMediaSource,
+    sourceMode,
     snapshotForPreview,
     subheadlineDraft,
   ]);
@@ -1109,29 +1445,49 @@ export default function PublishedHeroLabPage({
       : evaluation.verdict === "promising"
         ? "[border-color:color-mix(in_oklab,var(--warning)_52%,transparent)] [background:color-mix(in_oklab,var(--warning-soft)_72%,var(--panel-surface-3,var(--surface-3,var(--card))))] [color:var(--warning-foreground)] [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,currentColor_14%,transparent)]"
         : "[border-color:color-mix(in_oklab,var(--danger)_52%,transparent)] [background:color-mix(in_oklab,var(--danger-soft)_72%,var(--panel-surface-3,var(--surface-3,var(--card))))] [color:var(--danger-foreground)] [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,currentColor_14%,transparent)]";
+  const labControlSelectClass =
+    "w-full min-w-0 rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))] focus-visible:outline-none focus-visible:ring-2 focus-visible:[ring-color:var(--taller-lab-accent-border,var(--taller-lab-accent,var(--accent,var(--processing))))]";
+  const labControlToggleRowClass =
+    "col-span-2 min-w-0 flex items-center justify-between gap-2 rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1.5 [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]";
+  const labControlCheckboxClass =
+    "h-4 w-4 shrink-0 cursor-pointer rounded-sm [accent-color:var(--taller-lab-accent,var(--accent,var(--processing)))] focus-visible:outline-none focus-visible:ring-2 focus-visible:[ring-color:var(--taller-lab-accent-border,var(--taller-lab-accent,var(--accent,var(--processing))))]";
+  const navSystemSurfaceAClass =
+    "min-w-0 rounded-lg border [border-color:color-mix(in_oklab,var(--taller-lab-chip-border,var(--border))_82%,transparent)] [background:var(--taller-lab-sidebar-card,var(--surface-3,var(--card)))] p-2 [box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]";
+  const navSystemGridClass = "mt-2 grid min-w-0 grid-cols-2 gap-2.5";
+  const navSystemFieldClass = "min-w-0 grid gap-1";
+  const navSystemWideFieldClass = "col-span-2 min-w-0 grid gap-1";
+  const navSystemLabelClass = "min-w-0 truncate text-muted-foreground";
+  const navSystemTargetGroupClass =
+    "mt-2 grid min-w-0 grid-cols-2 gap-1 rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] p-1 sm:grid-cols-3";
+  const navSystemTargetButtonClass =
+    "inline-flex h-8 w-full min-w-0 items-center justify-center rounded-md border px-2 text-[10px] font-semibold uppercase tracking-wide transition";
+  const labSegmentedTextButtonClass =
+    "inline-flex h-8 min-w-0 shrink-0 items-center justify-center rounded-md border px-2.5 text-[11px] font-semibold tracking-wide transition";
+  const labSegmentedIconButtonClass =
+    "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border px-0 transition";
+  const labSegmentedStaticChipClass =
+    "inline-flex h-8 min-w-0 shrink-0 items-center justify-center rounded-md border px-2.5 text-[11px] font-semibold tracking-wide";
+  const labChipActiveClass =
+    "[border-color:var(--taller-lab-accent-border,color-mix(in_oklab,var(--processing)_48%,transparent))] [background:var(--taller-lab-accent-soft,color-mix(in_oklab,var(--processing-soft)_86%,var(--taller-lab-chip-surface,var(--panel-surface-3,var(--surface-3,var(--card))))))] [color:var(--taller-lab-accent-foreground,var(--processing-foreground))] [box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]";
+  const labChipIdleClass =
+    "border-transparent text-muted-foreground hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))] hover:[border-color:color-mix(in_oklab,var(--taller-lab-chip-border,var(--border))_72%,transparent)]";
+  const labUtilityChipClass =
+    "inline-flex h-7 min-w-0 items-center rounded-md border [border-color:var(--taller-lab-chip-border,var(--border))] [background:var(--taller-lab-chip-surface,var(--surface-3,var(--card)))] px-2 text-[11px] font-medium text-muted-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))]";
+  const labStatusBadgeBaseClass =
+    "inline-flex h-6 shrink-0 items-center rounded-full border px-2.5 text-[11px] font-semibold [box-shadow:var(--elevation-base,var(--panel-shadow-1))]";
+  const labAccentActionButtonClass =
+    "mt-2 rounded-md border [border-color:var(--taller-lab-accent-border,color-mix(in_oklab,var(--processing)_42%,transparent))] [background:var(--taller-lab-accent-soft,var(--processing-soft))] px-2 py-1 text-[11px] font-semibold [color:var(--taller-lab-accent-foreground,var(--processing-foreground))] [box-shadow:var(--elevation-base,var(--panel-shadow-1))] transition hover:[box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]";
 
   return (
-    <main className="min-h-svh w-full [background:radial-gradient(136%_120%_at_50%_-10%,color-mix(in_oklab,var(--accent-soft,var(--muted))_66%,transparent),transparent_40%),linear-gradient(180deg,color-mix(in_oklab,var(--panel-surface-1,var(--background))_72%,var(--panel-background,var(--background)))_0%,var(--panel-background,var(--background))_100%)] text-foreground">
+    <main
+      className="min-h-svh w-full [background:var(--panel-background,var(--background))] text-foreground"
+      style={labVisualCssVars}
+    >
       {disableInternalBrandHydrator ? null : <BrandHydrator scope={brandScope} />}
       <div className="mx-auto w-full max-w-[1600px] px-3 py-4 sm:px-4 sm:py-6">
-        <div className="mb-4 rounded-2xl border border-border/70 [background:var(--panel-surface-1,var(--background))] p-4 [box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]">
-          <p className="text-xs font-semibold uppercase tracking-wider text-processing-foreground">
-            Hero Lab v1
-          </p>
-          <h1 className="mt-1 text-xl font-bold sm:text-2xl">
-            Guided Decision Surface
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Workspace creativo guiado: causa a la izquierda, canvas central y lectura accionable a la derecha.
-          </p>
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Theme source: <span className="font-semibold text-foreground">{brandScope}</span> (role: {sessionRole ?? "anon"})
-          </p>
-        </div>
-
         <div className="grid gap-4 xl:grid-cols-[14.5rem_minmax(0,1fr)_16.5rem] 2xl:grid-cols-[15.5rem_minmax(0,1fr)_17.5rem] 2xl:gap-5">
-          <aside className="space-y-4 xl:sticky xl:top-4 xl:h-[calc(100vh-2.25rem)] xl:overflow-y-auto xl:pr-1">
-            <section className="rounded-2xl border border-border/80 [background:var(--panel-sidebar,var(--surface-2,var(--card)))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+          <aside className="space-y-4 xl:sticky xl:top-4 xl:h-[calc(100vh-2.25rem)] xl:overflow-y-auto bcc-scrollbar xl:pr-1">
+            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
               <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
                 1) Brief
               </h2>
@@ -1204,22 +1560,110 @@ export default function PublishedHeroLabPage({
               </p>
             </section>
 
-            <section className="rounded-2xl border border-border/80 [background:var(--panel-sidebar,var(--surface-2,var(--card)))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
               <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                2) Composition
+                2) Composition Lab
               </h2>
               <div className="mt-2 space-y-3 text-sm">
-                <label className="block">
-                  <span className="mb-1 block text-xs text-muted-foreground">Source</span>
-                  <select
-                    value={candidateId}
-                    onChange={(event) => setCandidateId(event.target.value as CandidateId)}
-                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
-                  >
-                    <option value="barber-pro">Lab mock - Barber Pro</option>
-                    <option value="urban-studio">Lab mock - Urban Studio</option>
-                  </select>
-                </label>
+                <div className="rounded-lg border border-border [background:var(--taller-lab-sidebar-card,var(--surface-3,var(--card)))] p-2">
+                  <span className="mb-1 block text-xs text-muted-foreground">Source flow</span>
+                  <label className="block text-xs">
+                    <span className="mb-1 block text-muted-foreground">source view</span>
+                    <select
+                      value={sourceMode}
+                      onChange={(event) => setSourceMode(event.target.value as SourceMode)}
+                      className="w-full rounded-md border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
+                    >
+                      <option value="preset">preset snapshot</option>
+                      <option value="hero-safe-media">media hero-safe</option>
+                    </select>
+                  </label>
+
+                  {sourceMode === "preset" ? (
+                    <label className="mt-2 block text-xs">
+                      <span className="mb-1 block text-muted-foreground">preset snapshot</span>
+                      <select
+                        value={candidateId}
+                        onChange={(event) => setCandidateId(event.target.value as CandidateId)}
+                        className="w-full rounded-md border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
+                      >
+                        <option value="barber-pro">Lab mock - Barber Pro</option>
+                        <option value="urban-studio">Lab mock - Urban Studio</option>
+                      </select>
+                    </label>
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      <label className="block text-xs">
+                        <span className="mb-1 block text-muted-foreground">hero-safe source</span>
+                        <select
+                          value={heroSafeMediaSourceId}
+                          onChange={(event) => setHeroSafeMediaSourceId(event.target.value)}
+                          disabled={heroSafeMediaState !== "ready" || heroSafeMediaSources.length === 0}
+                          className="w-full rounded-md border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground disabled:opacity-55"
+                        >
+                          {heroSafeMediaSources.length === 0 ? (
+                            <option value="">sin assets hero-safe disponibles</option>
+                          ) : null}
+                          {heroSafeMediaSources.map((source) => (
+                            <option key={source.id} value={source.id}>
+                              {source.label} · {source.derived} · {source.ratio}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <p className="rounded-md border border-border/80 [background:var(--surface-3,var(--card))] px-2 py-1.5 text-[11px] text-muted-foreground">
+                        {heroSafeMediaState === "loading"
+                          ? "Cargando media hero-safe desde la libreria..."
+                          : heroSafeMediaState === "error"
+                            ? `Error de source hero-safe: ${heroSafeMediaError}`
+                            : `Assets hero-safe: ${heroSafeMediaSources.length}`}
+                      </p>
+                      {selectedHeroSafeMediaSource ? (
+                        <div className="rounded-md border border-border/80 [background:var(--surface-3,var(--card))] p-2 text-[11px] text-muted-foreground">
+                          <p>
+                            thematic:{" "}
+                            <span className="font-semibold text-foreground">
+                              {selectedHeroSafeMediaSource.thematic}
+                            </span>
+                          </p>
+                          <p>
+                            sector:{" "}
+                            <span className="font-semibold text-foreground">
+                              {selectedHeroSafeMediaSource.sector}
+                            </span>
+                          </p>
+                          <p>
+                            component:{" "}
+                            <span className="font-semibold text-foreground">
+                              {selectedHeroSafeMediaSource.component}
+                            </span>
+                          </p>
+                          <p>
+                            derivado/formato/ratio:{" "}
+                            <span className="font-semibold text-foreground">
+                              {selectedHeroSafeMediaSource.derived} · {selectedHeroSafeMediaSource.format} ·{" "}
+                              {selectedHeroSafeMediaSource.ratio}
+                            </span>
+                          </p>
+                          <p>
+                            scope + allowedComponents:{" "}
+                            <span className="font-semibold text-foreground">
+                              {selectedHeroSafeMediaSource.scope} ·{" "}
+                              {selectedHeroSafeMediaSource.allowedComponents}
+                            </span>
+                          </p>
+                          <p>
+                            review state:{" "}
+                            <span className="font-semibold text-foreground">
+                              {selectedHeroSafeMediaSource.reviewState}
+                            </span>
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <span className="mb-1 block text-xs text-muted-foreground">Hero layout type</span>
                   <div className="grid grid-cols-2 gap-1 rounded-lg border border-border [background:var(--surface-3,var(--card))] p-1">
@@ -1228,21 +1672,23 @@ export default function PublishedHeroLabPage({
                         key={layoutType}
                         type="button"
                         onClick={() => setHeroLayoutType(layoutType)}
-                        className={`rounded-md border px-2 py-2 text-center text-[11px] font-semibold uppercase tracking-wide transition ${heroLayoutType === layoutType ? "[border-color:color-mix(in_oklab,var(--processing)_44%,transparent)] bg-processing-soft text-processing-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))]" : "border-transparent text-muted-foreground hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))] hover:[border-color:color-mix(in_oklab,var(--border)_62%,transparent)]"}`}
+                        className={`${labSegmentedTextButtonClass} uppercase ${heroLayoutType === layoutType ? labChipActiveClass : labChipIdleClass}`}
                       >
                         {HERO_LAYOUT_LABEL[layoutType]}
                       </button>
                     ))}
                   </div>
                 </div>
+
                 <p className="rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-[11px] text-muted-foreground">
                   Active composition:{" "}
                   <span className="font-semibold text-foreground">
                     {HERO_LAYOUT_LABEL[heroLayoutType]}
                   </span>
                 </p>
+
                 <label className="block text-xs">
-                  <span className="mb-1 block text-muted-foreground">copy width</span>
+                  <span className="mb-1 block text-muted-foreground">narrative width</span>
                   <select
                     value={copyWidth}
                     onChange={(event) => setCopyWidth(event.target.value as CopyWidth)}
@@ -1253,15 +1699,15 @@ export default function PublishedHeroLabPage({
                     <option value="expanded">expanded</option>
                   </select>
                 </label>
-                <div className="rounded-lg border border-border [background:var(--surface-3,var(--card))] p-2">
+
+                <div className="rounded-lg border border-border [background:var(--taller-lab-sidebar-card,var(--surface-3,var(--card)))] p-2">
                   <div className="mb-1 flex items-center justify-between">
                     <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      Composition Fine Tune
+                      Anchors / Relative Position
                     </span>
                     <button
                       type="button"
                       onClick={() => {
-                        setNavPositionOverride("auto");
                         setLogoPositionOverride("auto");
                         setVisualPositionOverride("auto");
                         setCopyBlockPositionOverride("auto");
@@ -1273,24 +1719,11 @@ export default function PublishedHeroLabPage({
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
                     <label className="grid gap-1">
-                      <span className="text-muted-foreground">nav</span>
-                      <select
-                        value={navPositionOverride}
-                        onChange={(event) => setNavPositionOverride(event.target.value as PositionXOverride)}
-                        className="rounded-md border border-border [background:var(--surface-2,var(--card))] px-2 py-1 text-foreground"
-                      >
-                        <option value="auto">auto</option>
-                        <option value="left">left</option>
-                        <option value="center">center</option>
-                        <option value="right">right</option>
-                      </select>
-                    </label>
-                    <label className="grid gap-1">
-                      <span className="text-muted-foreground">logo</span>
+                      <span className="text-muted-foreground">logo anchor</span>
                       <select
                         value={logoPositionOverride}
                         onChange={(event) => setLogoPositionOverride(event.target.value as PositionXOverride)}
-                        className="rounded-md border border-border [background:var(--surface-2,var(--card))] px-2 py-1 text-foreground"
+                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
                       >
                         <option value="auto">auto</option>
                         <option value="left">left</option>
@@ -1299,11 +1732,11 @@ export default function PublishedHeroLabPage({
                       </select>
                     </label>
                     <label className="grid gap-1">
-                      <span className="text-muted-foreground">visual</span>
+                      <span className="text-muted-foreground">visual anchor</span>
                       <select
                         value={visualPositionOverride}
                         onChange={(event) => setVisualPositionOverride(event.target.value as PositionXOverride)}
-                        className="rounded-md border border-border [background:var(--surface-2,var(--card))] px-2 py-1 text-foreground"
+                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
                       >
                         <option value="auto">auto</option>
                         <option value="left">left</option>
@@ -1312,13 +1745,13 @@ export default function PublishedHeroLabPage({
                       </select>
                     </label>
                     <label className="grid gap-1">
-                      <span className="text-muted-foreground">copy block</span>
+                      <span className="text-muted-foreground">copy anchor</span>
                       <select
                         value={copyBlockPositionOverride}
                         onChange={(event) =>
                           setCopyBlockPositionOverride(event.target.value as CopyBlockPositionOverride)
                         }
-                        className="rounded-md border border-border [background:var(--surface-2,var(--card))] px-2 py-1 text-foreground"
+                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
                       >
                         <option value="auto">auto</option>
                         <option value="left">left</option>
@@ -1329,37 +1762,111 @@ export default function PublishedHeroLabPage({
                     </label>
                   </div>
                 </div>
+
+                <div className="rounded-lg border border-border [background:var(--taller-lab-sidebar-card,var(--surface-3,var(--card)))] p-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Spacing / Hierarchy
+                  </p>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                    <label className="grid gap-1">
+                      <span className="text-muted-foreground">mobile headline scale</span>
+                      <select
+                        value={mobileHeadlineScale}
+                        onChange={(event) =>
+                          setMobileHeadlineScale(event.target.value as HierarchyScale)
+                        }
+                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
+                      >
+                        <option value="compact">compact</option>
+                        <option value="balanced">balanced</option>
+                        <option value="expressive">expressive</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-muted-foreground">mobile logo scale</span>
+                      <select
+                        value={mobileLogoScale}
+                        onChange={(event) => setMobileLogoScale(event.target.value as HierarchyScale)}
+                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
+                      >
+                        <option value="compact">compact</option>
+                        <option value="balanced">balanced</option>
+                        <option value="expressive">expressive</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-muted-foreground">logo to headline</span>
+                      <select
+                        value={gapLogoHeadline}
+                        onChange={(event) => setGapLogoHeadline(event.target.value as SeparationLevel)}
+                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
+                      >
+                        <option value="tight">tight</option>
+                        <option value="normal">normal</option>
+                        <option value="relaxed">relaxed</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-muted-foreground">headline to subheadline</span>
+                      <select
+                        value={gapHeadlineSubheadline}
+                        onChange={(event) =>
+                          setGapHeadlineSubheadline(event.target.value as SeparationLevel)
+                        }
+                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
+                      >
+                        <option value="tight">tight</option>
+                        <option value="normal">normal</option>
+                        <option value="relaxed">relaxed</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-muted-foreground">text to CTA</span>
+                      <select
+                        value={gapTextCta}
+                        onChange={(event) => setGapTextCta(event.target.value as SeparationLevel)}
+                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
+                      >
+                        <option value="tight">tight</option>
+                        <option value="normal">normal</option>
+                        <option value="relaxed">relaxed</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-muted-foreground">CTA to footer</span>
+                      <select
+                        value={gapCtaFooter}
+                        onChange={(event) => setGapCtaFooter(event.target.value as SeparationLevel)}
+                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
+                      >
+                        <option value="tight">tight</option>
+                        <option value="normal">normal</option>
+                        <option value="relaxed">relaxed</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-muted-foreground">footer data to signature</span>
+                      <select
+                        value={gapFooterDataSignature}
+                        onChange={(event) =>
+                          setGapFooterDataSignature(event.target.value as SeparationLevel)
+                        }
+                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
+                      >
+                        <option value="tight">tight</option>
+                        <option value="normal">normal</option>
+                        <option value="relaxed">relaxed</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
               </div>
             </section>
-            <section className="rounded-2xl border border-border/80 [background:var(--panel-sidebar,var(--surface-2,var(--card)))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
               <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                3) Scene controls
+                3) Emphasis / Atmosphere
               </h2>
               <div className="mt-2 space-y-2 text-xs">
-                <label className="flex items-center justify-between rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2">
-                  <span className="text-foreground">menu open (external)</span>
-                  <input
-                    type="checkbox"
-                    checked={effectiveMenuOpen}
-                    onChange={(event) => setMenuOpen(event.target.checked)}
-                    disabled={!menuToggleEnabled}
-                    className="h-4 w-4 accent-processing disabled:opacity-40"
-                  />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-muted-foreground">menuStyle</span>
-                  <select
-                    value={menuStyle}
-                    onChange={(event) => setMenuStyle(event.target.value as MenuStyle)}
-                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
-                  >
-                    <option value="opaque">opaque</option>
-                    <option value="integrated">integrated</option>
-                  </select>
-                </label>
-                <p className="rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-[11px] text-muted-foreground">
-                  `opaque` concentra foco en la banda del menu. `integrated` elimina caja visible y navega flotando sobre el hero.
-                </p>
                 <label className="block">
                   <span className="mb-1 block text-muted-foreground">overlay density</span>
                   <select
@@ -1393,7 +1900,7 @@ export default function PublishedHeroLabPage({
                         type="button"
                         onClick={() => setOverlayColor(tint)}
                         disabled={overlayStyleMode === "none"}
-                        className={`inline-flex items-center gap-2 rounded-md border px-2 py-1.5 text-[11px] font-semibold capitalize transition disabled:opacity-45 ${overlayColor === tint ? "[border-color:color-mix(in_oklab,var(--processing)_44%,transparent)] bg-processing-soft text-processing-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))]" : "border-border/80 text-muted-foreground hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))]"}`}
+                        className={`${labSegmentedTextButtonClass} gap-2 capitalize disabled:opacity-45 ${overlayColor === tint ? labChipActiveClass : labChipIdleClass}`}
                       >
                         <span className={`block h-2.5 w-4 rounded-sm ${OVERLAY_TINT_PREVIEW_CLASS[tint]}`} />
                         {tint}
@@ -1401,6 +1908,29 @@ export default function PublishedHeroLabPage({
                     ))}
                   </div>
                 </div>
+                <label className="block">
+                  <span className="mb-1 block text-muted-foreground">headline color</span>
+                  <select
+                    value={labHeadlineTone}
+                    onChange={(event) => setLabHeadlineTone(event.target.value as LabHeadlineTone)}
+                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
+                  >
+                    {(
+                      [
+                        "white",
+                        "black",
+                        "inverse",
+                        "muted-light",
+                        "warm-light",
+                        "cool-light",
+                      ] as const
+                    ).map((tone) => (
+                      <option key={tone} value={tone}>
+                        {LAB_HEADLINE_TONE_LABEL[tone]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <div>
                   <span className="mb-1 block text-muted-foreground">background emphasis</span>
                   <div className="inline-flex w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] p-1">
@@ -1409,7 +1939,7 @@ export default function PublishedHeroLabPage({
                         key={emphasis}
                         type="button"
                         onClick={() => setBackgroundEmphasis(emphasis)}
-                        className={`flex-1 rounded-md border px-2 py-1.5 text-xs font-semibold capitalize transition ${backgroundEmphasis === emphasis ? "[border-color:color-mix(in_oklab,var(--processing)_44%,transparent)] bg-processing-soft text-processing-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))]" : "border-transparent text-muted-foreground hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))] hover:[border-color:color-mix(in_oklab,var(--border)_62%,transparent)]"}`}
+                        className={`flex-1 rounded-md border px-2 py-1.5 text-xs font-semibold capitalize transition ${backgroundEmphasis === emphasis ? labChipActiveClass : labChipIdleClass}`}
                       >
                         {emphasis}
                       </button>
@@ -1430,43 +1960,617 @@ export default function PublishedHeroLabPage({
               </div>
             </section>
 
-            <section className="rounded-2xl border border-border/80 [background:var(--panel-sidebar,var(--surface-2,var(--card)))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
               <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                3) Scene Controls - Visibility
+                4) Navigation / Menu System
               </h2>
-              <label className="flex items-center justify-between rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-xs">
-                <span className="text-foreground">badge visible</span>
-                <input
-                  type="checkbox"
-                  checked={badgeVisible}
-                  onChange={(event) => setBadgeVisible(event.target.checked)}
-                  className="h-4 w-4 accent-processing"
-                />
-              </label>
+              <div className={`mb-2 text-xs ${navSystemSurfaceAClass}`}>
+                <span className="block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  editing target
+                </span>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  `auto` sigue el viewport activo.
+                </p>
+                <div className={navSystemTargetGroupClass}>
+                  {(
+                    [
+                      { id: "auto", label: "auto", disabled: false },
+                      {
+                        id: "desktop",
+                        label: "desktop nav",
+                        disabled: !canEditDesktopNavigation,
+                      },
+                      {
+                        id: "burger",
+                        label: "burger nav",
+                        disabled: !canEditBurgerNavigation,
+                      },
+                    ] as const
+                  ).map((target) => (
+                    <button
+                      key={target.id}
+                      type="button"
+                      disabled={target.disabled}
+                      onClick={() => setNavigationEditTarget(target.id)}
+                      className={`${navSystemTargetButtonClass} ${governedNavigationEditTarget === target.id ? "[border-color:var(--taller-lab-accent-border,color-mix(in_oklab,var(--processing)_44%,transparent))] [background:var(--taller-lab-accent-soft,var(--processing-soft))] [color:var(--taller-lab-accent-foreground,var(--processing-foreground))]" : "border-transparent text-muted-foreground hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))]"} ${target.disabled ? "cursor-not-allowed opacity-45 hover:[background:transparent]" : ""}`}
+                    >
+                      {target.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {desktopNavigationControlsVisible ? (
+                <div className="space-y-2 text-xs">
+                  <div className={navSystemSurfaceAClass}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Desktop Nav Appearance
+                    </p>
+                    <div className={navSystemGridClass}>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>desktop nav position</span>
+                        <select
+                          value={navPositionOverride}
+                          onChange={(event) =>
+                            setNavPositionOverride(event.target.value as PositionXOverride)
+                          }
+                          className={labControlSelectClass}
+                        >
+                          <option value="auto">auto</option>
+                          <option value="left">left</option>
+                          <option value="center">center</option>
+                          <option value="right">right</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>desktop nav size</span>
+                        <select
+                          value={desktopNavSize}
+                          onChange={(event) => setDesktopNavSize(event.target.value as DesktopNavSize)}
+                          className={labControlSelectClass}
+                        >
+                          <option value="sm">sm</option>
+                          <option value="md">md</option>
+                          <option value="lg">lg</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>desktop nav fg/text color</span>
+                        <select
+                          value={desktopNavTone}
+                          onChange={(event) => setDesktopNavTone(event.target.value as DesktopNavTone)}
+                          className={labControlSelectClass}
+                        >
+                          <option value="inverse">inverse</option>
+                          <option value="primary">primary</option>
+                          <option value="muted">muted</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>desktop nav badge/background style</span>
+                        <select
+                          value={desktopNavSurface}
+                          onChange={(event) =>
+                            setDesktopNavSurface(event.target.value as DesktopNavSurface)
+                          }
+                          className={labControlSelectClass}
+                        >
+                          <option value="minimal">minimal</option>
+                          <option value="solid">solid</option>
+                          <option value="glass">glass</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>desktop nav hover style</span>
+                        <select
+                          value={desktopNavHover}
+                          onChange={(event) => setDesktopNavHover(event.target.value as DesktopNavHover)}
+                          className={labControlSelectClass}
+                        >
+                          <option value="soft">soft</option>
+                          <option value="lift">lift</option>
+                          <option value="glow">glow</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>desktop nav contrast/presence</span>
+                        <select
+                          value={desktopNavPresence}
+                          onChange={(event) =>
+                            setDesktopNavPresence(event.target.value as DesktopNavPresence)
+                          }
+                          className={labControlSelectClass}
+                        >
+                          <option value="low">low</option>
+                          <option value="medium">medium</option>
+                          <option value="high">high</option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {burgerNavigationControlsVisible ? (
+                <div className="space-y-2 text-xs">
+                  <div className={navSystemSurfaceAClass}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      A) Burger trigger appearance
+                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Solo afecta al trigger hamburguesa.
+                    </p>
+                    <div className={navSystemGridClass}>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>nav size</span>
+                        <select
+                          value={navTriggerSize}
+                          onChange={(event) => setNavTriggerSize(event.target.value as NavTriggerSize)}
+                          className={labControlSelectClass}
+                        >
+                          <option value="sm">sm</option>
+                          <option value="md">md</option>
+                          <option value="lg">lg</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>nav aura</span>
+                        <select
+                          value={navTriggerAura}
+                          onChange={(event) => setNavTriggerAura(event.target.value as NavTriggerAura)}
+                          className={labControlSelectClass}
+                        >
+                          <option value="none">none</option>
+                          <option value="soft">soft</option>
+                          <option value="strong">strong</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>nav surface style</span>
+                        <select
+                          value={navTriggerSurface}
+                          onChange={(event) =>
+                            setNavTriggerSurface(event.target.value as NavTriggerSurface)
+                          }
+                          className={labControlSelectClass}
+                        >
+                          <option value="minimal">minimal</option>
+                          <option value="solid">solid</option>
+                          <option value="glass">glass</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>nav fg/icon color</span>
+                        <select
+                          value={navTriggerTone}
+                          onChange={(event) => setNavTriggerTone(event.target.value as NavTriggerTone)}
+                          className={labControlSelectClass}
+                        >
+                          <option value="inverse">inverse</option>
+                          <option value="primary">primary</option>
+                          <option value="muted">muted</option>
+                        </select>
+                      </label>
+                      <label className={navSystemWideFieldClass}>
+                        <span className={navSystemLabelClass}>nav hover style</span>
+                        <select
+                          value={navTriggerHover}
+                          onChange={(event) => setNavTriggerHover(event.target.value as NavTriggerHover)}
+                          className={labControlSelectClass}
+                        >
+                          <option value="soft">soft</option>
+                          <option value="lift">lift</option>
+                          <option value="glow">glow</option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className={navSystemSurfaceAClass}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      B) Open panel
+                    </p>
+                    <div className={navSystemGridClass}>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>open behavior</span>
+                        <select
+                          value={navOpenBehavior}
+                          onChange={(event) => setNavOpenBehavior(event.target.value as NavOpenBehavior)}
+                          className={labControlSelectClass}
+                        >
+                          <option value="overlay">overlay</option>
+                          <option value="drawer">drawer</option>
+                          <option value="fullscreen">fullscreen</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>panel width</span>
+                        <select
+                          value={navPanelWidth}
+                          onChange={(event) => setNavPanelWidth(event.target.value as NavPanelWidth)}
+                          disabled={navOpenBehavior === "fullscreen"}
+                          className={`${labControlSelectClass} disabled:opacity-55`}
+                        >
+                          <option value="narrow">narrow</option>
+                          <option value="normal">normal</option>
+                          <option value="wide">wide</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>panel alignment/origin</span>
+                        <select
+                          value={navPanelOrigin}
+                          onChange={(event) => setNavPanelOrigin(event.target.value as NavPanelOrigin)}
+                          disabled={navOpenBehavior === "fullscreen"}
+                          className={`${labControlSelectClass} disabled:opacity-55`}
+                        >
+                          <option value="right">right</option>
+                          <option value="left">left</option>
+                          <option value="center">center</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>panel visual style</span>
+                        <select
+                          value={navPanelStyle}
+                          onChange={(event) => setNavPanelStyle(event.target.value as NavPanelStyle)}
+                          className={labControlSelectClass}
+                        >
+                          <option value="solid">solid</option>
+                          <option value="glass">glass</option>
+                          <option value="minimal">minimal</option>
+                        </select>
+                      </label>
+                      <label className={labControlToggleRowClass}>
+                        <span className="min-w-0 truncate text-muted-foreground">include logo</span>
+                        <input
+                          type="checkbox"
+                          checked={navPanelIncludeLogo}
+                          onChange={(event) => setNavPanelIncludeLogo(event.target.checked)}
+                          className={labControlCheckboxClass}
+                        />
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>overlay density</span>
+                        <select
+                          value={navOverlayDensity}
+                          onChange={(event) =>
+                            setNavOverlayDensity(event.target.value as NavOverlayDensity)
+                          }
+                          className={labControlSelectClass}
+                        >
+                          <option value="low">low</option>
+                          <option value="medium">medium</option>
+                          <option value="high">high</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>overlay tint/style</span>
+                        <select
+                          value={navOverlayStyle}
+                          onChange={(event) => setNavOverlayStyle(event.target.value as NavOverlayStyle)}
+                          className={labControlSelectClass}
+                        >
+                          <option value="tinted">tinted</option>
+                          <option value="neutral">neutral</option>
+                          <option value="none">none</option>
+                        </select>
+                      </label>
+                      <label className={navSystemWideFieldClass}>
+                        <span className={navSystemLabelClass}>background readability behind menu</span>
+                        <select
+                          value={navReadabilityBoost}
+                          onChange={(event) =>
+                            setNavReadabilityBoost(event.target.value as NavReadabilityBoost)
+                          }
+                          className={labControlSelectClass}
+                        >
+                          <option value="none">none</option>
+                          <option value="soft">soft</option>
+                          <option value="strong">strong</option>
+                        </select>
+                      </label>
+                      <label className={labControlToggleRowClass}>
+                        <span className="min-w-0 truncate text-muted-foreground">badge visible</span>
+                        <input
+                          type="checkbox"
+                          checked={badgeVisible}
+                          onChange={(event) => setBadgeVisible(event.target.checked)}
+                          className={labControlCheckboxClass}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className={navSystemSurfaceAClass}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      C) Menu content placement
+                    </p>
+                    <div className={navSystemGridClass}>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>menu block position</span>
+                        <select
+                          value={navMenuBlockPosition}
+                          onChange={(event) =>
+                            setNavMenuBlockPosition(event.target.value as NavMenuBlockPosition)
+                          }
+                          className={labControlSelectClass}
+                        >
+                          <option value="top">top</option>
+                          <option value="center">center</option>
+                          <option value="bottom">bottom</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>menu alignment</span>
+                        <select
+                          value={navMenuAlignment}
+                          onChange={(event) =>
+                            setNavMenuAlignment(event.target.value as NavMenuAlignment)
+                          }
+                          className={labControlSelectClass}
+                        >
+                          <option value="left">left</option>
+                          <option value="center">center</option>
+                          <option value="right">right</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>menu item size</span>
+                        <select
+                          value={navMenuItemSize}
+                          onChange={(event) =>
+                            setNavMenuItemSize(event.target.value as NavMenuItemSize)
+                          }
+                          className={labControlSelectClass}
+                        >
+                          <option value="sm">sm</option>
+                          <option value="md">md</option>
+                          <option value="lg">lg</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>menu text style</span>
+                        <select
+                          value={navMenuTextTone}
+                          onChange={(event) =>
+                            setNavMenuTextTone(event.target.value as NavMenuTextTone)
+                          }
+                          className={labControlSelectClass}
+                        >
+                          <option value="inverse">inverse</option>
+                          <option value="muted">muted</option>
+                          <option value="primary">primary</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>top safe offset</span>
+                        <select
+                          value={navMenuSafeTopOffset}
+                          onChange={(event) =>
+                            setNavMenuSafeTopOffset(event.target.value as NavMenuSafeOffset)
+                          }
+                          className={labControlSelectClass}
+                        >
+                          <option value="tight">tight</option>
+                          <option value="normal">normal</option>
+                          <option value="relaxed">relaxed</option>
+                        </select>
+                      </label>
+                      <label className={navSystemFieldClass}>
+                        <span className={navSystemLabelClass}>side safe offset</span>
+                        <select
+                          value={navMenuSafeSideOffset}
+                          onChange={(event) =>
+                            setNavMenuSafeSideOffset(event.target.value as NavMenuSafeOffset)
+                          }
+                          className={labControlSelectClass}
+                        >
+                          <option value="tight">tight</option>
+                          <option value="normal">normal</option>
+                          <option value="relaxed">relaxed</option>
+                        </select>
+                      </label>
+                      <label className={navSystemWideFieldClass}>
+                        <span className={navSystemLabelClass}>menu vertical spacing</span>
+                        <select
+                          value={navMenuVerticalSpacing}
+                          onChange={(event) =>
+                            setNavMenuVerticalSpacing(event.target.value as NavMenuVerticalSpacing)
+                          }
+                          className={labControlSelectClass}
+                        >
+                          <option value="tight">tight</option>
+                          <option value="normal">normal</option>
+                          <option value="relaxed">relaxed</option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </section>
+
+            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+              <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
+                5) Hero Regions
+              </h2>
+              <p className="mb-2 text-[11px] text-muted-foreground">
+                Regiones activas en esta fase: header, body y footer.
+              </p>
+
+              <div className="space-y-2 text-xs">
+                <div className="min-w-0 rounded-lg border border-border [background:var(--taller-lab-sidebar-card,var(--surface-3,var(--card)))] p-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Header region
+                  </p>
+                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <label className="min-w-0 grid gap-1">
+                      <span className="truncate text-muted-foreground">header integration</span>
+                      <select
+                        value={headerIntegration}
+                        onChange={(event) =>
+                          setHeaderIntegration(event.target.value as HeaderIntegration)
+                        }
+                        className={labControlSelectClass}
+                      >
+                        <option value="integrated">integrated</option>
+                        <option value="separated">separated</option>
+                      </select>
+                    </label>
+                    <label className="min-w-0 grid gap-1">
+                      <span className="truncate text-muted-foreground">header visual style</span>
+                      <select
+                        value={headerVisualStyle}
+                        onChange={(event) =>
+                          setHeaderVisualStyle(event.target.value as HeaderVisualStyle)
+                        }
+                        className={labControlSelectClass}
+                      >
+                        <option value="minimal">minimal</option>
+                        <option value="solid">solid</option>
+                        <option value="glass">glass</option>
+                      </select>
+                    </label>
+                    <label className="min-w-0 grid gap-1">
+                      <span className="truncate text-muted-foreground">top safe area / spacing</span>
+                      <select
+                        value={headerTopSpacing}
+                        onChange={(event) =>
+                          setHeaderTopSpacing(event.target.value as HeaderTopSpacing)
+                        }
+                        className={labControlSelectClass}
+                      >
+                        <option value="tight">tight</option>
+                        <option value="normal">normal</option>
+                        <option value="relaxed">relaxed</option>
+                      </select>
+                    </label>
+                    <label className="min-w-0 grid gap-1">
+                      <span className="truncate text-muted-foreground">logo / nav relation</span>
+                      <select
+                        value={headerRelation}
+                        onChange={(event) => setHeaderRelation(event.target.value as HeaderRelation)}
+                        className={labControlSelectClass}
+                      >
+                        <option value="balanced">balanced</option>
+                        <option value="logo-focus">logo-focus</option>
+                        <option value="nav-focus">nav-focus</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="min-w-0 rounded-lg border border-border [background:var(--taller-lab-sidebar-card,var(--surface-3,var(--card)))] p-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Footer region
+                  </p>
+                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <label className="min-w-0 grid gap-1">
+                      <span className="truncate text-muted-foreground">footer integration</span>
+                      <select
+                        value={footerIntegration}
+                        onChange={(event) =>
+                          setFooterIntegration(event.target.value as FooterIntegration)
+                        }
+                        className={labControlSelectClass}
+                      >
+                        <option value="integrated">integrated</option>
+                        <option value="separated">separated</option>
+                      </select>
+                    </label>
+                    <label className="min-w-0 grid gap-1">
+                      <span className="truncate text-muted-foreground">footer visual style</span>
+                      <select
+                        value={footerVisualStyle}
+                        onChange={(event) =>
+                          setFooterVisualStyle(event.target.value as FooterVisualStyle)
+                        }
+                        className={labControlSelectClass}
+                      >
+                        <option value="minimal">minimal</option>
+                        <option value="solid">solid</option>
+                        <option value="glass">glass</option>
+                      </select>
+                    </label>
+                    <label className="min-w-0 grid gap-1">
+                      <span className="truncate text-muted-foreground">footer density</span>
+                      <select
+                        value={footerDensity}
+                        onChange={(event) => setFooterDensity(event.target.value as FooterDensity)}
+                        className={labControlSelectClass}
+                      >
+                        <option value="compact">compact</option>
+                        <option value="balanced">balanced</option>
+                        <option value="spacious">spacious</option>
+                      </select>
+                    </label>
+                    <label className="min-w-0 grid gap-1">
+                      <span className="truncate text-muted-foreground">footer placement/alignment</span>
+                      <select
+                        value={footerPositionOverride}
+                        onChange={(event) =>
+                          setFooterPositionOverride(event.target.value as PositionXOverride)
+                        }
+                        className={labControlSelectClass}
+                      >
+                        <option value="auto">auto</option>
+                        <option value="left">left</option>
+                        <option value="center">center</option>
+                        <option value="right">right</option>
+                      </select>
+                    </label>
+                    <label className="col-span-1 min-w-0 grid gap-1 sm:col-span-2">
+                      <span className="truncate text-muted-foreground">data / signature separation</span>
+                      <select
+                        value={footerSignatureSeparation}
+                        onChange={(event) =>
+                          setFooterSignatureSeparation(
+                            event.target.value as FooterSignatureSeparation
+                          )
+                        }
+                        className={labControlSelectClass}
+                      >
+                        <option value="tight">tight</option>
+                        <option value="normal">normal</option>
+                        <option value="relaxed">relaxed</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              </div>
             </section>
 
           </aside>
 
-          <section className="min-w-0 xl:h-[calc(100vh-2.25rem)]">
-            <section className="flex h-full min-h-[78vh] flex-col overflow-hidden rounded-2xl border border-border/80 [background:var(--panel-surface-1,var(--background))] [box-shadow:var(--elevation-task,var(--panel-shadow-2))]">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b border-border/90 px-3 py-2 [background:color-mix(in_oklab,var(--panel-topbar,var(--panel-surface-1,var(--background)))_78%,var(--accent-soft,var(--muted)))]">
-                <div className="flex max-w-full flex-wrap items-center justify-self-start gap-1 rounded-lg border border-border/80 [background:var(--panel-surface-3,var(--surface-3,var(--card)))] p-1 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+          <section
+            ref={workspaceViewportRef}
+            className="min-w-0 xl:h-[var(--lab-workspace-viewport-height)]"
+            style={
+              workspaceViewportHeight
+                ? ({ "--lab-workspace-viewport-height": `${workspaceViewportHeight}px` } as CSSProperties)
+                : undefined
+            }
+          >
+            <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/80 [background:var(--taller-lab-canvas-backdrop,var(--panel-surface-1,var(--background)))] [box-shadow:var(--elevation-task,var(--panel-shadow-2))]">
+              <div className="grid grid-cols-1 items-center gap-2 border-b border-border/90 px-3 py-2 [background:var(--taller-lab-workspace-top-strip,var(--panel-topbar,var(--panel-surface-1,var(--background))))] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+                <div className="flex min-w-0 max-w-full flex-wrap items-center justify-self-start gap-1 rounded-lg border [border-color:var(--taller-lab-chip-border,var(--border))] [background:var(--taller-lab-chip-surface,var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card)))))] p-1 pr-1 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
                   {COMPONENT_TYPES.map((type) => (
                     <button
                       key={type.id}
                       type="button"
                       onClick={() => setComponentType(type.id)}
-                      className={`rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition sm:px-2.5 sm:text-[11px] ${componentType === type.id ? "[border-color:color-mix(in_oklab,var(--processing)_48%,transparent)] [background:color-mix(in_oklab,var(--processing-soft)_86%,var(--panel-surface-3,var(--surface-3,var(--card))))] text-processing-foreground [box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]" : "border-transparent text-muted-foreground hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))] hover:[border-color:color-mix(in_oklab,var(--border)_62%,transparent)]"}`}
+                      className={`${labSegmentedTextButtonClass} min-w-0 max-w-[8.2rem] truncate uppercase ${componentType === type.id ? labChipActiveClass : labChipIdleClass}`}
                     >
                       {COMPONENT_TYPE_LABEL[type.id]}
                     </button>
                   ))}
-                  <span className="rounded-md border border-border/80 [background:var(--panel-surface-2,var(--surface-2,var(--card)))] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))] sm:text-[11px]">
+                  <span className={`${labSegmentedStaticChipClass} min-w-0 max-w-[8.8rem] truncate uppercase [border-color:var(--taller-lab-chip-border,var(--border))] [background:var(--panel-surface-2,var(--surface-2,var(--card)))] text-muted-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))]`}>
                     More +{FUTURE_COMPONENT_TYPES_COUNT}
                   </span>
                 </div>
 
-                <div className="inline-flex justify-self-center rounded-lg border border-border/80 [background:var(--panel-surface-3,var(--surface-3,var(--card)))] p-1 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+                <div className="flex min-w-0 max-w-full flex-wrap justify-self-start rounded-lg border [border-color:var(--taller-lab-chip-border,var(--border))] [background:var(--taller-lab-chip-surface,var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card)))))] p-1 [box-shadow:var(--elevation-base,var(--panel-shadow-1))] lg:justify-self-center">
                   {(["mobile", "tablet", "desktop", "wide"] as const).map((id) => {
                     const Icon = VIEWPORT_BUTTON_LABEL[id].Icon;
                     return (
@@ -1477,7 +2581,7 @@ export default function PublishedHeroLabPage({
                         aria-label={VIEWPORT_BUTTON_LABEL[id].label}
                         aria-pressed={viewport === id}
                         onClick={() => setViewport(id)}
-                        className={`rounded-md border px-2 py-1.5 transition ${viewport === id ? "[border-color:color-mix(in_oklab,var(--processing)_48%,transparent)] [background:color-mix(in_oklab,var(--processing-soft)_86%,var(--panel-surface-3,var(--surface-3,var(--card))))] text-processing-foreground [box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]" : "border-transparent text-muted-foreground hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))] hover:[border-color:color-mix(in_oklab,var(--border)_62%,transparent)]"}`}
+                        className={`${labSegmentedIconButtonClass} ${viewport === id ? labChipActiveClass : labChipIdleClass}`}
                       >
                         <Icon className={viewportIconClassName} />
                       </button>
@@ -1485,13 +2589,13 @@ export default function PublishedHeroLabPage({
                   })}
                 </div>
 
-                <div className="inline-flex justify-self-end rounded-lg border border-border/80 [background:var(--panel-surface-3,var(--surface-3,var(--card)))] p-1 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+                <div className="flex min-w-0 max-w-full flex-wrap justify-self-start rounded-lg border [border-color:var(--taller-lab-chip-border,var(--border))] [background:var(--taller-lab-chip-surface,var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card)))))] p-1 [box-shadow:var(--elevation-base,var(--panel-shadow-1))] lg:justify-self-end">
                   {(["preview", "layout"] as const).map((mode) => (
                     <button
                       key={mode}
                       type="button"
                       onClick={() => setCanvasMode(mode)}
-                      className={`rounded-md border px-2 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${canvasMode === mode ? "[border-color:color-mix(in_oklab,var(--processing)_48%,transparent)] [background:color-mix(in_oklab,var(--processing-soft)_86%,var(--panel-surface-3,var(--surface-3,var(--card))))] text-processing-foreground [box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]" : "border-transparent text-muted-foreground hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))] hover:[border-color:color-mix(in_oklab,var(--border)_62%,transparent)]"}`}
+                      className={`${labSegmentedTextButtonClass} uppercase ${canvasMode === mode ? labChipActiveClass : labChipIdleClass}`}
                     >
                       {mode}
                     </button>
@@ -1499,21 +2603,39 @@ export default function PublishedHeroLabPage({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-2 border-b border-border/90 px-3 py-2 text-[11px] text-foreground/80 [background:color-mix(in_oklab,var(--panel-surface-2,var(--surface-2,var(--card)))_74%,var(--accent-soft,var(--muted)))]">
-                <span>
-                  Canvas: <strong className="text-foreground">{viewport}</strong> ({canvasWidth}x{canvasHeight})
-                </span>
-                <span>Scale: {(canvasScale * 100).toFixed(0)}%</span>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/90 px-3 py-2 text-[11px] text-foreground/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-2,var(--surface-2,var(--card))))]">
+                <div className="min-w-0 flex flex-wrap items-center gap-2.5">
+                  <span className="min-w-0 max-w-full truncate text-muted-foreground sm:max-w-[25rem]">
+                    Hero Lab v1 - source:{" "}
+                    <span className="font-semibold text-foreground">{brandScope}</span> / role{" "}
+                    {sessionRole ?? "anon"}
+                  </span>
+                  <span className="truncate">
+                    Canvas: <strong className="text-foreground">{viewport}</strong> ({canvasWidth}x{canvasHeight})
+                  </span>
+                  <span className="shrink-0">Scale: {(canvasScale * 100).toFixed(0)}%</span>
+                </div>
+                <div className="flex max-w-full flex-wrap items-center justify-end gap-2">
+                  <span className={`${labUtilityChipClass} shrink-0 font-semibold`}>
+                    Navigation module
+                  </span>
+                  <span className={`${labUtilityChipClass} min-w-0 max-w-full truncate`}>
+                    {burgerNavigationControlsVisible
+                      ? burgerControlsLiveOnViewport
+                        ? `burger ${effectiveMenuOpen ? "open" : "closed"}`
+                        : "burger controls (switch viewport)"
+                      : "desktop nav preview"}
+                  </span>
+                </div>
               </div>
 
               <div
                 ref={previewStageRef}
-                className="relative h-full flex-1 overflow-hidden border-t border-border/70 [background:linear-gradient(180deg,color-mix(in_oklab,var(--background)_94%,var(--surface-2,var(--card))),color-mix(in_oklab,var(--background)_88%,var(--surface-2,var(--card))))] [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,var(--border)_44%,transparent)]"
+                className="relative min-h-0 flex-1 overflow-hidden border-t border-border/70 [background:var(--taller-lab-canvas-stage,var(--panel-surface-2,var(--surface-2,var(--card))))] [background-image:var(--taller-lab-canvas-texture,none)] [background-size:var(--taller-lab-canvas-texture-size,auto)] [background-position:center] [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,var(--border)_56%,transparent),inset_0_22px_36px_color-mix(in_oklab,var(--foreground)_8%,transparent)]"
               >
-                <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:radial-gradient(color-mix(in_oklab,var(--border)_34%,transparent)_1px,transparent_1px)] [background-size:16px_16px]" />
                 <div className="absolute inset-0 flex items-center justify-center px-3 py-5">
                   <div
-                    className="relative overflow-hidden rounded-[24px] ring-1 ring-border/65 [box-shadow:var(--elevation-overlay,var(--panel-shadow-3))]"
+                    className="relative overflow-hidden rounded-[24px] ring-1 [ring-color:color-mix(in_oklab,var(--taller-lab-chip-border,var(--border))_84%,transparent)] [box-shadow:var(--elevation-overlay,var(--panel-shadow-3)),0_0_0_1px_color-mix(in_oklab,var(--foreground)_8%,transparent)]"
                     style={{
                       width: `${scaledCanvasWidth}px`,
                       height: `${scaledCanvasHeight}px`,
@@ -1538,8 +2660,41 @@ export default function PublishedHeroLabPage({
                         mobileMenuStyle={menuStyle}
                         forceMobileMenuOpen={effectiveMenuOpen}
                         onLabMenuOpenChange={(open) => setMenuOpen(open)}
+                        navTriggerSize={navTriggerSize}
+                        navTriggerAura={navTriggerAura}
+                        navTriggerSurface={navTriggerSurface}
+                        navTriggerTone={navTriggerTone}
+                        navTriggerHover={navTriggerHover}
+                        desktopNavSize={desktopNavSize}
+                        desktopNavTone={desktopNavTone}
+                        desktopNavSurface={desktopNavSurface}
+                        desktopNavHover={desktopNavHover}
+                        desktopNavPresence={desktopNavPresence}
+                        navOpenBehavior={navOpenBehavior}
+                        navPanelWidth={navPanelWidth}
+                        navPanelOrigin={navPanelOrigin}
+                        navPanelIncludeLogo={navPanelIncludeLogo}
+                        navPanelStyle={navPanelStyle}
+                        navOverlayDensity={navOverlayDensity}
+                        navOverlayStyle={navOverlayStyle}
+                        navReadabilityBoost={navReadabilityBoost}
+                        navMenuBlockPosition={navMenuBlockPosition}
+                        navMenuAlignment={navMenuAlignment}
+                        navMenuItemSize={navMenuItemSize}
+                        navMenuSafeTopOffset={navMenuSafeTopOffset}
+                        navMenuSafeSideOffset={navMenuSafeSideOffset}
+                        navMenuVerticalSpacing={navMenuVerticalSpacing}
+                        navMenuTextTone={navMenuTextTone}
+                        headerIntegration={headerIntegration}
+                        headerVisualStyle={headerVisualStyle}
+                        headerTopSpacing={headerTopSpacing}
+                        headerRelation={headerRelation}
+                        footerIntegration={footerIntegration}
+                        footerVisualStyle={footerVisualStyle}
+                        footerDensity={footerDensity}
+                        footerSignatureSeparation={footerSignatureSeparation}
                         copyWidth={heroCopyWidth}
-                        navigationMode={viewportConfig.navigationMode}
+                        navigationMode={previewNavigationMode}
                         navPosition={navPosition}
                         headlinePosition={headlinePosition}
                         copyBlockPosition={copyBlockPosition}
@@ -1550,6 +2705,14 @@ export default function PublishedHeroLabPage({
                         overlayColor={overlayColor}
                         overlayStyleMode={overlayStyleMode}
                         backgroundEmphasis={backgroundEmphasis}
+                        labHeadlineTone={labHeadlineTone}
+                        mobileHeadlineScale={mobileHeadlineScale}
+                        mobileLogoScale={mobileLogoScale}
+                        gapLogoHeadline={gapLogoHeadline}
+                        gapHeadlineSubheadline={gapHeadlineSubheadline}
+                        gapTextCta={gapTextCta}
+                        gapCtaFooter={gapCtaFooter}
+                        gapFooterDataSignature={gapFooterDataSignature}
                         labSceneOverlayClassName={labSceneOverlayClassName}
                         isLabMode={true}
                       />
@@ -1586,18 +2749,18 @@ export default function PublishedHeroLabPage({
             </section>
           </section>
 
-          <aside className="space-y-4 xl:sticky xl:top-4 xl:h-[calc(100vh-2.25rem)] xl:overflow-y-auto xl:pl-1">
-            <section className="rounded-2xl border border-border/80 [background:var(--panel-sidebar,var(--surface-2,var(--card)))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+          <aside className="space-y-4 xl:sticky xl:top-4 xl:h-[calc(100vh-2.25rem)] xl:overflow-y-auto bcc-scrollbar xl:pl-1">
+            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))] xl:sticky xl:top-0 xl:z-10">
               <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
                 Candidate Status
               </h2>
-              <div className="mt-2 flex items-center justify-between rounded-lg border border-border/80 [background:var(--panel-surface-3,var(--surface-3,var(--card)))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+              <div className="mt-2 flex items-center justify-between rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
                 <span className="text-xs text-muted-foreground">verdict</span>
-                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ring-1 ring-border/25 [box-shadow:var(--elevation-base,var(--panel-shadow-1))] ${verdictToneClass}`}>
+                <span className={`${labStatusBadgeBaseClass} ${verdictToneClass}`}>
                   {evaluation.verdict}
                 </span>
               </div>
-              <div className="mt-2 rounded-lg border border-border/80 [background:var(--panel-surface-3,var(--surface-3,var(--card)))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+              <div className="mt-2 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
                 <p className="text-[11px] text-muted-foreground">
                   Component type: <span className="font-semibold text-foreground">{COMPONENT_TYPE_LABEL[componentType]}</span>
                 </p>
@@ -1605,33 +2768,45 @@ export default function PublishedHeroLabPage({
                   {componentType === "hero" ? "Flujo totalmente activo." : "Tipo visible para roadmap; renderer hero activo en esta iteracion."}
                 </p>
               </div>
+              <div className="mt-2 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+                <p className="text-[11px] text-muted-foreground">
+                  Final score:{" "}
+                  <span className="font-semibold text-foreground">{qualityScore.average}</span> / 100
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Action read:{" "}
+                  <span className="font-semibold text-foreground">
+                    {recommendedActions[0]?.action ?? "Sin accion prioritaria"}
+                  </span>
+                </p>
+              </div>
             </section>
 
-            <section className="rounded-2xl border border-border/80 [background:var(--panel-sidebar,var(--surface-2,var(--card)))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
                   4) Evaluation
                 </h2>
-                <span className={`rounded-full border px-3 py-1 text-xs font-semibold ring-1 ring-border/25 [box-shadow:var(--elevation-base,var(--panel-shadow-1))] ${verdictToneClass}`}>
+                <span className={`${labStatusBadgeBaseClass} ${verdictToneClass}`}>
                   {evaluation.verdict}
                 </span>
               </div>
 
-              <div className="mt-2 rounded-lg border border-border/80 [background:var(--panel-surface-3,var(--surface-3,var(--card)))] p-3 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+              <div className="mt-2 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-3 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
                 <p className="text-[11px] uppercase tracking-wide text-foreground/75">Quality score</p>
                 <div className="mt-1 flex items-end justify-between gap-2">
-                  <p className="text-xl font-semibold text-foreground">{qualityScore.average}</p>
+                  <p className="text-xl font-semibold [color:var(--taller-lab-accent-strong,var(--processing))]">{qualityScore.average}</p>
                   <p className="text-[11px] text-muted-foreground">sobre 100</p>
                 </div>
                 <div className="mt-2 space-y-2">
                   {qualityScore.items.map((item) => (
-                    <div key={item.key} className="rounded-md border border-border/80 [background:var(--panel-topbar,var(--surface-2,var(--card)))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+                    <div key={item.key} className="rounded-md border [border-color:color-mix(in_oklab,var(--taller-lab-accent-border,var(--border))_38%,transparent)] [background:var(--panel-topbar,var(--surface-2,var(--card)))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[11px] font-semibold text-foreground">{item.label}</p>
-                        <p className="text-[11px] text-muted-foreground">{item.score}</p>
+                        <p className="text-[11px] [color:var(--taller-lab-accent-strong,var(--processing))]">{item.score}</p>
                       </div>
                       <progress
-                        className="mt-1 h-1.5 w-full overflow-hidden rounded-full [&::-moz-progress-bar]:[background:color-mix(in_oklab,var(--processing)_68%,transparent)] [&::-webkit-progress-bar]:[background:color-mix(in_oklab,var(--surface-2,var(--card))_84%,transparent)] [&::-webkit-progress-value]:[background:color-mix(in_oklab,var(--processing)_68%,transparent)]"
+                        className="mt-1 h-1.5 w-full overflow-hidden rounded-full border [border-color:color-mix(in_oklab,var(--taller-lab-chip-border,var(--border))_68%,transparent)] [&::-moz-progress-bar]:[background:var(--taller-lab-accent-strong,color-mix(in_oklab,var(--processing)_68%,transparent))] [&::-webkit-progress-bar]:[background:color-mix(in_oklab,var(--taller-lab-chip-surface,var(--surface-2,var(--card)))_88%,transparent)] [&::-webkit-progress-value]:[background:var(--taller-lab-accent-strong,color-mix(in_oklab,var(--processing)_68%,transparent))]"
                         value={item.score}
                         max={100}
                         aria-label={`${item.label} score`}
@@ -1644,7 +2819,7 @@ export default function PublishedHeroLabPage({
                 </div>
               </div>
 
-              <div className="mt-3 rounded-lg border border-border/80 [background:var(--panel-surface-3,var(--surface-3,var(--card)))] p-3 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+              <div className="mt-3 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-3 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
                 <p className="text-xs font-semibold text-foreground/75">Why this score</p>
                 <ul className="mt-2 space-y-1.5 text-[11px] text-foreground/90">
                   {whyThisScore.map((reason) => (
@@ -1653,7 +2828,7 @@ export default function PublishedHeroLabPage({
                 </ul>
               </div>
 
-              <div className="mt-3 rounded-lg border border-border/80 [background:var(--panel-surface-3,var(--surface-3,var(--card)))] p-3 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+              <div className="mt-3 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-3 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
                 <p className="text-xs font-semibold text-foreground/75">Recommended changes</p>
                 <div className="mt-2 space-y-2">
                   {recommendedActions.map((item) => (
@@ -1671,7 +2846,7 @@ export default function PublishedHeroLabPage({
               </div>
             </section>
 
-            <section className="rounded-2xl border border-border/80 [background:var(--panel-sidebar,var(--surface-2,var(--card)))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
               <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
                 3) Creative Guidance
               </h2>
@@ -1679,7 +2854,7 @@ export default function PublishedHeroLabPage({
                 Sugerencias locales guiadas por el brief. Puedes aplicar propuestas directamente al preview.
               </p>
 
-              <details className="mt-3 rounded-lg border border-border/80 [background:var(--panel-surface-3,var(--surface-3,var(--card)))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]" open>
+              <details className="mt-3 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]" open>
                 <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Headline proposals
                 </summary>
@@ -1690,7 +2865,7 @@ export default function PublishedHeroLabPage({
                       <button
                         type="button"
                         onClick={() => setHeadlineDraft(headline)}
-                        className="mt-2 rounded-md border [border-color:color-mix(in_oklab,var(--processing)_42%,transparent)] bg-processing-soft px-2 py-1 text-[11px] font-semibold text-processing-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))] transition hover:[box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]"
+                        className={labAccentActionButtonClass}
                       >
                         Aplicar headline
                       </button>
@@ -1699,7 +2874,7 @@ export default function PublishedHeroLabPage({
                 </div>
               </details>
 
-              <details className="mt-3 rounded-lg border border-border/80 [background:var(--panel-surface-3,var(--surface-3,var(--card)))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+              <details className="mt-3 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
                 <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Subheadline proposals
                 </summary>
@@ -1710,7 +2885,7 @@ export default function PublishedHeroLabPage({
                       <button
                         type="button"
                         onClick={() => setSubheadlineDraft(subheadline)}
-                        className="mt-2 rounded-md border [border-color:color-mix(in_oklab,var(--processing)_42%,transparent)] bg-processing-soft px-2 py-1 text-[11px] font-semibold text-processing-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))] transition hover:[box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]"
+                        className={labAccentActionButtonClass}
                       >
                         Aplicar subheadline
                       </button>
@@ -1719,7 +2894,7 @@ export default function PublishedHeroLabPage({
                 </div>
               </details>
 
-              <details className="mt-3 rounded-lg border border-border/80 [background:var(--panel-surface-3,var(--surface-3,var(--card)))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+              <details className="mt-3 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
                 <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   CTA proposals
                 </summary>
@@ -1734,7 +2909,7 @@ export default function PublishedHeroLabPage({
                           setPrimaryCtaDraft(cta.primary);
                           setSecondaryCtaDraft(cta.secondary);
                         }}
-                        className="mt-2 rounded-md border [border-color:color-mix(in_oklab,var(--processing)_42%,transparent)] bg-processing-soft px-2 py-1 text-[11px] font-semibold text-processing-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))] transition hover:[box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]"
+                        className={labAccentActionButtonClass}
                       >
                         Aplicar CTA
                       </button>
@@ -1743,7 +2918,7 @@ export default function PublishedHeroLabPage({
                 </div>
               </details>
 
-              <div className="mt-3 rounded-lg border border-border/80 [background:var(--panel-surface-3,var(--surface-3,var(--card)))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+              <div className="mt-3 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Atmosfera recomendada
                 </p>
@@ -1758,7 +2933,7 @@ export default function PublishedHeroLabPage({
                 <button
                   type="button"
                   onClick={resetCreativeContent}
-                  className="rounded-md border border-border/80 [background:var(--panel-sidebar,var(--surface-2,var(--card)))] px-2 py-1.5 text-[11px] font-semibold text-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))] transition hover:[box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]"
+                  className="rounded-md border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] px-2 py-1.5 text-[11px] font-semibold text-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))] transition hover:[box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]"
                 >
                   Reset propuestas
                 </button>
@@ -1778,7 +2953,7 @@ export default function PublishedHeroLabPage({
               </div>
             </section>
 
-            <section className="rounded-2xl border border-border/80 [background:var(--panel-sidebar,var(--surface-2,var(--card)))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
+            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
               <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
                 Coming next
               </h2>
@@ -1795,3 +2970,6 @@ export default function PublishedHeroLabPage({
     </main>
   );
 }
+
+
+
