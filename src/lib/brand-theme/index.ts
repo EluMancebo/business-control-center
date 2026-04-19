@@ -51,10 +51,12 @@ export type {
 export {
   DEFAULT_BRAND_THEME_CONFIG,
   buildBrandThemeConfigFromBrand,
+  resolveBrandPresetToSemanticTokens,
   resolveBrandThemeMode,
   resolveBrandThemeTokens,
   resolveBrandThemeTokensFromBrand,
 } from "./resolver";
+export type { PersistedBrandPresetSemanticInput } from "./resolver";
 
 export type {
   ExtractedColorCandidate,

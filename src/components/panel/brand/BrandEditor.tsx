@@ -233,6 +233,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const [extractError, setExtractError] = useState("");
   const [extracting, setExtracting] = useState(false);
   const [savePresetNotice, setSavePresetNotice] = useState("");
+  const [presetSummaryPaletteView, setPresetSummaryPaletteView] = useState<"bar" | "pie">("bar");
 
   const scopeUsesBusinessSlug = scope === "panel" || scope === "web";
   const canUsePaletteEngine = scope === "system";
@@ -557,16 +558,32 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     );
   }
 
-  const technicalTokens: Array<{ label: string; value: string }> = [
-    { label: "background", value: effectiveTokens.background },
-    { label: "card", value: effectiveTokens.card },
-    { label: "surface2", value: effectiveTokens.surface2 },
-    { label: "surface3", value: effectiveTokens.surface3 },
-    { label: "primary", value: effectiveTokens.primary },
-    { label: "accent", value: effectiveTokens.accent },
-    { label: "link", value: effectiveTokens.link },
-    { label: "border", value: effectiveTokens.border },
+  const presetSummarySegments: Array<{ label: string; value: string }> = [
+    { label: "Primary", value: effectiveTokens.primary },
+    { label: "Accent", value: effectiveTokens.accent },
+    { label: "Neutral", value: resolvedPaletteSeed?.neutral || neutralDisplayValue },
+    { label: "Background", value: effectiveTokens.background },
+    { label: "Card", value: effectiveTokens.card },
+    { label: "Surface 2", value: effectiveTokens.surface2 },
+    { label: "Surface 3", value: effectiveTokens.surface3 },
   ];
+  const presetIdentityTokens: Array<{ label: string; value: string }> = [
+    { label: "Background", value: effectiveTokens.background },
+    { label: "Card", value: effectiveTokens.card },
+    { label: "Surface 2", value: effectiveTokens.surface2 },
+    { label: "Surface 3", value: effectiveTokens.surface3 },
+    { label: "Link", value: effectiveTokens.link },
+    { label: "Border", value: effectiveTokens.border },
+  ];
+  const presetSummaryStatusLabel = savePresetNotice ? "Saved" : "Draft";
+  const presetSummarySlug = effectiveSlug || "system";
+  const presetSummaryPieStops = presetSummarySegments
+    .map((segment, index) => {
+      const start = (index * 100) / presetSummarySegments.length;
+      const end = ((index + 1) * 100) / presetSummarySegments.length;
+      return `${segment.value} ${start.toFixed(2)}% ${end.toFixed(2)}%`;
+    })
+    .join(", ");
   const shouldShowPaletteProposalRow =
     canUsePaletteEngine && paletteSeedSource !== "manual";
 
@@ -890,7 +907,122 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
               <p className="mt-1 text-[11px] text-muted-foreground">
                 Cadena: Input base {"->"} Transformación {"->"} Output técnico {"->"} Preview diagnóstica.
               </p>
-              <div className="mt-2 rounded-md border border-border/55 bg-background/75 p-2 shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)]">
+              <section className="mt-2 rounded-md border border-border/55 bg-background/75 p-2 shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)]">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold text-foreground">Preset summary</p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {preset.label} - {brand.brandName || "Sin nombre"}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground">
+                      {presetSummaryStatusLabel}
+                    </span>
+                    <span className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      Mode: {resolvedMode}
+                    </span>
+                  </div>
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Slug: <span className="font-medium text-foreground/85">{presetSummarySlug}</span>
+                </p>
+                <div className="mt-2 inline-flex rounded-md border border-border/60 bg-background/80 p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setPresetSummaryPaletteView("bar")}
+                    aria-pressed={presetSummaryPaletteView === "bar"}
+                    className={[
+                      "h-7 rounded px-2 text-[11px] font-semibold transition",
+                      presetSummaryPaletteView === "bar"
+                        ? "bg-primary/90 text-primary-foreground shadow-[0_8px_16px_-14px_rgba(37,99,235,0.55)]"
+                        : "text-muted-foreground hover:bg-muted/60",
+                    ].join(" ")}
+                  >
+                    Barra
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPresetSummaryPaletteView("pie")}
+                    aria-pressed={presetSummaryPaletteView === "pie"}
+                    className={[
+                      "h-7 rounded px-2 text-[11px] font-semibold transition",
+                      presetSummaryPaletteView === "pie"
+                        ? "bg-primary/90 text-primary-foreground shadow-[0_8px_16px_-14px_rgba(37,99,235,0.55)]"
+                        : "text-muted-foreground hover:bg-muted/60",
+                    ].join(" ")}
+                  >
+                    Pastel
+                  </button>
+                </div>
+                {presetSummaryPaletteView === "bar" ? (
+                  <div className="mt-2 grid min-w-0 grid-cols-7 overflow-hidden rounded-md border border-border/55 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.04)]">
+                    {presetSummarySegments.map((segment) => (
+                      <span
+                        key={segment.label}
+                        title={`${segment.label}: ${segment.value}`}
+                        className="h-5 min-w-0 border-r border-border/35 last:border-r-0"
+                        style={{ backgroundColor: segment.value }}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-2 grid min-w-0 gap-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
+                    <div
+                      className="h-24 w-24 rounded-full border border-border/60 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.55)]"
+                      style={{ backgroundImage: `conic-gradient(${presetSummaryPieStops})` }}
+                    />
+                    <div className="grid min-w-0 grid-cols-2 gap-1">
+                      {presetSummarySegments.map((segment) => (
+                        <div
+                          key={`${segment.label}-legend`}
+                          className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-1 rounded border border-border/50 bg-background/80 px-1.5 py-1"
+                        >
+                          <span
+                            className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full border border-border/60"
+                            style={{ backgroundColor: segment.value }}
+                          />
+                          <p title={`${segment.label}: ${segment.value}`} className="truncate text-[10px] text-muted-foreground">
+                            {segment.label}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <span className="rounded-md border border-border/60 bg-background px-2 py-1 text-[11px] text-foreground">
+                    Harmony: <span className="font-semibold">{HARMONY_LABELS[previewHarmony]}</span>
+                  </span>
+                  <span className="rounded-md border border-border/60 bg-background px-2 py-1 text-[11px] text-foreground">
+                    Accent style: <span className="font-semibold">{ACCENT_STYLE_LABELS[previewAccentStyle]}</span>
+                  </span>
+                  <span className="rounded-md border border-border/60 bg-background px-2 py-1 text-[11px] text-foreground">
+                    Typography: <span className="font-semibold">{TYPOGRAPHY_LABELS[previewTypography]}</span>
+                  </span>
+                </div>
+                <div className="mt-2 grid min-w-0 gap-1 sm:grid-cols-2">
+                  {presetIdentityTokens.map((token) => (
+                    <div
+                      key={token.label}
+                      className="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-2 rounded-md border border-border/55 bg-background/80 px-2 py-1.5"
+                    >
+                      <span
+                        className="inline-flex h-3.5 w-3.5 shrink-0 rounded border border-border/60"
+                        style={{ backgroundColor: token.value }}
+                      />
+                      <p className="text-[11px] font-semibold text-foreground">{token.label}</p>
+                      <p
+                        title={token.value}
+                        className="truncate text-right font-mono text-[11px] text-muted-foreground"
+                      >
+                        {token.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+              <div className="mt-2 rounded-md border border-border/45 bg-background/65 p-2 shadow-[0_8px_16px_-14px_rgba(15,23,42,0.35)]">
                 <p className="text-[11px] font-semibold text-foreground">Transformación activa</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   Mode: {resolvedMode} · Preset: {preset.label} · Harmony: {HARMONY_LABELS[previewHarmony]} ·
@@ -901,17 +1033,6 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                   Resolución tokens: {tokenResolutionSourceLabel}. Diagnóstico local:{" "}
                   {previewEnabled ? "ON (capas auxiliares visibles)" : "OFF (solo salida final)"}.
                 </p>
-              </div>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                {technicalTokens.map((token) => (
-                  <div key={token.label} className="rounded-md border border-border/55 bg-background/75 p-2 shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)]">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex h-5 w-5 shrink-0 rounded border border-border/55" style={{ backgroundColor: token.value }} />
-                      <p className="text-xs font-semibold text-foreground">{token.label}</p>
-                    </div>
-                    <p title={token.value} className="mt-1 truncate font-mono text-[11px] text-muted-foreground">{token.value}</p>
-                  </div>
-                ))}
               </div>
             </section>
 

@@ -7,11 +7,16 @@ import {
   BRAND_THEME_HARMONY_OPTIONS,
   BRAND_THEME_TYPOGRAPHY_OPTIONS,
 } from "./presets";
-import { DEFAULT_BRAND_THEME_CONFIG } from "./resolver";
+import {
+  DEFAULT_BRAND_THEME_CONFIG,
+  resolveBrandPresetToSemanticTokens,
+} from "./resolver";
 import type {
   BrandAccentStyle,
   BrandHarmonyStrategy,
+  BrandSemanticTokens,
   BrandTypographyPreset,
+  ResolveBrandThemeOptions,
 } from "./types";
 import { normalizeBusinessSlug } from "./authorized/model";
 
@@ -48,6 +53,12 @@ export type BusinessBrandConfigRecord = {
   businessSlug: string;
   activeBrandPresetId: string;
   mode: Extract<BrandMode, "system" | "light" | "dark">;
+};
+
+export type ResolvedActiveBrandPresetRecord = {
+  preset: BrandPresetRecord;
+  mode: BusinessBrandConfigRecord["mode"];
+  semanticTokens: BrandSemanticTokens;
 };
 
 export type SaveBrandPresetInput = {
@@ -366,4 +377,45 @@ export async function saveBrandPreset(
 
   const refreshed = (await BrandPreset.findById(persistedId).lean()) as BrandPresetLean | null;
   return toBrandPresetRecord(refreshed);
+}
+
+export async function getResolvedActiveBrandPreset(
+  businessSlug: string,
+  options?: {
+    mode?: BrandMode;
+    runtime?: ResolveBrandThemeOptions;
+  }
+): Promise<ResolvedActiveBrandPresetRecord | null> {
+  const preset = await getActiveBrandPreset(businessSlug);
+  if (!preset) return null;
+
+  const slug = normalizeBusinessSlug(businessSlug);
+  if (!slug) return null;
+
+  const modeFromInput = asMode(options?.mode);
+  const modeFromConfig = !modeFromInput
+    ? asMode((await BusinessBrandConfig.findOne({ businessSlug: slug }).lean())?.mode)
+    : null;
+  const mode = modeFromInput ?? modeFromConfig ?? "system";
+
+  const semanticTokens = resolveBrandPresetToSemanticTokens(
+    {
+      sourceMode: preset.sourceMode,
+      harmony: preset.harmony,
+      accentStyle: preset.accentStyle,
+      typography: preset.typography,
+      tokens: preset.tokens,
+    },
+    {
+      mode,
+      runtime: options?.runtime,
+    }
+  );
+  if (!semanticTokens) return null;
+
+  return {
+    preset,
+    mode,
+    semanticTokens,
+  };
 }
