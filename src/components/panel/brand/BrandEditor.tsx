@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { Brand, BrandMode, BrandPaletteKey } from "@/lib/brand/types";
 import { BRAND_PALETTES } from "@/lib/brand/presets";
 import {
@@ -100,6 +100,42 @@ type TokenDiagnosticKey =
   | "border"
   | "ring";
 
+type VaultMode = Extract<BrandMode, "system" | "light" | "dark">;
+
+type PresetVaultItem = {
+  id: string;
+  businessSlug: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  sourceMode: "manual" | "logo" | "hybrid";
+  harmony: BrandHarmonyStrategy;
+  accentStyle: BrandAccentStyle;
+  typography?: BrandTypographyPreset;
+  tokens: {
+    primary: string;
+    accent: string;
+    neutral: string;
+    background: string;
+    card: string;
+    surface2: string;
+    surface3: string;
+    link: string;
+    border: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+};
+
+type PresetVaultResponse = {
+  ok: boolean;
+  error?: string;
+  items?: PresetVaultItem[];
+  item?: PresetVaultItem;
+  mode?: VaultMode;
+  activeBrandPresetId?: string | null;
+};
+
 const TOKEN_DIAGNOSTIC_KEYS: TokenDiagnosticKey[] = [
   "background",
   "card",
@@ -178,6 +214,18 @@ function readActiveBusinessSlug() {
   if (typeof window === "undefined") return "";
   return window.localStorage.getItem("bcc:activeBusinessSlug")?.trim() || "";
 }
+
+function formatVaultDate(value: string) {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(parsed);
+}
+
 function useBrandScoped(storageKey: string, channel: string, fallback: Brand, enabled: boolean) {
   return useSyncExternalStore(
     (cb) => (enabled ? subscribeBrand(cb, storageKey, channel, fallback) : () => {}),
@@ -234,11 +282,18 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const [extracting, setExtracting] = useState(false);
   const [savePresetNotice, setSavePresetNotice] = useState("");
   const [presetSummaryPaletteView, setPresetSummaryPaletteView] = useState<"bar" | "pie">("bar");
+  const [presetVaultItems, setPresetVaultItems] = useState<PresetVaultItem[]>([]);
+  const [presetVaultMode, setPresetVaultMode] = useState<VaultMode>("system");
+  const [presetVaultLoading, setPresetVaultLoading] = useState(false);
+  const [presetVaultSaving, setPresetVaultSaving] = useState(false);
+  const [presetVaultActivatingId, setPresetVaultActivatingId] = useState("");
+  const [presetVaultError, setPresetVaultError] = useState("");
 
   const scopeUsesBusinessSlug = scope === "panel" || scope === "web";
   const canUsePaletteEngine = scope === "system";
   const showLabPreview = scope === "system";
   const effectiveSlug = scopeUsesBusinessSlug ? (businessSlug?.trim() || resolvedSlug) : "";
+  const vaultSlug = (businessSlug?.trim() || resolvedSlug).trim();
   const v1BusinessSlug = scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined;
   const skipWebWithoutSlug = scope === "web" && !effectiveSlug;
   const storageKey = getBrandStorageKey(scope, scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined);
@@ -251,12 +306,12 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     setBrandLocal((prev) => (isSameBrand(prev, current) ? prev : current));
   }, [current]);
   useEffect(() => {
-    if (!scopeUsesBusinessSlug || (businessSlug && businessSlug.trim())) return;
+    if ((!scopeUsesBusinessSlug && !canUsePaletteEngine) || (businessSlug && businessSlug.trim())) return;
     const sync = () => setResolvedSlug(readActiveBusinessSlug());
     sync();
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
-  }, [scopeUsesBusinessSlug, businessSlug]);
+  }, [scopeUsesBusinessSlug, canUsePaletteEngine, businessSlug]);
   useEffect(() => {
     if (skipWebWithoutSlug) return;
     syncBrandFromStorage(storageKey, channel, fallback, { applyToDocument: scope === "panel" || scope === "studio" });
@@ -371,6 +426,45 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     resolvedSeedWithMeta?.accentSource === "explicit-blend"
       ? "manual + harmony blend"
       : "derived by harmony";
+  const loadPresetVault = useCallback(
+    async (slugOverride?: string) => {
+      if (!canUsePaletteEngine) return;
+
+      const slug = (slugOverride ?? vaultSlug).trim();
+      if (!slug) {
+        setPresetVaultItems([]);
+        setPresetVaultError("");
+        return;
+      }
+
+      setPresetVaultLoading(true);
+      setPresetVaultError("");
+      try {
+        const response = await fetch(
+          `/api/taller/brand-presets?slug=${encodeURIComponent(slug)}`,
+          { cache: "no-store" }
+        );
+        const payload = (await response.json().catch(() => null)) as PresetVaultResponse | null;
+        if (!response.ok || !payload?.ok) {
+          throw new Error(payload?.error || "No se pudo cargar Preset Vault.");
+        }
+        setPresetVaultItems(Array.isArray(payload.items) ? payload.items : []);
+        if (payload.mode === "light" || payload.mode === "dark" || payload.mode === "system") {
+          setPresetVaultMode(payload.mode);
+        }
+      } catch (error: unknown) {
+        setPresetVaultError(error instanceof Error ? error.message : "No se pudo cargar Preset Vault.");
+      } finally {
+        setPresetVaultLoading(false);
+      }
+    },
+    [canUsePaletteEngine, vaultSlug]
+  );
+
+  useEffect(() => {
+    if (!canUsePaletteEngine) return;
+    void loadPresetVault(vaultSlug);
+  }, [canUsePaletteEngine, vaultSlug, loadPresetVault]);
 
   useEffect(() => {
     if (skipWebWithoutSlug) return;
@@ -529,8 +623,119 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     setPaletteSeedNeutral("");
     resetPreviewState();
   }
-  function savePresetStub() {
-    setSavePresetNotice("Preset preparado. Guardado real pendiente de integración.");
+  async function savePresetStub() {
+    if (!canUsePaletteEngine) {
+      setSavePresetNotice("El guardado de presets esta disponible en Brand Lab.");
+      return;
+    }
+    if (!vaultSlug) {
+      setSavePresetNotice("Selecciona un negocio activo antes de guardar presets.");
+      return;
+    }
+
+    const sourceMode: "manual" | "logo" | "hybrid" =
+      paletteSeedSource === "manual"
+        ? "manual"
+        : paletteSeedSource === "logo"
+          ? "logo"
+          : "hybrid";
+    const generatedName = `${brand.brandName?.trim() || "Brand"} ${new Date()
+      .toISOString()
+      .slice(0, 16)
+      .replace("T", " ")}`;
+    const neutralToken = resolvedPaletteSeed?.neutral || neutralDisplayValue || "#94a3b8";
+
+    setPresetVaultSaving(true);
+    setPresetVaultError("");
+    setSavePresetNotice("");
+    try {
+      const response = await fetch("/api/taller/brand-presets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: vaultSlug,
+          name: generatedName,
+          description: `Source ${sourceMode} - ${HARMONY_LABELS[previewHarmony]} - ${ACCENT_STYLE_LABELS[previewAccentStyle]}`,
+          isActive: false,
+          sourceMode,
+          harmony: previewHarmony,
+          accentStyle: previewAccentStyle,
+          typography: previewTypography,
+          tokens: {
+            primary: effectiveTokens.primary,
+            accent: effectiveTokens.accent,
+            neutral: neutralToken,
+            background: effectiveTokens.background,
+            card: effectiveTokens.card,
+            surface2: effectiveTokens.surface2,
+            surface3: effectiveTokens.surface3,
+            link: effectiveTokens.link,
+            border: effectiveTokens.border,
+          },
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as PresetVaultResponse | null;
+      if (!response.ok || !payload?.ok || !payload.item) {
+        throw new Error(payload?.error || "No se pudo guardar el preset.");
+      }
+
+      setSavePresetNotice(`Preset guardado: ${payload.item.name}`);
+      if (Array.isArray(payload.items)) {
+        setPresetVaultItems(payload.items);
+      } else {
+        await loadPresetVault(vaultSlug);
+      }
+      if (payload.mode === "light" || payload.mode === "dark" || payload.mode === "system") {
+        setPresetVaultMode(payload.mode);
+      }
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "No se pudo guardar el preset.";
+      setPresetVaultError(message);
+      setSavePresetNotice(message);
+    } finally {
+      setPresetVaultSaving(false);
+    }
+  }
+
+  async function activatePresetFromVault(presetId: string) {
+    if (!canUsePaletteEngine || !vaultSlug || !presetId) return;
+
+    setPresetVaultActivatingId(presetId);
+    setPresetVaultError("");
+    setSavePresetNotice("");
+    try {
+      const response = await fetch("/api/taller/brand-presets", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: vaultSlug,
+          presetId,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as PresetVaultResponse | null;
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || "No se pudo activar el preset.");
+      }
+      if (Array.isArray(payload.items)) {
+        setPresetVaultItems(payload.items);
+      } else {
+        await loadPresetVault(vaultSlug);
+      }
+      if (payload.mode === "light" || payload.mode === "dark" || payload.mode === "system") {
+        setPresetVaultMode(payload.mode);
+      }
+      const activeName = payload.item?.name || "Preset actualizado";
+      setSavePresetNotice(`Preset activo: ${activeName}`);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "No se pudo activar el preset.";
+      setPresetVaultError(message);
+      setSavePresetNotice(message);
+    } finally {
+      setPresetVaultActivatingId("");
+    }
   }
   async function runExtraction() {
     if (!sourceImageUrl) return setExtractError("Selecciona un asset o pega una URL antes de extraer.");
@@ -1042,9 +1247,10 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                 <button
                   type="button"
                   onClick={savePresetStub}
+                  disabled={presetVaultSaving || !canUsePaletteEngine}
                   className="h-10 w-full min-w-0 rounded-lg border border-primary/45 bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-[0_8px_16px_-14px_rgba(37,99,235,0.55)] transition hover:-translate-y-px hover:opacity-95"
                 >
-                  Guardar preset
+                  {presetVaultSaving ? "Guardando..." : "Guardar preset"}
                 </button>
                 <button type="button" onClick={resetPreviewState} className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:-translate-y-px hover:bg-muted">Reset preview</button>
                 <button type="button" onClick={resetLab} className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:-translate-y-px hover:bg-muted">Reset general</button>
@@ -1058,10 +1264,132 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                 </p>
               )}
               <details className="mt-3 rounded-md border border-border/55 bg-background/70 p-2 shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)]">
-                <summary className="cursor-pointer text-xs font-semibold text-foreground">E. Detalles secundarios</summary>
+                <summary className="cursor-pointer text-xs font-semibold text-foreground">F. Detalles secundarios</summary>
                 <p className="mt-2 text-xs text-muted-foreground">Preset activo: {preset.label}. Modulación aplicada: {PRESET_MODULATION_PERCENT}%.</p>
                 {extractedPalette ? <p className="mt-1 text-xs text-muted-foreground">Extracción: {extractedPalette.imageWidth}x{extractedPalette.imageHeight} · {extractedPalette.sampledPixels} px.</p> : null}
               </details>
+            </section>
+
+            <section className="rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-foreground">E. Preset Vault</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Catalogo minimo de presets guardados para activar y reutilizar.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-1">
+                  {vaultSlug ? (
+                    <span className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      {vaultSlug}
+                    </span>
+                  ) : null}
+                  <span className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    Mode: {presetVaultMode}
+                  </span>
+                  <span className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    {presetVaultItems.length} presets
+                  </span>
+                  {presetVaultLoading ? (
+                    <span className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      Loading...
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              {presetVaultError ? (
+                <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">{presetVaultError}</p>
+              ) : null}
+
+              {!vaultSlug ? (
+                <p className="mt-3 rounded-md border border-dashed border-border/60 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+                  No hay business slug activo. Activa un negocio para ver su biblioteca.
+                </p>
+              ) : presetVaultItems.length === 0 ? (
+                <p className="mt-3 rounded-md border border-dashed border-border/60 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+                  No hay presets guardados todavia para este negocio.
+                </p>
+              ) : (
+                <div className="mt-3 grid min-w-0 gap-3 md:grid-cols-2">
+                  {presetVaultItems.map((item) => {
+                    const paletteSegments = [
+                      item.tokens.primary,
+                      item.tokens.accent,
+                      item.tokens.neutral,
+                      item.tokens.background,
+                      item.tokens.card,
+                      item.tokens.surface2,
+                      item.tokens.surface3,
+                    ];
+                    const isActivating = presetVaultActivatingId === item.id;
+                    const updatedLabel = formatVaultDate(item.updatedAt);
+                    return (
+                      <article
+                        key={item.id}
+                        className={[
+                          "min-w-0 rounded-lg border p-3 shadow-[0_10px_18px_-16px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--background)_92%,var(--surface-3,var(--card)))]",
+                          item.isActive ? "border-primary/45" : "border-border/55",
+                        ].join(" ")}
+                      >
+                        <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {item.businessSlug}
+                              {updatedLabel ? ` - ${updatedLabel}` : ""}
+                            </p>
+                          </div>
+                          <span
+                            className={[
+                              "rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                              item.isActive
+                                ? "border-primary/45 bg-primary/10 text-primary"
+                                : "border-border/60 bg-background text-muted-foreground",
+                            ].join(" ")}
+                          >
+                            {item.isActive ? "Active" : "Draft"}
+                          </span>
+                        </div>
+
+                        <div className="mt-2 grid min-w-0 grid-cols-7 overflow-hidden rounded-md border border-border/55">
+                          {paletteSegments.map((value, index) => (
+                            <span
+                              key={`${item.id}-${index}`}
+                              className="h-4 min-w-0 border-r border-border/35 last:border-r-0"
+                              style={{ backgroundColor: value }}
+                            />
+                          ))}
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          <span className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-[10px] text-muted-foreground">
+                            Source: {item.sourceMode}
+                          </span>
+                          <span className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-[10px] text-muted-foreground">
+                            Harmony: {HARMONY_LABELS[item.harmony]}
+                          </span>
+                          <span className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-[10px] text-muted-foreground">
+                            Accent: {ACCENT_STYLE_LABELS[item.accentStyle]}
+                          </span>
+                          <span className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-[10px] text-muted-foreground">
+                            Type: {TYPOGRAPHY_LABELS[item.typography ?? "modern"]}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={item.isActive || Boolean(presetVaultActivatingId)}
+                          onClick={() => activatePresetFromVault(item.id)}
+                          className="mt-3 h-9 w-full min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:bg-muted disabled:opacity-60"
+                        >
+                          {item.isActive ? "Activo" : isActivating ? "Activando..." : "Activar preset"}
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           </div>
         ) : null}
@@ -1069,3 +1397,5 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     </section>
   );
 }
+
+

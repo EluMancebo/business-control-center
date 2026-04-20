@@ -304,6 +304,23 @@ export async function getActiveBrandPreset(
   return toBrandPresetRecord(byFlag);
 }
 
+export async function listBrandPresets(
+  businessSlug: string
+): Promise<BrandPresetRecord[]> {
+  await dbConnect();
+
+  const slug = normalizeBusinessSlug(businessSlug);
+  if (!slug) return [];
+
+  const items = (await BrandPreset.find({ businessSlug: slug })
+    .sort({ isActive: -1, updatedAt: -1 })
+    .lean()) as BrandPresetLean[];
+
+  return items
+    .map((item) => toBrandPresetRecord(item))
+    .filter((item): item is BrandPresetRecord => Boolean(item));
+}
+
 export async function saveBrandPreset(
   input: SaveBrandPresetInput
 ): Promise<BrandPresetRecord | null> {
