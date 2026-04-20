@@ -69,4 +69,16 @@ export {
   extractPaletteFromImageUrl,
 } from "./extraction";
 
+export {
+  toBrandPresetVaultItem,
+} from "./vault-contract";
+export type {
+  BrandPresetVaultItem,
+  BrandPresetVaultMode,
+  BrandPresetVaultResponse,
+  BrandPresetVaultSnapshot,
+  BrandPresetVaultSourceMode,
+  BrandPresetVaultTokens,
+} from "./vault-contract";
+
 export * from "./authorized";

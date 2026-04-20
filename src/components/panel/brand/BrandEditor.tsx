@@ -26,6 +26,12 @@ import type {
   BrandTypographyPreset,
   ExtractedPaletteResult,
 } from "@/lib/brand-theme";
+import type {
+  BrandPresetVaultItem,
+  BrandPresetVaultMode,
+  BrandPresetVaultResponse,
+} from "@/lib/brand-theme/vault-contract";
+import { mapVaultPresetToHeroInput } from "@/lib/content-lab/hero/vault-to-hero";
 import {
   getBrandChannel,
   getBrandStorageKey,
@@ -99,42 +105,6 @@ type TokenDiagnosticKey =
   | "link"
   | "border"
   | "ring";
-
-type VaultMode = Extract<BrandMode, "system" | "light" | "dark">;
-
-type PresetVaultItem = {
-  id: string;
-  businessSlug: string;
-  name: string;
-  description?: string;
-  isActive: boolean;
-  sourceMode: "manual" | "logo" | "hybrid";
-  harmony: BrandHarmonyStrategy;
-  accentStyle: BrandAccentStyle;
-  typography?: BrandTypographyPreset;
-  tokens: {
-    primary: string;
-    accent: string;
-    neutral: string;
-    background: string;
-    card: string;
-    surface2: string;
-    surface3: string;
-    link: string;
-    border: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-};
-
-type PresetVaultResponse = {
-  ok: boolean;
-  error?: string;
-  items?: PresetVaultItem[];
-  item?: PresetVaultItem;
-  mode?: VaultMode;
-  activeBrandPresetId?: string | null;
-};
 
 const TOKEN_DIAGNOSTIC_KEYS: TokenDiagnosticKey[] = [
   "background",
@@ -282,8 +252,8 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const [extracting, setExtracting] = useState(false);
   const [savePresetNotice, setSavePresetNotice] = useState("");
   const [presetSummaryPaletteView, setPresetSummaryPaletteView] = useState<"bar" | "pie">("bar");
-  const [presetVaultItems, setPresetVaultItems] = useState<PresetVaultItem[]>([]);
-  const [presetVaultMode, setPresetVaultMode] = useState<VaultMode>("system");
+  const [presetVaultItems, setPresetVaultItems] = useState<BrandPresetVaultItem[]>([]);
+  const [presetVaultMode, setPresetVaultMode] = useState<BrandPresetVaultMode>("system");
   const [presetVaultLoading, setPresetVaultLoading] = useState(false);
   const [presetVaultSaving, setPresetVaultSaving] = useState(false);
   const [presetVaultActivatingId, setPresetVaultActivatingId] = useState("");
@@ -444,7 +414,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
           `/api/taller/brand-presets?slug=${encodeURIComponent(slug)}`,
           { cache: "no-store" }
         );
-        const payload = (await response.json().catch(() => null)) as PresetVaultResponse | null;
+        const payload = (await response.json().catch(() => null)) as BrandPresetVaultResponse | null;
         if (!response.ok || !payload?.ok) {
           throw new Error(payload?.error || "No se pudo cargar Preset Vault.");
         }
@@ -675,7 +645,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
         }),
       });
 
-      const payload = (await response.json().catch(() => null)) as PresetVaultResponse | null;
+      const payload = (await response.json().catch(() => null)) as BrandPresetVaultResponse | null;
       if (!response.ok || !payload?.ok || !payload.item) {
         throw new Error(payload?.error || "No se pudo guardar el preset.");
       }
@@ -714,7 +684,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
           presetId,
         }),
       });
-      const payload = (await response.json().catch(() => null)) as PresetVaultResponse | null;
+      const payload = (await response.json().catch(() => null)) as BrandPresetVaultResponse | null;
       if (!response.ok || !payload?.ok) {
         throw new Error(payload?.error || "No se pudo activar el preset.");
       }
@@ -736,6 +706,15 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     } finally {
       setPresetVaultActivatingId("");
     }
+  }
+  function applyVaultPresetToHero(vaultItem: BrandPresetVaultItem) {
+    const heroInput = mapVaultPresetToHeroInput(vaultItem);
+    console.log("[BrandLab] Hero prefill input", {
+      presetId: vaultItem.id,
+      presetName: vaultItem.name,
+      heroInput,
+    });
+    setSavePresetNotice(`Prefill Hero generado desde: ${vaultItem.name}`);
   }
   async function runExtraction() {
     if (!sourceImageUrl) return setExtractError("Selecciona un asset o pega una URL antes de extraer.");
@@ -1377,14 +1356,23 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                           </span>
                         </div>
 
-                        <button
-                          type="button"
-                          disabled={item.isActive || Boolean(presetVaultActivatingId)}
-                          onClick={() => activatePresetFromVault(item.id)}
-                          className="mt-3 h-9 w-full min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:bg-muted disabled:opacity-60"
-                        >
-                          {item.isActive ? "Activo" : isActivating ? "Activando..." : "Activar preset"}
-                        </button>
+                        <div className="mt-3 grid min-w-0 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => applyVaultPresetToHero(item)}
+                            className="h-9 w-full min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:bg-muted"
+                          >
+                            Aplicar a Hero
+                          </button>
+                          <button
+                            type="button"
+                            disabled={item.isActive || Boolean(presetVaultActivatingId)}
+                            onClick={() => activatePresetFromVault(item.id)}
+                            className="h-9 w-full min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:bg-muted disabled:opacity-60"
+                          >
+                            {item.isActive ? "Activo" : isActivating ? "Activando..." : "Activar preset"}
+                          </button>
+                        </div>
                       </article>
                     );
                   })}

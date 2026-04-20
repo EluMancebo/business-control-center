@@ -19,20 +19,16 @@ import type {
   ResolveBrandThemeOptions,
 } from "./types";
 import { normalizeBusinessSlug } from "./authorized/model";
+import {
+  toBrandPresetVaultItem,
+  type BrandPresetVaultItem,
+  type BrandPresetVaultSourceMode,
+  type BrandPresetVaultTokens,
+} from "./vault-contract";
 
-export type BrandPresetSourceMode = "manual" | "logo" | "hybrid";
+export type BrandPresetSourceMode = BrandPresetVaultSourceMode;
 
-export type BrandPresetTokens = {
-  primary: string;
-  accent: string;
-  neutral: string;
-  background: string;
-  card: string;
-  surface2: string;
-  surface3: string;
-  link: string;
-  border: string;
-};
+export type BrandPresetTokens = BrandPresetVaultTokens;
 
 export type BrandPresetRecord = {
   id: string;
@@ -319,6 +315,13 @@ export async function listBrandPresets(
   return items
     .map((item) => toBrandPresetRecord(item))
     .filter((item): item is BrandPresetRecord => Boolean(item));
+}
+
+export async function listBrandPresetVaultItems(
+  businessSlug: string
+): Promise<BrandPresetVaultItem[]> {
+  const records = await listBrandPresets(businessSlug);
+  return records.map((record) => toBrandPresetVaultItem(record));
 }
 
 export async function saveBrandPreset(

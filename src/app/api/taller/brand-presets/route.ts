@@ -3,11 +3,16 @@ import type { BrandMode } from "@/lib/brand/types";
 import { requireRole } from "@/lib/auth/serverSession";
 import { BusinessBrandConfig } from "@/models/BusinessBrandConfig";
 import {
-  listBrandPresets,
+  listBrandPresetVaultItems,
   saveBrandPreset,
   setActiveBrandPreset,
 } from "@/lib/brand-theme/preset-persistence";
 import { normalizeBusinessSlug } from "@/lib/brand-theme/authorized/model";
+import {
+  toBrandPresetVaultItem,
+  type BrandPresetVaultMode,
+  type BrandPresetVaultSnapshot,
+} from "@/lib/brand-theme/vault-contract";
 
 export const dynamic = "force-dynamic";
 
@@ -45,17 +50,18 @@ async function requireAdminAuth() {
   }
 }
 
-async function getVaultPayload(slug: string) {
+function asVaultMode(input: unknown): BrandPresetVaultMode {
+  return input === "light" || input === "dark" || input === "system" ? input : "system";
+}
+
+async function getVaultPayload(slug: string): Promise<BrandPresetVaultSnapshot> {
   const [items, config] = await Promise.all([
-    listBrandPresets(slug),
+    listBrandPresetVaultItems(slug),
     BusinessBrandConfig.findOne({ businessSlug: slug }).lean(),
   ]);
   return {
     items,
-    mode:
-      config?.mode === "light" || config?.mode === "dark" || config?.mode === "system"
-        ? config.mode
-        : "system",
+    mode: asVaultMode(config?.mode),
     activeBrandPresetId: toIdString(config?.activeBrandPresetId) || null,
   };
 }
@@ -129,7 +135,7 @@ export async function POST(req: NextRequest) {
   }
 
   const payload = await getVaultPayload(slug);
-  return NextResponse.json({ ok: true, item: saved, ...payload });
+  return NextResponse.json({ ok: true, item: toBrandPresetVaultItem(saved), ...payload });
 }
 
 export async function PUT(req: NextRequest) {
@@ -155,5 +161,5 @@ export async function PUT(req: NextRequest) {
   }
 
   const payload = await getVaultPayload(slug);
-  return NextResponse.json({ ok: true, item: updated, ...payload });
+  return NextResponse.json({ ok: true, item: toBrandPresetVaultItem(updated), ...payload });
 }
