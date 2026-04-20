@@ -76,16 +76,52 @@ export type PersistedBrandPresetSemanticInput = {
   typography?: BrandTypographyPreset;
   tokens: {
     primary: string;
-    accent: string;
-    neutral: string;
-    background: string;
-    card: string;
-    surface2: string;
-    surface3: string;
-    link: string;
-    border: string;
+    accent?: string;
+    neutral?: string;
+    background?: string;
+    card?: string;
+    surface2?: string;
+    surface3?: string;
+    link?: string;
+    border?: string;
   };
 };
+
+type PersistedIdentityTokenKey =
+  | "background"
+  | "card"
+  | "surface2"
+  | "surface3"
+  | "link"
+  | "border";
+
+const PERSISTED_IDENTITY_KEYS: PersistedIdentityTokenKey[] = [
+  "background",
+  "card",
+  "surface2",
+  "surface3",
+  "link",
+  "border",
+];
+
+function asNonEmptyToken(input: string | undefined): string | undefined {
+  if (typeof input !== "string") return undefined;
+  const value = input.trim();
+  return value.length > 0 ? value : undefined;
+}
+
+function pickPersistedIdentityOverrides(
+  tokens: PersistedBrandPresetSemanticInput["tokens"]
+): Partial<Pick<BrandSemanticTokens, PersistedIdentityTokenKey>> {
+  const overrides: Partial<Pick<BrandSemanticTokens, PersistedIdentityTokenKey>> = {};
+  for (const key of PERSISTED_IDENTITY_KEYS) {
+    const value = asNonEmptyToken(tokens[key]);
+    if (value) {
+      overrides[key] = value;
+    }
+  }
+  return overrides;
+}
 
 export function resolveBrandPresetToSemanticTokens(
   input: PersistedBrandPresetSemanticInput,
@@ -94,12 +130,17 @@ export function resolveBrandPresetToSemanticTokens(
     runtime?: ResolveBrandThemeOptions;
   }
 ): BrandSemanticTokens | null {
+  const primary = asNonEmptyToken(input.tokens.primary);
+  if (!primary) return null;
+  const accent = asNonEmptyToken(input.tokens.accent);
+  const neutral = asNonEmptyToken(input.tokens.neutral);
+
   const resolved = resolveBrandThemeTokensFromPaletteSeedWithMeta({
     seed: {
       source: input.sourceMode === "manual" ? "manual" : "logo",
-      primary: input.tokens.primary,
-      accent: input.tokens.accent,
-      neutral: input.tokens.neutral,
+      primary,
+      accent,
+      neutral,
     },
     mode: options?.mode ?? "system",
     config: {
@@ -111,16 +152,13 @@ export function resolveBrandPresetToSemanticTokens(
   });
   if (!resolved) return null;
 
+  const persistedIdentity = pickPersistedIdentityOverrides(input.tokens);
+
   return {
     ...resolved.tokens,
-    primary: input.tokens.primary,
-    accent: input.tokens.accent,
-    background: input.tokens.background,
-    card: input.tokens.card,
-    surface2: input.tokens.surface2,
-    surface3: input.tokens.surface3,
-    link: input.tokens.link,
-    border: input.tokens.border,
+    primary,
+    accent: accent ?? resolved.tokens.accent,
+    ...persistedIdentity,
     typographyPreset: input.typography ?? resolved.tokens.typographyPreset,
   };
 }
