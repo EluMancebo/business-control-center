@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Brand, BrandMode, BrandPaletteKey } from "@/lib/brand/types";
 import { BRAND_PALETTES } from "@/lib/brand/presets";
 import {
@@ -82,6 +82,10 @@ const PALETTE_SOURCE_LABELS: Record<BrandPaletteSeedSource, string> = {
   logo: "Logo",
   hero: "Hero image",
 };
+const SOURCE_ASSET_KIND_LABELS = {
+  hero: "Hero",
+  logo: "Logo",
+} as const;
 const TYPOGRAPHY_FONT_STACK: Record<BrandTypographyPreset, string> = {
   editorial: "Georgia, Cambria, 'Times New Roman', Times, serif",
   modern:
@@ -93,6 +97,7 @@ const TYPOGRAPHY_FONT_STACK: Record<BrandTypographyPreset, string> = {
 
 type BrandEditorProps = { scope?: BrandScope; businessSlug?: string };
 type RGB = { r: number; g: number; b: number };
+type SourceAssetKind = "hero" | "logo";
 type TokenDiagnosticKey =
   | "background"
   | "card"
@@ -196,6 +201,59 @@ function formatVaultDate(value: string) {
   }).format(parsed);
 }
 
+function normalizeAssetSearchText(asset: AssetItem) {
+  return [
+    asset.label,
+    asset.key,
+    asset.variantKey,
+    asset.tags.join(" "),
+    asset.allowedIn.join(" "),
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
+function assetMatchesKind(asset: AssetItem, kind: SourceAssetKind) {
+  const text = normalizeAssetSearchText(asset);
+  if (kind === "logo") {
+    return (
+      text.includes("logo") ||
+      text.includes("brand.logo.header") ||
+      text.includes("brand.logo.footer")
+    );
+  }
+  return text.includes("hero") || text.includes("home.hero.background");
+}
+
+function detectAssetContextHint(input: string) {
+  const value = input.toLowerCase();
+  if (value.includes("barber") || value.includes("barberia") || value.includes("peluquer")) {
+    return "barber";
+  }
+  return "";
+}
+
+function rankSourceAsset(asset: AssetItem, kind: SourceAssetKind, contextHint: string) {
+  let score = 0;
+  if (assetMatchesKind(asset, kind)) score += 120;
+  if (kind === "hero" && asset.variantKey === "optimized") score += 45;
+  if (kind === "hero" && asset.variantKey === "original") score += 20;
+  if (kind === "logo" && (asset.variantKey === "optimized" || asset.variantKey === "original")) {
+    score += 25;
+  }
+  if (asset.pipelineStatus === "ready") score += 15;
+
+  if (contextHint) {
+    const text = normalizeAssetSearchText(asset);
+    if (text.includes(contextHint)) score += 40;
+  }
+
+  const width = Number(asset.width || 0);
+  const height = Number(asset.height || 0);
+  score += Math.min(12, Math.floor((width * height) / 180000));
+  return score;
+}
+
 function useBrandScoped(storageKey: string, channel: string, fallback: Brand, enabled: boolean) {
   return useSyncExternalStore(
     (cb) => (enabled ? subscribeBrand(cb, storageKey, channel, fallback) : () => {}),
@@ -246,6 +304,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const [mediaLoading, setMediaLoading] = useState(false);
   const [mediaError, setMediaError] = useState("");
   const [selectedVisualAssetId, setSelectedVisualAssetId] = useState("");
+  const [sourceAssetKindFilter, setSourceAssetKindFilter] = useState<SourceAssetKind>("hero");
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [extractedPalette, setExtractedPalette] = useState<ExtractedPaletteResult | null>(null);
   const [extractError, setExtractError] = useState("");
@@ -258,6 +317,8 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const [presetVaultSaving, setPresetVaultSaving] = useState(false);
   const [presetVaultActivatingId, setPresetVaultActivatingId] = useState("");
   const [presetVaultError, setPresetVaultError] = useState("");
+  const [vaultCollapsed, setVaultCollapsed] = useState(false);
+  const sourceAssetPickerRef = useRef<HTMLDetailsElement | null>(null);
 
   const scopeUsesBusinessSlug = scope === "panel" || scope === "web";
   const canUsePaletteEngine = scope === "system";
@@ -300,7 +361,43 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   }, [canUsePaletteEngine]);
 
   const selectedVisualAsset = useMemo(() => mediaAssets.find((item) => item._id === selectedVisualAssetId) ?? null, [mediaAssets, selectedVisualAssetId]);
+  const assetContextHint = useMemo(
+    () => detectAssetContextHint(`${brand.brandName} ${vaultSlug}`),
+    [brand.brandName, vaultSlug]
+  );
+  const filteredSourceAssets = useMemo(() => {
+    const imageAssets = mediaAssets.filter((item) => item.kind === "image");
+    const ranked = [...imageAssets].sort(
+      (a, b) =>
+        rankSourceAsset(b, sourceAssetKindFilter, assetContextHint) -
+          rankSourceAsset(a, sourceAssetKindFilter, assetContextHint) ||
+        Number(new Date(b.updatedAt || b.createdAt || 0)) -
+          Number(new Date(a.updatedAt || a.createdAt || 0))
+    );
+    const scoped = ranked.filter((item) => assetMatchesKind(item, sourceAssetKindFilter));
+    return scoped.length > 0 ? scoped : ranked;
+  }, [mediaAssets, sourceAssetKindFilter, assetContextHint]);
   const sourceImageUrl = useMemo(() => (paletteSeedSource === "manual" ? "" : selectedVisualAsset?.url || imageUrlInput.trim()), [paletteSeedSource, selectedVisualAsset, imageUrlInput]);
+  useEffect(() => {
+    if (paletteSeedSource === "hero" || paletteSeedSource === "logo") {
+      setSourceAssetKindFilter(paletteSeedSource);
+    }
+  }, [paletteSeedSource]);
+  useEffect(() => {
+    if (paletteSeedSource === "manual" || imageUrlInput.trim()) return;
+    if (filteredSourceAssets.length === 0) return;
+    const selected = mediaAssets.find((item) => item._id === selectedVisualAssetId);
+    if (!selected || !assetMatchesKind(selected, sourceAssetKindFilter)) {
+      setSelectedVisualAssetId(filteredSourceAssets[0]._id);
+    }
+  }, [
+    paletteSeedSource,
+    imageUrlInput,
+    filteredSourceAssets,
+    mediaAssets,
+    selectedVisualAssetId,
+    sourceAssetKindFilter,
+  ]);
   const paletteSeedInput = useMemo(() => ({ source: paletteSeedSource, primary: paletteSeedPrimary, accent: paletteSeedAccent, neutral: paletteSeedNeutral }), [paletteSeedSource, paletteSeedPrimary, paletteSeedAccent, paletteSeedNeutral]);
   const brandThemeStateV1 = useMemo(
     () =>
@@ -716,6 +813,13 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     });
     setSavePresetNotice(`Prefill Hero generado desde: ${vaultItem.name}`);
   }
+  function selectSourceAssetFromPicker(assetId: string) {
+    setSelectedVisualAssetId(assetId);
+    setImageUrlInput("");
+    if (sourceAssetPickerRef.current) {
+      sourceAssetPickerRef.current.open = false;
+    }
+  }
   async function runExtraction() {
     if (!sourceImageUrl) return setExtractError("Selecciona un asset o pega una URL antes de extraer.");
     setExtracting(true);
@@ -829,7 +933,81 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
               <p className="mt-1 text-xs text-muted-foreground">Estado: {paletteSeedSource === "manual" ? "Manual" : sourceImageUrl ? "Fuente activa" : "Sin fuente seleccionada"}.</p>
               <div className="mt-3 grid gap-2">
                 <select value={paletteSeedSource} onChange={(e) => setPaletteSeedSource(e.target.value as BrandPaletteSeedSource)} className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)]">{Object.entries(PALETTE_SOURCE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
-                <select value={selectedVisualAssetId} onChange={(e) => setSelectedVisualAssetId(e.target.value)} disabled={paletteSeedSource === "manual" || mediaLoading} className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] disabled:opacity-60"><option value="">{mediaLoading ? "Cargando assets..." : "Seleccionar asset"}</option>{mediaAssets.map((asset) => <option key={asset._id} value={asset._id}>{asset.label}</option>)}</select>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)]">
+                  <select
+                    value={sourceAssetKindFilter}
+                    onChange={(e) => setSourceAssetKindFilter(e.target.value as SourceAssetKind)}
+                    disabled={paletteSeedSource === "manual"}
+                    className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] disabled:opacity-60"
+                  >
+                    {(Object.keys(SOURCE_ASSET_KIND_LABELS) as SourceAssetKind[]).map((value) => (
+                      <option key={value} value={value}>
+                        Tipo asset: {SOURCE_ASSET_KIND_LABELS[value]}
+                      </option>
+                    ))}
+                  </select>
+                  {paletteSeedSource === "manual" ? (
+                    <div className="grid h-10 place-items-center rounded-lg border border-border/55 bg-background px-3 text-xs text-muted-foreground">
+                      Modo manual activo
+                    </div>
+                  ) : (
+                    <details
+                      ref={sourceAssetPickerRef}
+                      className={[
+                        "relative min-w-0",
+                        mediaLoading ? "pointer-events-none opacity-60" : "",
+                      ].join(" ")}
+                    >
+                      <summary className="flex h-10 min-w-0 cursor-pointer list-none items-center rounded-lg border border-border/55 bg-background px-2.5 text-sm text-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] [&::-webkit-details-marker]:hidden">
+                        {selectedVisualAsset ? (
+                          <span className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
+                            <span className="h-6 w-9 overflow-hidden rounded border border-border/60 bg-muted/30">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={selectedVisualAsset.url} alt={selectedVisualAsset.label} className="h-full w-full object-cover" />
+                            </span>
+                            <span className="truncate text-sm">
+                              {selectedVisualAsset.label} · {selectedVisualAsset.variantKey}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="truncate">
+                            {mediaLoading ? "Cargando assets..." : "Seleccionar asset"}
+                          </span>
+                        )}
+                      </summary>
+                      <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-72 overflow-y-auto rounded-lg border border-border/60 bg-background/98 p-1 shadow-[0_14px_28px_-20px_rgba(15,23,42,0.55)]">
+                        {filteredSourceAssets.length === 0 ? (
+                          <p className="px-2 py-2 text-xs text-muted-foreground">
+                            No hay assets disponibles para este filtro.
+                          </p>
+                        ) : (
+                          filteredSourceAssets.map((asset) => (
+                            <button
+                              key={asset._id}
+                              type="button"
+                              onClick={() => selectSourceAssetFromPicker(asset._id)}
+                              className={[
+                                "grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-md px-2 py-1.5 text-left transition",
+                                selectedVisualAssetId === asset._id
+                                  ? "bg-primary/[0.08]"
+                                  : "hover:bg-muted/55",
+                              ].join(" ")}
+                            >
+                              <span className="h-6 w-9 overflow-hidden rounded border border-border/60 bg-muted/30">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={asset.url} alt={asset.label} className="h-full w-full object-cover" />
+                              </span>
+                              <span className="min-w-0">
+                                <p className="truncate text-xs font-medium text-foreground">{asset.label}</p>
+                                <p className="truncate text-[10px] text-muted-foreground">{asset.variantKey}</p>
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </details>
+                  )}
+                </div>
                 <input value={imageUrlInput} onChange={(e) => setImageUrlInput(e.target.value)} disabled={paletteSeedSource === "manual"} placeholder={paletteSeedSource === "manual" ? "Modo manual activo" : "https://..."} className="h-10 w-full min-w-0 rounded-lg border border-border/55 bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground shadow-[0_8px_18px_-16px_rgba(15,23,42,0.4)] disabled:opacity-60" />
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -1249,7 +1427,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
               </details>
             </section>
 
-            <section className="rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)]">
+            <section className="rounded-xl border border-border/55 p-4 shadow-[0_12px_24px_-20px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_90%,white)] xl:col-span-3">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-foreground">E. Preset Vault</h3>
@@ -1258,6 +1436,13 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setVaultCollapsed((value) => !value)}
+                    className="h-7 rounded-md border border-border/60 bg-background px-2 py-0.5 text-[10px] font-semibold text-foreground"
+                  >
+                    {vaultCollapsed ? "Expandir" : "Colapsar"}
+                  </button>
                   {vaultSlug ? (
                     <span className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                       {vaultSlug}
@@ -1289,8 +1474,12 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                 <p className="mt-3 rounded-md border border-dashed border-border/60 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
                   No hay presets guardados todavia para este negocio.
                 </p>
+              ) : vaultCollapsed ? (
+                <p className="mt-3 rounded-md border border-dashed border-border/60 bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+                  Libreria colapsada. Expande para ver y aplicar presets.
+                </p>
               ) : (
-                <div className="mt-3 grid min-w-0 gap-3 md:grid-cols-2">
+                <div className="mt-3 grid min-w-0 gap-2">
                   {presetVaultItems.map((item) => {
                     const paletteSegments = [
                       item.tokens.primary,
@@ -1307,21 +1496,20 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                       <article
                         key={item.id}
                         className={[
-                          "min-w-0 rounded-lg border p-3 shadow-[0_10px_18px_-16px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--background)_92%,var(--surface-3,var(--card)))]",
+                          "grid min-w-0 gap-2 rounded-md border px-3 py-2.5 [background:color-mix(in_oklab,var(--background)_92%,var(--surface-3,var(--card)))]",
+                          "lg:grid-cols-[minmax(180px,1fr)_minmax(280px,1.2fr)_minmax(220px,1fr)_auto_auto] lg:items-center",
                           item.isActive ? "border-primary/45" : "border-border/55",
                         ].join(" ")}
                       >
-                        <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {item.businessSlug}
-                              {updatedLabel ? ` - ${updatedLabel}` : ""}
-                            </p>
-                          </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            {item.businessSlug}
+                            {updatedLabel ? ` · ${updatedLabel}` : ""}
+                          </p>
                           <span
                             className={[
-                              "rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                              "mt-1 inline-flex rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
                               item.isActive
                                 ? "border-primary/45 bg-primary/10 text-primary"
                                 : "border-border/60 bg-background text-muted-foreground",
@@ -1331,17 +1519,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                           </span>
                         </div>
 
-                        <div className="mt-2 grid min-w-0 grid-cols-7 overflow-hidden rounded-md border border-border/55">
-                          {paletteSegments.map((value, index) => (
-                            <span
-                              key={`${item.id}-${index}`}
-                              className="h-4 min-w-0 border-r border-border/35 last:border-r-0"
-                              style={{ backgroundColor: value }}
-                            />
-                          ))}
-                        </div>
-
-                        <div className="mt-2 flex flex-wrap gap-1">
+                        <div className="flex min-w-0 flex-wrap gap-1">
                           <span className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-[10px] text-muted-foreground">
                             Source: {item.sourceMode}
                           </span>
@@ -1356,23 +1534,33 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                           </span>
                         </div>
 
-                        <div className="mt-3 grid min-w-0 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => applyVaultPresetToHero(item)}
-                            className="h-9 w-full min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:bg-muted"
-                          >
-                            Aplicar a Hero
-                          </button>
-                          <button
-                            type="button"
-                            disabled={item.isActive || Boolean(presetVaultActivatingId)}
-                            onClick={() => activatePresetFromVault(item.id)}
-                            className="h-9 w-full min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground shadow-[0_8px_16px_-14px_rgba(15,23,42,0.45)] transition hover:bg-muted disabled:opacity-60"
-                          >
-                            {item.isActive ? "Activo" : isActivating ? "Activando..." : "Activar preset"}
-                          </button>
+                        <div className="min-w-0">
+                          <div className="grid min-w-0 grid-cols-7 overflow-hidden rounded border border-border/55">
+                            {paletteSegments.map((value, index) => (
+                              <span
+                                key={`${item.id}-${index}`}
+                                className="h-3 min-w-0 border-r border-border/35 last:border-r-0"
+                                style={{ backgroundColor: value }}
+                              />
+                            ))}
+                          </div>
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={() => applyVaultPresetToHero(item)}
+                          className="h-8 min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground transition hover:bg-muted"
+                        >
+                          Aplicar a Hero
+                        </button>
+                        <button
+                          type="button"
+                          disabled={item.isActive || Boolean(presetVaultActivatingId)}
+                          onClick={() => activatePresetFromVault(item.id)}
+                          className="h-8 min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
+                        >
+                          {item.isActive ? "Activo" : isActivating ? "Activando..." : "Activar preset"}
+                        </button>
                       </article>
                     );
                   })}
