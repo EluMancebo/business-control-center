@@ -34,6 +34,8 @@ type HarmonySurfaceProfile = {
   cardBlend: number;
   panelBlend: number;
   popoverBlend: number;
+  panelBorderBlend: number;
+  popoverBorderBlend: number;
   backgroundTint: number;
   surfaceTint: number;
   cardTint: number;
@@ -45,41 +47,47 @@ const HARMONY_SURFACE_PROFILES: Record<LocalHarmonySurface, HarmonySurfaceProfil
   // Low contrast hierarchy: compact and close surfaces.
   analogous: {
     backgroundBlend: 97,
-    surfaceBlend: 89,
-    cardBlend: 75,
-    panelBlend: 68,
-    popoverBlend: 62,
-    backgroundTint: 4,
-    surfaceTint: 6,
-    cardTint: 8,
-    panelTint: 10,
-    popoverTint: 12,
+    surfaceBlend: 91,
+    cardBlend: 79,
+    panelBlend: 72,
+    popoverBlend: 67,
+    panelBorderBlend: 96,
+    popoverBorderBlend: 94,
+    backgroundTint: 3,
+    surfaceTint: 5,
+    cardTint: 7,
+    panelTint: 9,
+    popoverTint: 11,
   },
   // High contrast hierarchy: strong step-up between each surface.
   complementary: {
-    backgroundBlend: 97,
-    surfaceBlend: 54,
-    cardBlend: 36,
-    panelBlend: 26,
-    popoverBlend: 18,
-    backgroundTint: 6,
-    surfaceTint: 10,
-    cardTint: 16,
-    panelTint: 22,
-    popoverTint: 28,
+    backgroundBlend: 95,
+    surfaceBlend: 45,
+    cardBlend: 24,
+    panelBlend: 12,
+    popoverBlend: 6,
+    panelBorderBlend: 80,
+    popoverBorderBlend: 74,
+    backgroundTint: 8,
+    surfaceTint: 14,
+    cardTint: 22,
+    panelTint: 30,
+    popoverTint: 36,
   },
   // Medium contrast hierarchy: balanced separation.
   "split-complementary": {
     backgroundBlend: 96,
-    surfaceBlend: 70,
-    cardBlend: 52,
-    panelBlend: 42,
-    popoverBlend: 34,
-    backgroundTint: 5,
-    surfaceTint: 8,
-    cardTint: 12,
-    panelTint: 16,
-    popoverTint: 20,
+    surfaceBlend: 63,
+    cardBlend: 44,
+    panelBlend: 29,
+    popoverBlend: 21,
+    panelBorderBlend: 87,
+    popoverBorderBlend: 83,
+    backgroundTint: 6,
+    surfaceTint: 10,
+    cardTint: 15,
+    panelTint: 21,
+    popoverTint: 27,
   },
 };
 
@@ -101,12 +109,12 @@ export function mapHarmonyToSurfaces(
   const panelBase = mix(
     mix(palette.surface, palette.panel, profile.panelBlend),
     palette.border,
-    94
+    profile.panelBorderBlend
   );
   const popoverBase = mix(
     mix(palette.surface, palette.popover, profile.popoverBlend),
     palette.border,
-    92
+    profile.popoverBorderBlend
   );
 
   return {
