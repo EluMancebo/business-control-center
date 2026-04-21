@@ -5,6 +5,7 @@ import type {
   BrandSemanticTokens,
   BrandTypographyPreset,
 } from "@/lib/brand-theme";
+import { mapHarmonyToSurfaces } from "./mapHarmonyToSurfaces";
 
 type BrandThemePreviewSurfaceProps = {
   previewEnabled: boolean;
@@ -33,19 +34,6 @@ const PREVIEW_MODE_OPTIONS: Array<{ key: PreviewMode; label: string }> = [
   { key: "promo", label: "Promo" },
   { key: "popup", label: "Popup" },
 ];
-
-const PREVIEW_SURFACE_SEMANTIC_VARS: Record<`--preview-${string}`, string> = {
-  "--preview-background": "var(--background)",
-  "--preview-surface":
-    "color-mix(in oklab, var(--background) 82%, var(--surface-2,var(--card)))",
-  "--preview-card":
-    "color-mix(in oklab, var(--surface-2,var(--card)) 44%, var(--surface-3,var(--muted)))",
-  "--preview-panel":
-    "color-mix(in oklab, var(--surface-3,var(--muted)) 82%, var(--border))",
-  "--preview-popover":
-    "color-mix(in oklab, var(--surface-3,var(--muted)) 68%, var(--border))",
-  "--preview-border": "color-mix(in oklab, var(--border) 56%, transparent)",
-};
 
 const PREVIEW_SURFACE_SCALE: Array<{ label: string; token: string }> = [
   { label: "Background", token: "var(--preview-background)" },
@@ -152,9 +140,25 @@ export default function BrandThemePreviewSurface({
   const showDiagnosticLayer = previewEnabled;
   const showDiagnosticCompositionPanel = showCompositionPanel && showDiagnosticLayer;
   const compactDiagnosticHeader = showDiagnosticCompositionPanel;
+  const harmonySurfaceDistribution = mapHarmonyToSurfaces(
+    {
+      background: "var(--background)",
+      surface: "var(--surface-2,var(--card))",
+      card: "var(--card)",
+      panel: "var(--surface-3,var(--muted))",
+      popover: "var(--surface-3,var(--muted))",
+      border: "var(--border)",
+    },
+    harmony
+  );
   const previewSemanticVars = {
     ...(previewVariables as Record<string, string>),
-    ...PREVIEW_SURFACE_SEMANTIC_VARS,
+    "--preview-background": harmonySurfaceDistribution.background,
+    "--preview-surface": harmonySurfaceDistribution.surface,
+    "--preview-card": harmonySurfaceDistribution.card,
+    "--preview-panel": harmonySurfaceDistribution.panel,
+    "--preview-popover": harmonySurfaceDistribution.popover,
+    "--preview-border": "color-mix(in oklab, var(--border) 56%, transparent)",
   } as CSSProperties;
   const contextMetaChipClass = [
     "rounded-full border [border-color:var(--preview-border)] [background:var(--preview-popover)]",
