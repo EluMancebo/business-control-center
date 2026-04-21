@@ -149,7 +149,8 @@ export default function BrandThemePreviewSurface({
       popover: "var(--surface-3,var(--muted))",
       border: "var(--border)",
     },
-    harmony
+    harmony,
+    accentStyle
   );
   const previewSemanticVars = {
     ...(previewVariables as Record<string, string>),

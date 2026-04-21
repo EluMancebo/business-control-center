@@ -1,4 +1,4 @@
-import type { BrandHarmonyStrategy } from "@/lib/brand-theme";
+import type { BrandAccentStyle, BrandHarmonyStrategy } from "@/lib/brand-theme";
 
 export type HarmonySurfacePalette = {
   background: string;
@@ -21,8 +21,12 @@ function mix(primary: string, secondary: string, primaryPercent: number) {
   return `color-mix(in oklab, ${primary} ${primaryPercent}%, ${secondary})`;
 }
 
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, value));
+}
+
 function withAccentTint(surface: string, accentPercent: number) {
-  const basePercent = Math.max(0, Math.min(100, 100 - accentPercent));
+  const basePercent = clampPercent(100 - accentPercent);
   return mix(surface, "var(--accent-soft,var(--surface-3,var(--muted)))", basePercent);
 }
 
@@ -90,6 +94,16 @@ const HARMONY_SURFACE_PROFILES: Record<LocalHarmonySurface, HarmonySurfaceProfil
     popoverTint: 27,
   },
 };
+const ACCENT_STYLE_DEPTH_SHIFT: Record<BrandAccentStyle, number> = {
+  minimal: 6,
+  balanced: 0,
+  expressive: -8,
+};
+const ACCENT_STYLE_TINT_SHIFT: Record<BrandAccentStyle, number> = {
+  minimal: -5,
+  balanced: 0,
+  expressive: 6,
+};
 
 function toLocalHarmony(harmony: BrandHarmonyStrategy): LocalHarmonySurface {
   if (harmony === "analogous") return "analogous";
@@ -99,29 +113,48 @@ function toLocalHarmony(harmony: BrandHarmonyStrategy): LocalHarmonySurface {
 
 export function mapHarmonyToSurfaces(
   palette: HarmonySurfacePalette,
-  harmony: BrandHarmonyStrategy
+  harmony: BrandHarmonyStrategy,
+  accentStyle: BrandAccentStyle = "balanced"
 ): HarmonySurfaceDistribution {
   const profile = HARMONY_SURFACE_PROFILES[toLocalHarmony(harmony)];
+  const depthShift = ACCENT_STYLE_DEPTH_SHIFT[accentStyle] ?? 0;
+  const tintShift = ACCENT_STYLE_TINT_SHIFT[accentStyle] ?? 0;
 
   const backgroundBase = mix(palette.background, palette.surface, profile.backgroundBlend);
-  const surfaceBase = mix(palette.background, palette.surface, profile.surfaceBlend);
-  const cardBase = mix(palette.surface, palette.card, profile.cardBlend);
+  const surfaceBase = mix(
+    palette.background,
+    palette.surface,
+    clampPercent(profile.surfaceBlend + depthShift)
+  );
+  const cardBase = mix(
+    palette.surface,
+    palette.card,
+    clampPercent(profile.cardBlend + depthShift * 0.92)
+  );
   const panelBase = mix(
-    mix(palette.surface, palette.panel, profile.panelBlend),
+    mix(
+      palette.surface,
+      palette.panel,
+      clampPercent(profile.panelBlend + depthShift * 0.82)
+    ),
     palette.border,
-    profile.panelBorderBlend
+    clampPercent(profile.panelBorderBlend + depthShift * 0.64)
   );
   const popoverBase = mix(
-    mix(palette.surface, palette.popover, profile.popoverBlend),
+    mix(
+      palette.surface,
+      palette.popover,
+      clampPercent(profile.popoverBlend + depthShift * 0.7)
+    ),
     palette.border,
-    profile.popoverBorderBlend
+    clampPercent(profile.popoverBorderBlend + depthShift * 0.56)
   );
 
   return {
-    background: withAccentTint(backgroundBase, profile.backgroundTint),
-    surface: withAccentTint(surfaceBase, profile.surfaceTint),
-    card: withAccentTint(cardBase, profile.cardTint),
-    panel: withAccentTint(panelBase, profile.panelTint),
-    popover: withAccentTint(popoverBase, profile.popoverTint),
+    background: withAccentTint(backgroundBase, clampPercent(profile.backgroundTint + tintShift * 0.45)),
+    surface: withAccentTint(surfaceBase, clampPercent(profile.surfaceTint + tintShift * 0.65)),
+    card: withAccentTint(cardBase, clampPercent(profile.cardTint + tintShift * 0.8)),
+    panel: withAccentTint(panelBase, clampPercent(profile.panelTint + tintShift)),
+    popover: withAccentTint(popoverBase, clampPercent(profile.popoverTint + tintShift * 1.1)),
   };
 }

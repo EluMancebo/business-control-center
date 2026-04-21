@@ -108,6 +108,16 @@ type TokenDiagnosticKey =
   | "link"
   | "border"
   | "ring";
+type PresetAtmosphereProfile = {
+  atmospherePrimaryMix: number;
+  surfaceInfluence: number;
+  atmosphereInfluence: number;
+  borderInfluence: number;
+  ringInfluence: number;
+  linkInfluence: number;
+  accentSoftInfluence: number;
+  neutralizeAccent: boolean;
+};
 
 const TOKEN_DIAGNOSTIC_KEYS: TokenDiagnosticKey[] = [
   "background",
@@ -122,6 +132,66 @@ const TOKEN_DIAGNOSTIC_KEYS: TokenDiagnosticKey[] = [
   "border",
   "ring",
 ];
+const PRESET_ATMOSPHERE_PROFILES: Record<BrandPaletteKey, PresetAtmosphereProfile> = {
+  bcc: {
+    atmospherePrimaryMix: 0.2,
+    surfaceInfluence: 0.18,
+    atmosphereInfluence: 0.16,
+    borderInfluence: 0.2,
+    ringInfluence: 0.18,
+    linkInfluence: 0.16,
+    accentSoftInfluence: 0.16,
+    neutralizeAccent: false,
+  },
+  ocean: {
+    atmospherePrimaryMix: 0.38,
+    surfaceInfluence: 0.54,
+    atmosphereInfluence: 0.74,
+    borderInfluence: 0.36,
+    ringInfluence: 0.42,
+    linkInfluence: 0.36,
+    accentSoftInfluence: 0.5,
+    neutralizeAccent: false,
+  },
+  sunset: {
+    atmospherePrimaryMix: 0.46,
+    surfaceInfluence: 0.53,
+    atmosphereInfluence: 0.62,
+    borderInfluence: 0.34,
+    ringInfluence: 0.4,
+    linkInfluence: 0.32,
+    accentSoftInfluence: 0.48,
+    neutralizeAccent: false,
+  },
+  mono: {
+    atmospherePrimaryMix: 0.03,
+    surfaceInfluence: 0.44,
+    atmosphereInfluence: 0.2,
+    borderInfluence: 0.42,
+    ringInfluence: 0.18,
+    linkInfluence: 0.14,
+    accentSoftInfluence: 0.38,
+    neutralizeAccent: true,
+  },
+};
+const HARMONY_SURFACE_FACTOR: Record<BrandHarmonyStrategy, number> = {
+  monochromatic: 0.9,
+  analogous: 0.92,
+  complementary: 1.34,
+  "split-complementary": 1.08,
+  triadic: 1.12,
+  tetradic: 1.22,
+};
+const ACCENT_STYLE_FACTOR: Record<BrandAccentStyle, number> = {
+  minimal: 0.76,
+  balanced: 1,
+  expressive: 1.32,
+};
+const SOURCE_INTERPRETATION_FACTOR: Record<BrandPaletteSeedSource, number> = {
+  manual: 0.72,
+  logo: 0.92,
+  hero: 1.08,
+};
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -183,24 +253,59 @@ function modulateTokensWithPreset(args: {
   tokens: BrandSemanticTokens;
   presetCore: BrandCorePaletteTokens;
   modulationPercent: number;
+  paletteId: BrandPaletteKey;
+  source: BrandPaletteSeedSource;
+  harmony: BrandHarmonyStrategy;
+  accentStyle: BrandAccentStyle;
 }): BrandSemanticTokens {
   const ratio = clamp(args.modulationPercent / 100, 0, 0.42);
   if (ratio <= 0) return args.tokens;
   const { tokens, presetCore } = args;
-  const atmosphereBase = mixColor(presetCore.muted, presetCore.primary, 0.32);
-  const surfaceRatio = clamp(ratio * 1.22, 0, 0.5);
-  const softRatio = clamp(ratio * 0.52, 0, 0.24);
-  const ringRatio = clamp(ratio * 0.62, 0, 0.3);
-  const linkHoverRatio = clamp(ratio * 0.36, 0, 0.2);
-  const accentSoft = mixColor(tokens.accentSoft, atmosphereBase, softRatio);
+  const profile = PRESET_ATMOSPHERE_PROFILES[args.paletteId];
+  const sourceFactor = SOURCE_INTERPRETATION_FACTOR[args.source];
+  const harmonyFactor = HARMONY_SURFACE_FACTOR[args.harmony];
+  const accentFactor = ACCENT_STYLE_FACTOR[args.accentStyle];
+  const atmosphereBase = mixColor(
+    presetCore.muted,
+    presetCore.primary,
+    profile.atmospherePrimaryMix
+  );
+  const surfaceRatio = clamp(
+    ratio * profile.surfaceInfluence * sourceFactor * harmonyFactor,
+    0,
+    0.38
+  );
+  const atmosphereRatio = clamp(
+    ratio * profile.atmosphereInfluence * sourceFactor * harmonyFactor,
+    0,
+    0.34
+  );
+  const borderRatio = clamp(ratio * profile.borderInfluence * sourceFactor, 0, 0.2);
+  const ringRatio = clamp(
+    ratio * profile.ringInfluence * sourceFactor * accentFactor,
+    0,
+    0.22
+  );
+  const linkHoverRatio = clamp(
+    ratio * profile.linkInfluence * sourceFactor * accentFactor,
+    0,
+    0.2
+  );
+  const accentSoftTarget = profile.neutralizeAccent ? tokens.muted : atmosphereBase;
+  const accentSoftRatio = clamp(
+    ratio * profile.accentSoftInfluence * sourceFactor * accentFactor,
+    0,
+    0.22
+  );
+  const accentSoft = mixColor(tokens.accentSoft, accentSoftTarget, accentSoftRatio);
   return {
     ...tokens,
-    background: mixColor(tokens.background, presetCore.background, surfaceRatio),
-    card: mixColor(tokens.card, presetCore.card, surfaceRatio * 0.9),
-    muted: mixColor(tokens.muted, presetCore.muted, surfaceRatio),
-    surface2: mixColor(tokens.surface2, atmosphereBase, surfaceRatio),
-    surface3: mixColor(tokens.surface3, atmosphereBase, surfaceRatio * 0.9),
-    border: mixColor(tokens.border, presetCore.border, ratio * 0.6),
+    background: mixColor(tokens.background, presetCore.background, surfaceRatio * 0.72),
+    card: mixColor(tokens.card, presetCore.card, surfaceRatio * 0.62),
+    muted: mixColor(tokens.muted, presetCore.muted, surfaceRatio * 0.86),
+    surface2: mixColor(tokens.surface2, atmosphereBase, atmosphereRatio),
+    surface3: mixColor(tokens.surface3, atmosphereBase, atmosphereRatio * 1.06),
+    border: mixColor(tokens.border, presetCore.border, borderRatio),
     ring: mixColor(tokens.ring, presetCore.primary, ringRatio),
     accentSoft,
     badgeBg: accentSoft,
@@ -504,7 +609,15 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const primarySwatchTextColor = getSwatchTextColor(paletteSeedPrimary || "#2563eb");
   const accentSwatchTextColor = getSwatchTextColor(accentDisplayValue);
   const neutralSwatchTextColor = getSwatchTextColor(neutralDisplayValue);
-  const effectiveTokens = modulateTokensWithPreset({ tokens: resolvedTokens, presetCore, modulationPercent: PRESET_MODULATION_PERCENT });
+  const effectiveTokens = modulateTokensWithPreset({
+    tokens: resolvedTokens,
+    presetCore,
+    modulationPercent: PRESET_MODULATION_PERCENT,
+    paletteId: brand.palette,
+    source: paletteSeedSource,
+    harmony: previewHarmony,
+    accentStyle: previewAccentStyle,
+  });
   const previewVariables = useMemo(() => {
     const variables = toBrandCssVariables(effectiveTokens);
     variables["--brand-typography-preset"] = effectiveTokens.typographyPreset;
@@ -621,6 +734,10 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
         tokens: resolvedTokens,
         presetCore: paletteCore,
         modulationPercent: PRESET_MODULATION_PERCENT,
+        paletteId: paletteOption.key,
+        source: paletteSeedSource,
+        harmony: previewHarmony,
+        accentStyle: previewAccentStyle,
       });
 
       return {
@@ -652,8 +769,10 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     normalizedPaletteSeed,
     brand,
     resolvedMode,
+    previewHarmony,
     previewAccentStyle,
     previewTypography,
+    paletteSeedSource,
     resolvedTokensFromSeed,
     resolvedTokens,
     effectiveTokens,
