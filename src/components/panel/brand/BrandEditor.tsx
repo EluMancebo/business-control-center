@@ -135,57 +135,57 @@ const TOKEN_DIAGNOSTIC_KEYS: TokenDiagnosticKey[] = [
 const PRESET_ATMOSPHERE_PROFILES: Record<BrandPaletteKey, PresetAtmosphereProfile> = {
   bcc: {
     atmospherePrimaryMix: 0.2,
-    surfaceInfluence: 0.18,
-    atmosphereInfluence: 0.16,
+    surfaceInfluence: 0.16,
+    atmosphereInfluence: 0.13,
     borderInfluence: 0.2,
-    ringInfluence: 0.18,
-    linkInfluence: 0.16,
-    accentSoftInfluence: 0.16,
+    ringInfluence: 0.16,
+    linkInfluence: 0.14,
+    accentSoftInfluence: 0.14,
     neutralizeAccent: false,
   },
   ocean: {
-    atmospherePrimaryMix: 0.38,
-    surfaceInfluence: 0.54,
-    atmosphereInfluence: 0.74,
+    atmospherePrimaryMix: 0.42,
+    surfaceInfluence: 0.5,
+    atmosphereInfluence: 0.68,
     borderInfluence: 0.36,
-    ringInfluence: 0.42,
-    linkInfluence: 0.36,
-    accentSoftInfluence: 0.5,
-    neutralizeAccent: false,
-  },
-  sunset: {
-    atmospherePrimaryMix: 0.46,
-    surfaceInfluence: 0.53,
-    atmosphereInfluence: 0.62,
-    borderInfluence: 0.34,
     ringInfluence: 0.4,
-    linkInfluence: 0.32,
+    linkInfluence: 0.36,
     accentSoftInfluence: 0.48,
     neutralizeAccent: false,
   },
+  sunset: {
+    atmospherePrimaryMix: 0.5,
+    surfaceInfluence: 0.49,
+    atmosphereInfluence: 0.58,
+    borderInfluence: 0.34,
+    ringInfluence: 0.38,
+    linkInfluence: 0.32,
+    accentSoftInfluence: 0.46,
+    neutralizeAccent: false,
+  },
   mono: {
-    atmospherePrimaryMix: 0.03,
-    surfaceInfluence: 0.44,
-    atmosphereInfluence: 0.2,
-    borderInfluence: 0.42,
-    ringInfluence: 0.18,
-    linkInfluence: 0.14,
-    accentSoftInfluence: 0.38,
+    atmospherePrimaryMix: 0.02,
+    surfaceInfluence: 0.52,
+    atmosphereInfluence: 0.14,
+    borderInfluence: 0.46,
+    ringInfluence: 0.14,
+    linkInfluence: 0.1,
+    accentSoftInfluence: 0.5,
     neutralizeAccent: true,
   },
 };
 const HARMONY_SURFACE_FACTOR: Record<BrandHarmonyStrategy, number> = {
-  monochromatic: 0.9,
-  analogous: 0.92,
-  complementary: 1.34,
-  "split-complementary": 1.08,
-  triadic: 1.12,
-  tetradic: 1.22,
+  monochromatic: 0.88,
+  analogous: 0.9,
+  complementary: 1.44,
+  "split-complementary": 1.14,
+  triadic: 1.14,
+  tetradic: 1.28,
 };
 const ACCENT_STYLE_FACTOR: Record<BrandAccentStyle, number> = {
-  minimal: 0.76,
+  minimal: 0.74,
   balanced: 1,
-  expressive: 1.32,
+  expressive: 1.38,
 };
 const SOURCE_INTERPRETATION_FACTOR: Record<BrandPaletteSeedSource, number> = {
   manual: 0.72,
@@ -273,12 +273,12 @@ function modulateTokensWithPreset(args: {
   const surfaceRatio = clamp(
     ratio * profile.surfaceInfluence * sourceFactor * harmonyFactor,
     0,
-    0.38
+    0.42
   );
   const atmosphereRatio = clamp(
     ratio * profile.atmosphereInfluence * sourceFactor * harmonyFactor,
     0,
-    0.34
+    0.38
   );
   const borderRatio = clamp(ratio * profile.borderInfluence * sourceFactor, 0, 0.2);
   const ringRatio = clamp(
