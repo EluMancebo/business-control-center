@@ -36,6 +36,51 @@ function toPipelineError(value: string | undefined): string {
   return value;
 }
 
+function buildCanonicalMetadataSet(
+  input:
+    | Pick<
+        AssetCreateInput,
+        | "formatKind"
+        | "assetRole"
+        | "preferredUsage"
+        | "allowedComponents"
+        | "reviewStatus"
+        | "orientation"
+        | "aspectRatio"
+        | "brandCritical"
+        | "vectorizable"
+        | "animable"
+      >
+    | Pick<
+        AssetUpdateMetadataInput,
+        | "assetRole"
+        | "preferredUsage"
+        | "allowedComponents"
+        | "reviewStatus"
+        | "orientation"
+        | "aspectRatio"
+        | "brandCritical"
+        | "vectorizable"
+        | "animable"
+      >
+) {
+  const source = input as Partial<AssetCreateInput & AssetUpdateMetadataInput>;
+  const next: Record<string, unknown> = {};
+
+  if (source.formatKind) next.formatKind = source.formatKind;
+  if (source.assetRole) next.assetRole = source.assetRole;
+  if (source.preferredUsage !== undefined) next.preferredUsage = source.preferredUsage;
+  if (source.allowedComponents) next.allowedComponents = source.allowedComponents;
+  if (source.reviewStatus) next.reviewStatus = source.reviewStatus;
+  if (source.orientation) next.orientation = source.orientation;
+  if (source.aspectRatio !== undefined) next.aspectRatio = source.aspectRatio ?? "";
+  if (typeof source.brandCritical === "boolean") next.brandCritical = source.brandCritical;
+  if (typeof source.vectorizable === "boolean") next.vectorizable = source.vectorizable;
+  if (typeof source.animable === "boolean") next.animable = source.animable;
+
+  return next;
+}
+
 function getInitialPipelineDefaults(kind: AssetCreateInput["kind"]): {
   pipelineStatus: AssetPipelineStatus;
   pipelineStage: AssetPipelineStage;
@@ -56,6 +101,7 @@ export async function listSystemAssetsRepository(query: AssetListQuery) {
 
 export async function createSystemAssetRepository(input: AssetCreateInput) {
   const initialPipeline = getInitialPipelineDefaults(input.kind);
+  const canonical = buildCanonicalMetadataSet(input);
 
   return Asset.create({
     ...input,
@@ -66,6 +112,7 @@ export async function createSystemAssetRepository(input: AssetCreateInput) {
     pipelineStatus: input.pipelineStatus ?? initialPipeline.pipelineStatus,
     pipelineStage: input.pipelineStage ?? initialPipeline.pipelineStage,
     pipelineError: toPipelineError(input.pipelineError),
+    ...canonical,
   });
 }
 
@@ -97,6 +144,7 @@ export async function upsertSystemAssetVariantRepository(input: AssetCreateInput
 
   const initialPipeline = getInitialPipelineDefaults(input.kind);
   const variantKey = input.variantKey ?? DEFAULT_VARIANT_KEY;
+  const canonical = buildCanonicalMetadataSet(input);
 
   return Asset.findOneAndUpdate(
     {
@@ -124,6 +172,7 @@ export async function upsertSystemAssetVariantRepository(input: AssetCreateInput
         pipelineStage: input.pipelineStage ?? initialPipeline.pipelineStage,
         pipelineError: toPipelineError(input.pipelineError),
         status: input.status,
+        ...canonical,
       },
     },
     {
@@ -143,6 +192,7 @@ export async function updateSystemAssetMetadataRepository(
   id: string,
   input: AssetUpdateMetadataInput
 ) {
+  const canonical = buildCanonicalMetadataSet(input);
   return Asset.findOneAndUpdate(
     { _id: id, scope: "system", businessId: null },
     {
@@ -150,6 +200,7 @@ export async function updateSystemAssetMetadataRepository(
         label: input.label,
         tags: input.tags,
         allowedIn: input.allowedIn,
+        ...canonical,
       },
     },
     { new: true, lean: true }

@@ -13,6 +13,7 @@ import {
   buildSystemAssetStorageKey,
   buildSystemMediaListQuery,
   normalizeAssetItem,
+  parseCanonicalMediaMetadata,
   resolveAssetKindFromMime,
   splitMediaListValue,
 } from "@/lib/taller/media/service";
@@ -89,6 +90,19 @@ export async function POST(req: NextRequest) {
     const label = String(form.get("label") || "").trim() || "Asset";
     const tags = splitMediaListValue(form.get("tag"));
     const allowedIn = splitMediaListValue(form.get("allowedIn"));
+    const allowedComponents = splitMediaListValue(form.get("allowedComponents"));
+    const canonicalMetadata = parseCanonicalMediaMetadata({
+      formatKind: form.get("formatKind"),
+      assetRole: form.get("assetRole"),
+      preferredUsage: form.get("preferredUsage"),
+      allowedComponents,
+      reviewStatus: form.get("reviewStatus"),
+      orientation: form.get("orientation"),
+      aspectRatio: form.get("aspectRatio"),
+      brandCritical: form.get("brandCritical"),
+      vectorizable: form.get("vectorizable"),
+      animable: form.get("animable"),
+    });
 
     if (!(file instanceof File)) {
       return NextResponse.json({ ok: false, error: "Missing file" }, { status: 400 });
@@ -108,6 +122,7 @@ export async function POST(req: NextRequest) {
       businessId: null,
       scope: "system",
       kind,
+      formatKind: canonicalMetadata.formatKind ?? kind,
       bucket: "vercel-blob",
       key: blob.pathname, // pathname del blob
       url: blob.url,
@@ -117,6 +132,7 @@ export async function POST(req: NextRequest) {
       mime: file.type || "",
       bytes: file.size || 0,
       status: "active",
+      ...canonicalMetadata,
     });
 
     const createdItem = normalizeAssetItem(created);
@@ -156,6 +172,15 @@ export async function PATCH(req: NextRequest) {
           label?: unknown;
           tags?: unknown;
           allowedIn?: unknown;
+          assetRole?: unknown;
+          preferredUsage?: unknown;
+          allowedComponents?: unknown;
+          reviewStatus?: unknown;
+          orientation?: unknown;
+          aspectRatio?: unknown;
+          brandCritical?: unknown;
+          vectorizable?: unknown;
+          animable?: unknown;
         }
       | null;
 
@@ -166,11 +191,24 @@ export async function PATCH(req: NextRequest) {
 
     const tags = splitMediaListValue(payload?.tags);
     const allowedIn = splitMediaListValue(payload?.allowedIn);
+    const allowedComponents = splitMediaListValue(payload?.allowedComponents);
+    const canonicalMetadata = parseCanonicalMediaMetadata({
+      assetRole: payload?.assetRole,
+      preferredUsage: payload?.preferredUsage,
+      allowedComponents,
+      reviewStatus: payload?.reviewStatus,
+      orientation: payload?.orientation,
+      aspectRatio: payload?.aspectRatio,
+      brandCritical: payload?.brandCritical,
+      vectorizable: payload?.vectorizable,
+      animable: payload?.animable,
+    });
 
     const updated = await updateSystemAssetMetadataRepository(assetId, {
       label,
       tags,
       allowedIn,
+      ...canonicalMetadata,
     });
 
     if (!updated) {

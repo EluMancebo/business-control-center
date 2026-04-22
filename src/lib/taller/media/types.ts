@@ -2,13 +2,45 @@ import type { SvgAnalysis } from "@/lib/media/analyzer";
 import type { SvgAnimationDecision } from "@/lib/media/animation";
 
 export type AssetScope = "system" | "tenant";
-export type AssetKind = "image" | "svg" | "video";
+export type MediaFormatKind = "image" | "svg" | "video" | "pdf";
+export type AssetKind = MediaFormatKind;
 export type AssetStatus = "active" | "archived";
 export type AssetVariantKey = "original" | "thumbnail" | "optimized" | "vectorized-svg";
 export type AssetPipelineStatus = "queued" | "processing" | "ready" | "failed" | "skipped";
 export type AssetPipelineStage = "ingest" | "analyze" | "derive" | "vectorize" | "done";
 export type AssetBusinessId = string | null;
 export type VectorizationKind = "logo" | "icon" | "shape" | "photo" | "texture" | "illustration";
+export type MediaAssetRole =
+  | "logo"
+  | "icon"
+  | "photo"
+  | "illustration"
+  | "texture"
+  | "document"
+  | "video";
+export type MediaPreferredUsage =
+  | "hero-background"
+  | "hero-logo"
+  | "navbar-logo"
+  | "footer-mark"
+  | "banner-background"
+  | "popup-media"
+  | "gallery-item"
+  | "social-asset"
+  | "card-media"
+  | "document-embed";
+export type MediaAllowedComponent =
+  | "hero"
+  | "banner"
+  | "header"
+  | "footer"
+  | "popup"
+  | "card"
+  | "gallery"
+  | "social"
+  | "document";
+export type MediaReviewStatus = "draft" | "reviewed" | "approved" | "rejected" | "deprecated";
+export type MediaOrientation = "landscape" | "portrait" | "square" | "unknown";
 
 type SystemAssetOwnership = {
   scope: "system";
@@ -27,6 +59,17 @@ export type AssetItem = {
   businessId: AssetBusinessId;
   scope: AssetScope;
   kind: AssetKind;
+  formatKind: MediaFormatKind;
+  assetRole: MediaAssetRole;
+  preferredUsage: MediaPreferredUsage | null;
+  allowedComponents: MediaAllowedComponent[];
+  reviewStatus: MediaReviewStatus;
+  orientation: MediaOrientation;
+  aspectRatio: string | null;
+  brandCritical: boolean;
+  vectorizable: boolean;
+  animable: boolean;
+  isDerivative: boolean;
   bucket: string;
   key: string;
   url: string;
@@ -53,12 +96,25 @@ export type AssetListQuery = {
   status: AssetStatus;
   tags?: string;
   allowedIn?: string;
+  allowedComponent?: MediaAllowedComponent;
+  preferredUsage?: MediaPreferredUsage;
+  reviewStatus?: MediaReviewStatus;
   variantKey?: AssetVariantKey;
   pipelineStatus?: AssetPipelineStatus;
 };
 
 export type AssetCreateInput = AssetOwnership & {
   kind: AssetKind;
+  formatKind?: MediaFormatKind;
+  assetRole?: MediaAssetRole;
+  preferredUsage?: MediaPreferredUsage | null;
+  allowedComponents?: MediaAllowedComponent[];
+  reviewStatus?: MediaReviewStatus;
+  orientation?: MediaOrientation;
+  aspectRatio?: string | null;
+  brandCritical?: boolean;
+  vectorizable?: boolean;
+  animable?: boolean;
   bucket: "vercel-blob";
   key: string;
   url: string;
@@ -81,6 +137,15 @@ export type AssetUpdateMetadataInput = {
   label: string;
   tags: string[];
   allowedIn: string[];
+  assetRole?: MediaAssetRole;
+  preferredUsage?: MediaPreferredUsage | null;
+  allowedComponents?: MediaAllowedComponent[];
+  reviewStatus?: MediaReviewStatus;
+  orientation?: MediaOrientation;
+  aspectRatio?: string | null;
+  brandCritical?: boolean;
+  vectorizable?: boolean;
+  animable?: boolean;
 };
 
 export type ProcessedAssetResult = {

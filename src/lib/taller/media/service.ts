@@ -2,9 +2,15 @@ import type {
   AssetItem,
   AssetKind,
   AssetListQuery,
+  MediaAllowedComponent,
+  MediaAssetRole,
+  MediaFormatKind,
+  MediaOrientation,
   AssetPipelineStage,
   AssetPipelineStatus,
+  MediaPreferredUsage,
   ProcessedAssetResult,
+  MediaReviewStatus,
   AssetStatus,
   AssetVariantKey,
 } from "./types";
@@ -58,6 +64,72 @@ const ASSET_PIPELINE_STAGES: AssetPipelineStage[] = [
   "vectorize",
   "done",
 ];
+const MEDIA_FORMAT_KINDS: MediaFormatKind[] = ["image", "svg", "video", "pdf"];
+const MEDIA_ASSET_ROLES: MediaAssetRole[] = [
+  "logo",
+  "icon",
+  "photo",
+  "illustration",
+  "texture",
+  "document",
+  "video",
+];
+const MEDIA_PREFERRED_USAGES: MediaPreferredUsage[] = [
+  "hero-background",
+  "hero-logo",
+  "navbar-logo",
+  "footer-mark",
+  "banner-background",
+  "popup-media",
+  "gallery-item",
+  "social-asset",
+  "card-media",
+  "document-embed",
+];
+const MEDIA_ALLOWED_COMPONENTS: MediaAllowedComponent[] = [
+  "hero",
+  "banner",
+  "header",
+  "footer",
+  "popup",
+  "card",
+  "gallery",
+  "social",
+  "document",
+];
+const MEDIA_REVIEW_STATUSES: MediaReviewStatus[] = [
+  "draft",
+  "reviewed",
+  "approved",
+  "rejected",
+  "deprecated",
+];
+const MEDIA_ORIENTATIONS: MediaOrientation[] = ["landscape", "portrait", "square", "unknown"];
+const LEGACY_ALLOWED_IN_TO_CANONICAL: Record<
+  string,
+  { component: MediaAllowedComponent; usage: MediaPreferredUsage }
+> = {
+  "hero.background": { component: "hero", usage: "hero-background" },
+  "home.hero.background": { component: "hero", usage: "hero-background" },
+  "hero.logo": { component: "hero", usage: "hero-logo" },
+  "hero.media": { component: "hero", usage: "hero-background" },
+  "navbar.logo": { component: "header", usage: "navbar-logo" },
+  "brand.logo.header": { component: "header", usage: "navbar-logo" },
+  "footer.logo": { component: "footer", usage: "footer-mark" },
+  "footer.background": { component: "footer", usage: "footer-mark" },
+  "brand.logo.footer": { component: "footer", usage: "footer-mark" },
+  "banner.media": { component: "banner", usage: "banner-background" },
+  "popup.media": { component: "popup", usage: "popup-media" },
+  "popup.campaign.cover": { component: "popup", usage: "popup-media" },
+  "home.gallery.item": { component: "gallery", usage: "gallery-item" },
+  "catalog.product.gallery": { component: "gallery", usage: "gallery-item" },
+  "social.media": { component: "social", usage: "social-asset" },
+  "card.media": { component: "card", usage: "card-media" },
+  "home.services.card": { component: "card", usage: "card-media" },
+  "catalog.product.cover": { component: "card", usage: "card-media" },
+  "news.item.cover": { component: "card", usage: "card-media" },
+  "pdf.media": { component: "document", usage: "document-embed" },
+};
 
 function toNumber(value: unknown): number {
   if (typeof value !== "number" || Number.isNaN(value)) return 0;
@@ -113,33 +185,318 @@ function toOptionalDateString(value: unknown): string | undefined {
   return undefined;
 }
 
+function isOneOf<T extends string>(value: string, allowed: readonly T[]): value is T {
+  return allowed.includes(value as T);
+}
+
+function normalizeFormatKindFromMime(mime: string): MediaFormatKind {
+  const normalizedMime = String(mime || "").trim().toLowerCase();
+  if (normalizedMime.includes("pdf")) return "pdf";
+  if (normalizedMime.includes("svg")) return "svg";
+  if (normalizedMime.startsWith("video/")) return "video";
+  return "image";
+}
+
+function toNullableBoolean(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value !== "string") return undefined;
+
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (normalized === "true" || normalized === "1" || normalized === "yes") return true;
+  if (normalized === "false" || normalized === "0" || normalized === "no") return false;
+  return undefined;
+}
+
+function toCanonicalAllowedComponents(value: unknown): MediaAllowedComponent[] | undefined {
+  const rawList = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value
+          .split(/[,\s]+/g)
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [];
+  if (rawList.length === 0) return undefined;
+  const normalized = rawList
+    .map((item) => String(item || "").trim().toLowerCase())
+    .filter((item): item is MediaAllowedComponent => isOneOf(item, MEDIA_ALLOWED_COMPONENTS));
+  return Array.from(new Set(normalized));
+}
+
+function toCanonicalPreferredUsage(value: unknown): MediaPreferredUsage | null | undefined {
+  if (value === null) return null;
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (isOneOf(normalized, MEDIA_PREFERRED_USAGES)) return normalized;
+  return undefined;
+}
+
+function toCanonicalReviewStatus(value: unknown): MediaReviewStatus | undefined {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (isOneOf(normalized, MEDIA_REVIEW_STATUSES)) return normalized;
+  return undefined;
+}
+
+function toCanonicalAssetRole(value: unknown): MediaAssetRole | undefined {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (isOneOf(normalized, MEDIA_ASSET_ROLES)) return normalized;
+  return undefined;
+}
+
+function toCanonicalOrientation(value: unknown): MediaOrientation | undefined {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (isOneOf(normalized, MEDIA_ORIENTATIONS)) return normalized;
+  return undefined;
+}
+
+function toCanonicalFormatKind(value: unknown): MediaFormatKind | undefined {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (isOneOf(normalized, MEDIA_FORMAT_KINDS)) return normalized;
+  return undefined;
+}
+
+function extractCanonicalFromAllowedIn(
+  allowedIn: string[]
+): { allowedComponents: MediaAllowedComponent[]; preferredUsage: MediaPreferredUsage | null } {
+  const components = new Set<MediaAllowedComponent>();
+  let preferredUsage: MediaPreferredUsage | null = null;
+
+  allowedIn.forEach((raw) => {
+    const normalized = String(raw || "").trim().toLowerCase();
+    if (!normalized) return;
+    const mapped = LEGACY_ALLOWED_IN_TO_CANONICAL[normalized];
+    if (!mapped) return;
+    components.add(mapped.component);
+    if (!preferredUsage) preferredUsage = mapped.usage;
+  });
+
+  return {
+    allowedComponents: Array.from(components),
+    preferredUsage,
+  };
+}
+
+function greatestCommonDivisor(a: number, b: number): number {
+  let x = Math.abs(Math.round(a));
+  let y = Math.abs(Math.round(b));
+  while (y !== 0) {
+    const temp = y;
+    y = x % y;
+    x = temp;
+  }
+  return x || 1;
+}
+
+function toAspectRatio(width: number, height: number): string | null {
+  if (width <= 0 || height <= 0) return null;
+  const gcd = greatestCommonDivisor(width, height);
+  return `${Math.max(1, Math.round(width / gcd))}:${Math.max(1, Math.round(height / gcd))}`;
+}
+
+function inferOrientation(width: number, height: number): MediaOrientation {
+  if (width <= 0 || height <= 0) return "unknown";
+  if (width === height) return "square";
+  return width > height ? "landscape" : "portrait";
+}
+
+function readReviewStatusFromTags(tags: string[]): MediaReviewStatus | undefined {
+  const match = tags
+    .map((tag) => String(tag || "").trim().toLowerCase())
+    .find((tag) => tag.startsWith("review:"));
+  if (!match) return undefined;
+  return toCanonicalReviewStatus(match.slice("review:".length).trim());
+}
+
+function readPreferredUsageFromTags(tags: string[]): MediaPreferredUsage | undefined {
+  const match = tags
+    .map((tag) => String(tag || "").trim().toLowerCase())
+    .find((tag) => tag.startsWith("usage:"));
+  if (!match) return undefined;
+  const value = match.slice("usage:".length).trim();
+  return isOneOf(value, MEDIA_PREFERRED_USAGES) ? value : undefined;
+}
+
+function inferAssetRole(args: {
+  explicitRole?: MediaAssetRole;
+  formatKind: MediaFormatKind;
+  tags: string[];
+  label: string;
+  allowedIn: string[];
+}): MediaAssetRole {
+  if (args.explicitRole) return args.explicitRole;
+  if (args.formatKind === "pdf") return "document";
+  if (args.formatKind === "video") return "video";
+
+  const lowerTags = args.tags.map((tag) => String(tag || "").trim().toLowerCase());
+  const text = `${args.label} ${args.allowedIn.join(" ")} ${lowerTags.join(" ")}`.toLowerCase();
+
+  const hasVisualLogo = lowerTags.includes("visual:logo");
+  const hasVisualIcon = lowerTags.includes("visual:icon");
+  const hasVisualTexture = lowerTags.includes("visual:texture");
+  const hasVisualIllustration = lowerTags.includes("visual:illustration");
+  const hasVisualPhoto = lowerTags.includes("visual:photo");
+
+  if (hasVisualLogo || text.includes("logo")) return "logo";
+  if (hasVisualIcon || text.includes("icon")) return "icon";
+  if (hasVisualTexture || text.includes("texture")) return "texture";
+  if (hasVisualIllustration || args.formatKind === "svg") return "illustration";
+  if (hasVisualPhoto) return "photo";
+
+  return "photo";
+}
+
+export type CanonicalMediaMetadataInput = {
+  formatKind?: unknown;
+  assetRole?: unknown;
+  preferredUsage?: unknown;
+  allowedComponents?: unknown;
+  reviewStatus?: unknown;
+  orientation?: unknown;
+  aspectRatio?: unknown;
+  brandCritical?: unknown;
+  vectorizable?: unknown;
+  animable?: unknown;
+};
+
+export type CanonicalMediaMetadata = {
+  formatKind?: MediaFormatKind;
+  assetRole?: MediaAssetRole;
+  preferredUsage?: MediaPreferredUsage | null;
+  allowedComponents?: MediaAllowedComponent[];
+  reviewStatus?: MediaReviewStatus;
+  orientation?: MediaOrientation;
+  aspectRatio?: string | null;
+  brandCritical?: boolean;
+  vectorizable?: boolean;
+  animable?: boolean;
+};
+
+export function parseCanonicalMediaMetadata(input: CanonicalMediaMetadataInput): CanonicalMediaMetadata {
+  const next: CanonicalMediaMetadata = {};
+
+  const formatKind = toCanonicalFormatKind(input.formatKind);
+  const assetRole = toCanonicalAssetRole(input.assetRole);
+  const preferredUsage = toCanonicalPreferredUsage(input.preferredUsage);
+  const allowedComponents = toCanonicalAllowedComponents(input.allowedComponents);
+  const reviewStatus = toCanonicalReviewStatus(input.reviewStatus);
+  const orientation = toCanonicalOrientation(input.orientation);
+  const aspectRatioRaw = String(input.aspectRatio || "").trim();
+  const brandCritical = toNullableBoolean(input.brandCritical);
+  const vectorizable = toNullableBoolean(input.vectorizable);
+  const animable = toNullableBoolean(input.animable);
+
+  if (formatKind) next.formatKind = formatKind;
+  if (assetRole) next.assetRole = assetRole;
+  if (preferredUsage !== undefined) next.preferredUsage = preferredUsage;
+  if (allowedComponents) next.allowedComponents = allowedComponents;
+  if (reviewStatus) next.reviewStatus = reviewStatus;
+  if (orientation) next.orientation = orientation;
+  if (aspectRatioRaw) next.aspectRatio = aspectRatioRaw;
+  if (brandCritical !== undefined) next.brandCritical = brandCritical;
+  if (vectorizable !== undefined) next.vectorizable = vectorizable;
+  if (animable !== undefined) next.animable = animable;
+
+  return next;
+}
+
 export function normalizeAssetItem(value: unknown): AssetItem {
   const item = (value && typeof value === "object" ? value : {}) as Record<string, unknown>;
+  const kind =
+    item.kind === "svg" || item.kind === "video" || item.kind === "image" || item.kind === "pdf"
+      ? item.kind
+      : "image";
+  const tags = toStringArray(item.tags);
+  const allowedIn = toStringArray(item.allowedIn);
+  const width = toNumber(item.width);
+  const height = toNumber(item.height);
+  const status: AssetStatus = item.status === "archived" ? "archived" : "active";
+  const canonicalInput = parseCanonicalMediaMetadata({
+    formatKind: item.formatKind,
+    assetRole: item.assetRole,
+    preferredUsage: item.preferredUsage,
+    allowedComponents: item.allowedComponents,
+    reviewStatus: item.reviewStatus,
+    orientation: item.orientation,
+    aspectRatio: item.aspectRatio,
+    brandCritical: item.brandCritical,
+    vectorizable: item.vectorizable,
+    animable: item.animable,
+  });
+  const inferredFormatKind = canonicalInput.formatKind ?? kind ?? normalizeFormatKindFromMime(toStringValue(item.mime));
+  const allowedInCanonical = extractCanonicalFromAllowedIn(allowedIn);
+  const preferredUsage =
+    canonicalInput.preferredUsage ??
+    readPreferredUsageFromTags(tags) ??
+    allowedInCanonical.preferredUsage;
+  const assetRole = inferAssetRole({
+    explicitRole: canonicalInput.assetRole,
+    formatKind: inferredFormatKind,
+    tags,
+    label: toStringValue(item.label),
+    allowedIn,
+  });
+  const reviewStatus =
+    canonicalInput.reviewStatus ??
+    readReviewStatusFromTags(tags) ??
+    (status === "archived" ? "deprecated" : "draft");
+  const orientation = canonicalInput.orientation ?? inferOrientation(width, height);
+  const aspectRatio = canonicalInput.aspectRatio ?? toAspectRatio(width, height);
+  const brandCritical =
+    canonicalInput.brandCritical ??
+    (assetRole === "logo" ||
+      preferredUsage === "hero-logo" ||
+      preferredUsage === "navbar-logo" ||
+      preferredUsage === "footer-mark");
+  const vectorizable =
+    canonicalInput.vectorizable ??
+    (inferredFormatKind === "svg" || assetRole === "logo" || assetRole === "icon");
+  const animable = canonicalInput.animable ?? inferredFormatKind === "video";
+  const sourceAssetId = toNullableString(item.sourceAssetId);
+  const variantKey = toVariantKey(item.variantKey);
+  const isDerivative = Boolean(sourceAssetId) || variantKey !== "original";
+  const allowedComponents =
+    canonicalInput.allowedComponents && canonicalInput.allowedComponents.length > 0
+      ? canonicalInput.allowedComponents
+      : allowedInCanonical.allowedComponents;
 
   return {
     _id: toStringValue(item._id),
     businessId: toNullableString(item.businessId),
     scope: item.scope === "tenant" ? "tenant" : "system",
-    kind:
-      item.kind === "svg" || item.kind === "video" || item.kind === "image"
-        ? item.kind
-        : "image",
+    kind,
+    formatKind: inferredFormatKind,
+    assetRole,
+    preferredUsage: preferredUsage ?? null,
+    allowedComponents,
+    reviewStatus,
+    orientation,
+    aspectRatio,
+    brandCritical,
+    vectorizable,
+    animable,
+    isDerivative,
     bucket: toStringValue(item.bucket, "vercel-blob"),
     key: toStringValue(item.key),
     url: toStringValue(item.url),
     label: toStringValue(item.label),
-    tags: toStringArray(item.tags),
-    allowedIn: toStringArray(item.allowedIn),
+    tags,
+    allowedIn,
     mime: toStringValue(item.mime),
     bytes: toNumber(item.bytes),
-    width: toNumber(item.width),
-    height: toNumber(item.height),
-    sourceAssetId: toNullableString(item.sourceAssetId),
-    variantKey: toVariantKey(item.variantKey),
+    width,
+    height,
+    sourceAssetId,
+    variantKey,
     pipelineStatus: toPipelineStatus(item.pipelineStatus),
     pipelineStage: toPipelineStage(item.pipelineStage),
     pipelineError: toStringValue(item.pipelineError, ""),
-    status: item.status === "archived" ? "archived" : "active",
+    status,
     createdAt: toOptionalDateString(item.createdAt),
     updatedAt: toOptionalDateString(item.updatedAt),
   };
@@ -204,6 +561,7 @@ export function buildSystemMediaListQuery(input: {
 }
 
 export function resolveAssetKindFromMime(mime: string): AssetKind {
+  if (mime.includes("pdf")) return "pdf";
   if (mime.includes("svg")) return "svg";
   if (mime.startsWith("video/")) return "video";
   return "image";
