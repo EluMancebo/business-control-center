@@ -448,6 +448,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const [presetVaultEditingName, setPresetVaultEditingName] = useState("");
   const [presetVaultError, setPresetVaultError] = useState("");
   const [vaultCollapsed, setVaultCollapsed] = useState(false);
+  const [nativeColorPickActive, setNativeColorPickActive] = useState(false);
   const sourceAssetPickerRef = useRef<HTMLDetailsElement | null>(null);
 
   const scopeUsesBusinessSlug = scope === "panel" || scope === "web";
@@ -1111,6 +1112,15 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
       setExtracting(false);
     }
   }
+  function handleNativeColorPickStart() {
+    setNativeColorPickActive(true);
+    if (sourceAssetPickerRef.current) {
+      sourceAssetPickerRef.current.open = false;
+    }
+  }
+  function handleNativeColorPickEnd() {
+    setNativeColorPickActive(false);
+  }
 
   if (skipWebWithoutSlug) {
     return (
@@ -1292,14 +1302,36 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                         <p className="text-[10px] text-muted-foreground">Color base del sistema</p>
                       </div>
                       <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-md border border-border/60 bg-background/85 p-1.5">
-                        <input type="color" value={paletteSeedPrimary || "#2563eb"} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1" />
+                        <input
+                          type="color"
+                          value={paletteSeedPrimary || "#2563eb"}
+                          onPointerDown={handleNativeColorPickStart}
+                          onFocus={handleNativeColorPickStart}
+                          onBlur={handleNativeColorPickEnd}
+                          onChange={(e) => {
+                            setPaletteSeedPrimary(e.target.value);
+                            handleNativeColorPickEnd();
+                          }}
+                          className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1"
+                        />
                         <input value={paletteSeedPrimary} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-8 w-full min-w-0 rounded-md border border-border/70 bg-background px-2 font-mono text-xs text-foreground" />
                       </label>
                     </div>
                     <div className="grid gap-1">
                       <p className="text-[11px] font-medium text-muted-foreground">Accent</p>
                       <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-border/55 bg-background/70 p-2">
-                        <input type="color" value={accentDisplayValue} onChange={(e) => setPaletteSeedAccent(e.target.value)} className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1" />
+                        <input
+                          type="color"
+                          value={accentDisplayValue}
+                          onPointerDown={handleNativeColorPickStart}
+                          onFocus={handleNativeColorPickStart}
+                          onBlur={handleNativeColorPickEnd}
+                          onChange={(e) => {
+                            setPaletteSeedAccent(e.target.value);
+                            handleNativeColorPickEnd();
+                          }}
+                          className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1"
+                        />
                         <input
                           value={accentDisplayValue}
                           onChange={(e) => setPaletteSeedAccent(e.target.value)}
@@ -1319,7 +1351,18 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                     <div className="grid gap-1">
                       <p className="text-[11px] font-medium text-muted-foreground">Neutral</p>
                       <label className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-border/55 bg-background/70 p-2">
-                        <input type="color" value={neutralDisplayValue} onChange={(e) => setPaletteSeedNeutral(e.target.value)} className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1" />
+                        <input
+                          type="color"
+                          value={neutralDisplayValue}
+                          onPointerDown={handleNativeColorPickStart}
+                          onFocus={handleNativeColorPickStart}
+                          onBlur={handleNativeColorPickEnd}
+                          onChange={(e) => {
+                            setPaletteSeedNeutral(e.target.value);
+                            handleNativeColorPickEnd();
+                          }}
+                          className="h-8 w-9 shrink-0 rounded-md border border-border/70 bg-background p-1"
+                        />
                         <input
                           value={neutralDisplayValue}
                           onChange={(e) => setPaletteSeedNeutral(e.target.value)}
@@ -1375,7 +1418,18 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                         </span>
                       </div>
                       <div className="relative w-full overflow-hidden rounded-md border border-border/60" style={{ backgroundColor: paletteSeedPrimary || "#2563eb" }}>
-                        <input type="color" value={paletteSeedPrimary || "#2563eb"} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="absolute right-1 top-1 z-10 h-6 w-8 shrink-0 cursor-pointer rounded border border-black/25 bg-white/55 p-0.5" />
+                        <input
+                          type="color"
+                          value={paletteSeedPrimary || "#2563eb"}
+                          onPointerDown={handleNativeColorPickStart}
+                          onFocus={handleNativeColorPickStart}
+                          onBlur={handleNativeColorPickEnd}
+                          onChange={(e) => {
+                            setPaletteSeedPrimary(e.target.value);
+                            handleNativeColorPickEnd();
+                          }}
+                          className="absolute right-1 top-1 z-10 h-6 w-8 shrink-0 cursor-pointer rounded border border-black/25 bg-white/55 p-0.5"
+                        />
                         <input value={paletteSeedPrimary} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-9 w-full border-0 bg-transparent px-2 pr-10 pt-0.5 font-mono text-[11px] font-semibold uppercase tracking-wide placeholder:opacity-70 focus:outline-none focus:ring-0" style={{ color: primarySwatchTextColor }} />
                       </div>
                     </div>
@@ -1389,7 +1443,18 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                         </div>
                       </div>
                       <div className="relative w-full overflow-hidden rounded-md border border-border/60" style={{ backgroundColor: accentDisplayValue }}>
-                        <input type="color" value={accentDisplayValue} onChange={(e) => setPaletteSeedAccent(e.target.value)} className="absolute right-1 top-1 z-10 h-6 w-8 shrink-0 cursor-pointer rounded border border-black/25 bg-white/55 p-0.5" />
+                        <input
+                          type="color"
+                          value={accentDisplayValue}
+                          onPointerDown={handleNativeColorPickStart}
+                          onFocus={handleNativeColorPickStart}
+                          onBlur={handleNativeColorPickEnd}
+                          onChange={(e) => {
+                            setPaletteSeedAccent(e.target.value);
+                            handleNativeColorPickEnd();
+                          }}
+                          className="absolute right-1 top-1 z-10 h-6 w-8 shrink-0 cursor-pointer rounded border border-black/25 bg-white/55 p-0.5"
+                        />
                         <input
                           value={accentDisplayValue}
                           onChange={(e) => setPaletteSeedAccent(e.target.value)}
@@ -1414,7 +1479,18 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                         </div>
                       </div>
                       <div className="relative w-full overflow-hidden rounded-md border border-border/60" style={{ backgroundColor: neutralDisplayValue }}>
-                        <input type="color" value={neutralDisplayValue} onChange={(e) => setPaletteSeedNeutral(e.target.value)} className="absolute right-1 top-1 z-10 h-6 w-8 shrink-0 cursor-pointer rounded border border-black/25 bg-white/55 p-0.5" />
+                        <input
+                          type="color"
+                          value={neutralDisplayValue}
+                          onPointerDown={handleNativeColorPickStart}
+                          onFocus={handleNativeColorPickStart}
+                          onBlur={handleNativeColorPickEnd}
+                          onChange={(e) => {
+                            setPaletteSeedNeutral(e.target.value);
+                            handleNativeColorPickEnd();
+                          }}
+                          className="absolute right-1 top-1 z-10 h-6 w-8 shrink-0 cursor-pointer rounded border border-black/25 bg-white/55 p-0.5"
+                        />
                         <input
                           value={neutralDisplayValue}
                           onChange={(e) => setPaletteSeedNeutral(e.target.value)}
@@ -1433,7 +1509,12 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                 </section>
               ) : null}
 
-              <section className="rounded-xl border border-border/42 p-2.5 shadow-[0_10px_20px_-20px_rgba(15,23,42,0.35)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_68%,var(--background))] dark:border-border/45 dark:[background:color-mix(in_oklab,var(--background)_89%,var(--surface-2,var(--card)))]">
+              <section
+                className={[
+                  "rounded-xl border border-border/42 p-2.5 shadow-[0_10px_20px_-20px_rgba(15,23,42,0.35)] [background:color-mix(in_oklab,var(--surface-2,var(--card))_68%,var(--background))] dark:border-border/45 dark:[background:color-mix(in_oklab,var(--background)_89%,var(--surface-2,var(--card)))] transition-opacity duration-150",
+                  nativeColorPickActive ? "pointer-events-none opacity-0" : "opacity-100",
+                ].join(" ")}
+              >
                 <div className="flex flex-wrap items-start justify-between gap-1.5">
                   <h2 className="text-base font-semibold text-foreground">C. Composición y contexto</h2>
                   <p className="text-[10px] text-muted-foreground sm:text-right">
