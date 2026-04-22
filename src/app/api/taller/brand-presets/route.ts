@@ -3,6 +3,7 @@ import type { BrandMode } from "@/lib/brand/types";
 import { requireRole } from "@/lib/auth/serverSession";
 import { BusinessBrandConfig } from "@/models/BusinessBrandConfig";
 import {
+  deleteBrandPreset,
   listBrandPresetVaultItems,
   saveBrandPreset,
   setActiveBrandPreset,
@@ -162,4 +163,52 @@ export async function PUT(req: NextRequest) {
 
   const payload = await getVaultPayload(slug);
   return NextResponse.json({ ok: true, item: toBrandPresetVaultItem(updated), ...payload });
+}
+
+export async function DELETE(req: NextRequest) {
+  const ok = await requireAdminAuth();
+  if (!ok) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const raw = (await req.json().catch(() => null)) as unknown;
+  if (!isRecord(raw)) {
+    return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
+  }
+
+  const slug = normalizeBusinessSlug(asString(raw.slug));
+  const presetId = asString(raw.presetId);
+  const forceIfActive = raw.forceIfActive === true;
+  if (!slug || !presetId) {
+    return NextResponse.json({ ok: false, error: "Missing slug or presetId" }, { status: 400 });
+  }
+
+  const deleted = await deleteBrandPreset({
+    businessSlug: slug,
+    presetId,
+    forceIfActive,
+  });
+
+  if (!deleted.ok) {
+    if (deleted.reason === "active") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Active preset requires explicit confirmation",
+          requiresForceDelete: true,
+        },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ ok: false, error: "Preset not found" }, { status: 404 });
+  }
+
+  const payload = await getVaultPayload(slug);
+  return NextResponse.json({
+    ok: true,
+    deletedPresetId: deleted.deletedPresetId,
+    wasActive: deleted.wasActive,
+    heroReferenceWarning: deleted.heroReferenceWarning,
+    ...payload,
+  });
 }

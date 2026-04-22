@@ -2,6 +2,7 @@ import type { BrandMode } from "@/lib/brand/types";
 import { dbConnect } from "@/lib/db";
 import { BusinessBrandConfig } from "@/models/BusinessBrandConfig";
 import { BrandPreset } from "@/models/BrandPreset";
+import { HeroConfig } from "@/models/HeroConfig";
 import {
   BRAND_THEME_ACCENT_STYLE_OPTIONS,
   BRAND_THEME_HARMONY_OPTIONS,
@@ -70,6 +71,25 @@ export type SaveBrandPresetInput = {
   tokens?: Partial<BrandPresetTokens>;
   mode?: BrandMode;
 };
+
+export type DeleteBrandPresetInput = {
+  businessSlug: string;
+  presetId: string;
+  forceIfActive?: boolean;
+};
+
+export type DeleteBrandPresetResult =
+  | {
+      ok: false;
+      reason: "not-found" | "active";
+      preset?: BrandPresetRecord;
+    }
+  | {
+      ok: true;
+      deletedPresetId: string;
+      wasActive: boolean;
+      heroReferenceWarning: boolean;
+    };
 
 const BRAND_PRESET_SOURCE_MODE_OPTIONS: BrandPresetSourceMode[] = [
   "manual",
@@ -173,12 +193,20 @@ function toIsoString(input: unknown): string {
   return new Date().toISOString();
 }
 
+function buildFallbackPresetName(businessSlug: string, createdAt: unknown): string {
+  const createdIso = toIsoString(createdAt);
+  const shortDate = createdIso.slice(0, 10);
+  return `${businessSlug} - ${shortDate}`;
+}
+
 function toBrandPresetRecord(doc: BrandPresetLean | null | undefined): BrandPresetRecord | null {
   if (!doc) return null;
+  const createdAt = toIsoString(doc.createdAt);
+  const fallbackName = buildFallbackPresetName(doc.businessSlug, createdAt);
   return {
     id: toIdString(doc._id),
     businessSlug: doc.businessSlug,
-    name: doc.name,
+    name: asOptionalString(doc.name) ?? fallbackName,
     description: asOptionalString(doc.description),
     isActive: Boolean(doc.isActive),
     sourceMode: asSourceMode(doc.sourceMode) ?? "manual",
@@ -186,7 +214,7 @@ function toBrandPresetRecord(doc: BrandPresetLean | null | undefined): BrandPres
     accentStyle: asAccentStyle(doc.accentStyle) ?? DEFAULT_BRAND_THEME_CONFIG.accentStyle,
     typography: asTypography(doc.typography) ?? DEFAULT_BRAND_THEME_CONFIG.typographyPreset,
     tokens: doc.tokens,
-    createdAt: toIsoString(doc.createdAt),
+    createdAt,
     updatedAt: toIsoString(doc.updatedAt),
   };
 }
@@ -342,7 +370,10 @@ export async function saveBrandPreset(
 
   if (presetId && !existing) return null;
 
-  const name = asOptionalString(input.name) ?? asOptionalString(existing?.name);
+  const name =
+    asOptionalString(input.name) ??
+    asOptionalString(existing?.name) ??
+    buildFallbackPresetName(slug, existing?.createdAt);
   if (!name) return null;
 
   const tokens = resolveTokens(input.tokens, existing?.tokens);
@@ -397,6 +428,55 @@ export async function saveBrandPreset(
 
   const refreshed = (await BrandPreset.findById(persistedId).lean()) as BrandPresetLean | null;
   return toBrandPresetRecord(refreshed);
+}
+
+export async function deleteBrandPreset(
+  input: DeleteBrandPresetInput
+): Promise<DeleteBrandPresetResult> {
+  await dbConnect();
+
+  const slug = normalizeBusinessSlug(input.businessSlug);
+  const presetId = asOptionalString(input.presetId);
+  if (!slug || !presetId) {
+    return { ok: false, reason: "not-found" };
+  }
+
+  const target = (await BrandPreset.findOne({
+    _id: presetId,
+    businessSlug: slug,
+  }).lean()) as BrandPresetLean | null;
+  if (!target) {
+    return { ok: false, reason: "not-found" };
+  }
+
+  const config = await BusinessBrandConfig.findOne({ businessSlug: slug }).lean();
+  const configPresetId = toIdString(config?.activeBrandPresetId);
+  const wasActive = Boolean(target.isActive || configPresetId === presetId);
+  if (wasActive && !input.forceIfActive) {
+    return {
+      ok: false,
+      reason: "active",
+      preset: toBrandPresetRecord(target) ?? undefined,
+    };
+  }
+
+  if (wasActive) {
+    await BusinessBrandConfig.updateOne(
+      { businessSlug: slug, activeBrandPresetId: target._id },
+      { $set: { activeBrandPresetId: null } }
+    );
+  }
+
+  await BrandPreset.deleteOne({ _id: target._id, businessSlug: slug });
+
+  const heroReferenceWarning = Boolean(await HeroConfig.exists({ businessSlug: slug }));
+
+  return {
+    ok: true,
+    deletedPresetId: presetId,
+    wasActive,
+    heroReferenceWarning,
+  };
 }
 
 export async function getResolvedActiveBrandPreset(

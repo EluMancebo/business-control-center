@@ -23,7 +23,16 @@ const BrandPresetTokensSchema = new Schema(
 const BrandPresetSchema = new Schema(
   {
     businessSlug: { type: String, required: true, trim: true, lowercase: true, index: true },
-    name: { type: String, required: true, trim: true },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      default: function (this: { businessSlug?: string }) {
+        const slug = typeof this?.businessSlug === "string" ? this.businessSlug : "business";
+        const shortDate = new Date().toISOString().slice(0, 10);
+        return `${slug} - ${shortDate}`;
+      },
+    },
     description: { type: String, default: "" },
     isActive: { type: Boolean, default: false, index: true },
     sourceMode: {

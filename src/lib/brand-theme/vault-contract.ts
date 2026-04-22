@@ -46,10 +46,14 @@ export type BrandPresetVaultResponse =
       ok: true;
       error?: string;
       item?: BrandPresetVaultItem;
+      deletedPresetId?: string;
+      wasActive?: boolean;
+      heroReferenceWarning?: boolean;
     } & BrandPresetVaultSnapshot)
   | {
       ok: false;
       error: string;
+      requiresForceDelete?: boolean;
     };
 
 export function toBrandPresetVaultItem(
