@@ -443,6 +443,9 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const [presetVaultLoading, setPresetVaultLoading] = useState(false);
   const [presetVaultSaving, setPresetVaultSaving] = useState(false);
   const [presetVaultActivatingId, setPresetVaultActivatingId] = useState("");
+  const [presetVaultDeletingId, setPresetVaultDeletingId] = useState("");
+  const [presetVaultEditingId, setPresetVaultEditingId] = useState("");
+  const [presetVaultEditingName, setPresetVaultEditingName] = useState("");
   const [presetVaultError, setPresetVaultError] = useState("");
   const [vaultCollapsed, setVaultCollapsed] = useState(false);
   const sourceAssetPickerRef = useRef<HTMLDetailsElement | null>(null);
@@ -948,6 +951,134 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
       setPresetVaultActivatingId("");
     }
   }
+
+  function beginRenamePresetFromVault(item: BrandPresetVaultItem) {
+    setPresetVaultEditingId(item.id);
+    setPresetVaultEditingName(item.name);
+  }
+
+  function cancelRenamePresetFromVault() {
+    setPresetVaultEditingId("");
+    setPresetVaultEditingName("");
+  }
+
+  async function savePresetNameFromVault(presetId: string) {
+    if (!canUsePaletteEngine || !vaultSlug || !presetId) return;
+
+    const nextName = presetVaultEditingName.trim();
+    if (!nextName) {
+      setPresetVaultError("El nombre del preset no puede estar vacio.");
+      return;
+    }
+
+    setPresetVaultSaving(true);
+    setPresetVaultError("");
+    setSavePresetNotice("");
+    try {
+      const response = await fetch("/api/taller/brand-presets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: vaultSlug,
+          id: presetId,
+          name: nextName,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as BrandPresetVaultResponse | null;
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || "No se pudo renombrar el preset.");
+      }
+
+      if (Array.isArray(payload.items)) {
+        setPresetVaultItems(payload.items);
+      } else {
+        await loadPresetVault(vaultSlug);
+      }
+      setSavePresetNotice(`Nombre actualizado: ${nextName}`);
+      cancelRenamePresetFromVault();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "No se pudo renombrar el preset.";
+      setPresetVaultError(message);
+      setSavePresetNotice(message);
+    } finally {
+      setPresetVaultSaving(false);
+    }
+  }
+
+  async function deletePresetFromVault(item: BrandPresetVaultItem, forceIfActive = false) {
+    if (!canUsePaletteEngine || !vaultSlug) return;
+    if (typeof window === "undefined") return;
+
+    if (!forceIfActive) {
+      const confirmDelete = window.confirm(
+        `Eliminar preset "${item.name}"? Esta accion no se puede deshacer.`
+      );
+      if (!confirmDelete) return;
+    }
+
+    setPresetVaultDeletingId(item.id);
+    setPresetVaultError("");
+    setSavePresetNotice("");
+    try {
+      const response = await fetch("/api/taller/brand-presets", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: vaultSlug,
+          presetId: item.id,
+          forceIfActive,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as BrandPresetVaultResponse | null;
+
+      if (
+        !forceIfActive &&
+        response.status === 409 &&
+        payload &&
+        !payload.ok &&
+        payload.requiresForceDelete
+      ) {
+        const confirmActiveDelete = window.confirm(
+          "Este preset está activo. ¿Deseas continuar?"
+        );
+        if (confirmActiveDelete) {
+          await deletePresetFromVault(item, true);
+        }
+        return;
+      }
+
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || "No se pudo eliminar el preset.");
+      }
+
+      if (Array.isArray(payload.items)) {
+        setPresetVaultItems(payload.items);
+      } else {
+        await loadPresetVault(vaultSlug);
+      }
+      if (payload.mode === "light" || payload.mode === "dark" || payload.mode === "system") {
+        setPresetVaultMode(payload.mode);
+      }
+
+      const noticeParts = [`Preset eliminado: ${item.name}`];
+      if (payload.wasActive) noticeParts.push("(era el activo)");
+      if (payload.heroReferenceWarning) {
+        noticeParts.push("Aviso: revisa Hero publicado/draft tras este cambio.");
+      }
+      setSavePresetNotice(noticeParts.join(" "));
+
+      if (presetVaultEditingId === item.id) {
+        cancelRenamePresetFromVault();
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "No se pudo eliminar el preset.";
+      setPresetVaultError(message);
+      setSavePresetNotice(message);
+    } finally {
+      setPresetVaultDeletingId("");
+    }
+  }
+
   function applyVaultPresetToHero(vaultItem: BrandPresetVaultItem) {
     const heroInput = mapVaultPresetToHeroInput(vaultItem);
     console.log("[BrandLab] Hero prefill input", {
@@ -1244,7 +1375,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                         </span>
                       </div>
                       <div className="relative w-full overflow-hidden rounded-md border border-border/60" style={{ backgroundColor: paletteSeedPrimary || "#2563eb" }}>
-                        <input type="color" value={paletteSeedPrimary || "#2563eb"} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="absolute right-1 top-1 h-6 w-8 shrink-0 cursor-pointer rounded border border-black/25 bg-white/55 p-0.5" />
+                        <input type="color" value={paletteSeedPrimary || "#2563eb"} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="absolute right-1 top-1 z-10 h-6 w-8 shrink-0 cursor-pointer rounded border border-black/25 bg-white/55 p-0.5" />
                         <input value={paletteSeedPrimary} onChange={(e) => setPaletteSeedPrimary(e.target.value)} className="h-9 w-full border-0 bg-transparent px-2 pr-10 pt-0.5 font-mono text-[11px] font-semibold uppercase tracking-wide placeholder:opacity-70 focus:outline-none focus:ring-0" style={{ color: primarySwatchTextColor }} />
                       </div>
                     </div>
@@ -1258,7 +1389,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                         </div>
                       </div>
                       <div className="relative w-full overflow-hidden rounded-md border border-border/60" style={{ backgroundColor: accentDisplayValue }}>
-                        <input type="color" value={accentDisplayValue} onChange={(e) => setPaletteSeedAccent(e.target.value)} className="absolute right-1 top-1 h-6 w-8 shrink-0 cursor-pointer rounded border border-black/25 bg-white/55 p-0.5" />
+                        <input type="color" value={accentDisplayValue} onChange={(e) => setPaletteSeedAccent(e.target.value)} className="absolute right-1 top-1 z-10 h-6 w-8 shrink-0 cursor-pointer rounded border border-black/25 bg-white/55 p-0.5" />
                         <input
                           value={accentDisplayValue}
                           onChange={(e) => setPaletteSeedAccent(e.target.value)}
@@ -1283,7 +1414,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                         </div>
                       </div>
                       <div className="relative w-full overflow-hidden rounded-md border border-border/60" style={{ backgroundColor: neutralDisplayValue }}>
-                        <input type="color" value={neutralDisplayValue} onChange={(e) => setPaletteSeedNeutral(e.target.value)} className="absolute right-1 top-1 h-6 w-8 shrink-0 cursor-pointer rounded border border-black/25 bg-white/55 p-0.5" />
+                        <input type="color" value={neutralDisplayValue} onChange={(e) => setPaletteSeedNeutral(e.target.value)} className="absolute right-1 top-1 z-10 h-6 w-8 shrink-0 cursor-pointer rounded border border-black/25 bg-white/55 p-0.5" />
                         <input
                           value={neutralDisplayValue}
                           onChange={(e) => setPaletteSeedNeutral(e.target.value)}
@@ -1642,6 +1773,8 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                       item.tokens.surface3,
                     ];
                     const isActivating = presetVaultActivatingId === item.id;
+                    const isDeleting = presetVaultDeletingId === item.id;
+                    const isEditing = presetVaultEditingId === item.id;
                     const updatedLabel = formatVaultDate(item.updatedAt);
                     return (
                       <article
@@ -1654,6 +1787,32 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                       >
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                          {isEditing ? (
+                            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
+                              <input
+                                value={presetVaultEditingName}
+                                onChange={(event) => setPresetVaultEditingName(event.target.value)}
+                                className="h-7 min-w-[140px] flex-1 rounded-md border border-border/60 bg-background px-2 text-xs text-foreground outline-none"
+                                placeholder="Nombre del preset"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => savePresetNameFromVault(item.id)}
+                                disabled={presetVaultSaving || isDeleting}
+                                className="h-7 rounded-md border border-border/60 bg-background px-2 text-[10px] font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
+                              >
+                                {presetVaultSaving ? "Saving..." : "Guardar"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelRenamePresetFromVault}
+                                disabled={presetVaultSaving || isDeleting}
+                                className="h-7 rounded-md border border-border/60 bg-background px-2 text-[10px] font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : null}
                           <p className="truncate text-[11px] text-muted-foreground">
                             {item.businessSlug}
                             {updatedLabel ? ` · ${updatedLabel}` : ""}
@@ -1666,7 +1825,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                                 : "border-border/60 bg-background text-muted-foreground",
                             ].join(" ")}
                           >
-                            {item.isActive ? "Active" : "Draft"}
+                            {item.isActive ? "ACTIVE" : "INACTIVE"}
                           </span>
                         </div>
 
@@ -1697,21 +1856,46 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                           </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => applyVaultPresetToHero(item)}
-                          className="h-8 min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground transition hover:bg-muted"
-                        >
-                          Aplicar a Hero
-                        </button>
-                        <button
-                          type="button"
-                          disabled={item.isActive || Boolean(presetVaultActivatingId)}
-                          onClick={() => activatePresetFromVault(item.id)}
-                          className="h-8 min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
-                        >
-                          {item.isActive ? "Activo" : isActivating ? "Activando..." : "Activar preset"}
-                        </button>
+                        <div className="grid min-w-0 gap-1">
+                          <button
+                            type="button"
+                            onClick={() => applyVaultPresetToHero(item)}
+                            disabled={isDeleting}
+                            className="h-8 min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
+                          >
+                            Aplicar a Hero
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => beginRenamePresetFromVault(item)}
+                            disabled={isDeleting || presetVaultSaving}
+                            className="h-8 min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
+                          >
+                            Editar nombre
+                          </button>
+                        </div>
+                        <div className="grid min-w-0 gap-1">
+                          <button
+                            type="button"
+                            disabled={
+                              item.isActive ||
+                              Boolean(presetVaultActivatingId) ||
+                              Boolean(presetVaultDeletingId)
+                            }
+                            onClick={() => activatePresetFromVault(item.id)}
+                            className="h-8 min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
+                          >
+                            {item.isActive ? "Activo" : isActivating ? "Activando..." : "Activar preset"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deletePresetFromVault(item)}
+                            disabled={Boolean(presetVaultDeletingId) || Boolean(presetVaultActivatingId)}
+                            className="h-8 min-w-0 rounded-md border border-border/60 bg-background px-3 text-xs font-semibold text-foreground transition hover:bg-muted disabled:opacity-60"
+                          >
+                            {isDeleting ? "Eliminando..." : "Eliminar"}
+                          </button>
+                        </div>
                       </article>
                     );
                   })}
