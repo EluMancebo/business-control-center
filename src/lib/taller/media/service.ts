@@ -2,6 +2,7 @@ import type {
   AssetItem,
   AssetKind,
   AssetListQuery,
+  AssetScope,
   MediaAllowedComponent,
   MediaAssetRole,
   MediaFormatKind,
@@ -512,8 +513,64 @@ export function splitMediaListValue(value: unknown): string[] {
     .slice(0, 20);
 }
 
-export function parseMediaStatus(statusParam: string): AssetStatus {
-  return statusParam === "archived" ? "archived" : "active";
+export function parseMediaStatus(statusParam: string): AssetStatus | undefined {
+  const normalized = String(statusParam || "").trim().toLowerCase();
+  if (!normalized || normalized === "all") return undefined;
+  if (normalized === "archived") return "archived";
+  return "active";
+}
+
+export function parseMediaScopeParam(scopeParam: string): AssetScope | undefined {
+  const normalized = String(scopeParam || "").trim().toLowerCase();
+  if (!normalized || normalized === "all") return undefined;
+  if (normalized === "tenant") return "tenant";
+  if (normalized === "system") return "system";
+  return undefined;
+}
+
+export type MediaListCanonicalFilterInput = {
+  search?: string;
+  scope?: string;
+  status?: string;
+  assetRole?: string;
+  formatKind?: string;
+  allowedComponent?: string;
+  reviewStatus?: string;
+  preferredUsage?: string;
+  orientation?: string;
+};
+
+export function applyMediaListCanonicalFilters(
+  items: AssetItem[],
+  input: MediaListCanonicalFilterInput
+): AssetItem[] {
+  const search = String(input.search || "").trim().toLowerCase();
+  const scope = parseMediaScopeParam(input.scope || "");
+  const status = parseMediaStatus(input.status || "");
+  const assetRole = toCanonicalAssetRole(input.assetRole);
+  const formatKind = toCanonicalFormatKind(input.formatKind);
+  const allowedComponent = toCanonicalAllowedComponents(input.allowedComponent)?.[0];
+  const reviewStatus = toCanonicalReviewStatus(input.reviewStatus);
+  const preferredUsage = toCanonicalPreferredUsage(input.preferredUsage);
+  const orientation = toCanonicalOrientation(input.orientation);
+
+  return items.filter((item) => {
+    if (search) {
+      const haystack =
+        `${item.label} ${item.tags.join(" ")} ${item.allowedIn.join(" ")} ${item.assetRole} ${item.formatKind} ${item.preferredUsage ?? ""}`.toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    if (scope && item.scope !== scope) return false;
+    if (status && item.status !== status) return false;
+    if (assetRole && item.assetRole !== assetRole) return false;
+    if (formatKind && item.formatKind !== formatKind) return false;
+    if (allowedComponent && !item.allowedComponents.includes(allowedComponent)) return false;
+    if (reviewStatus && item.reviewStatus !== reviewStatus) return false;
+    if (preferredUsage !== undefined && preferredUsage !== null && item.preferredUsage !== preferredUsage)
+      return false;
+    if (orientation && item.orientation !== orientation) return false;
+    return true;
+  });
 }
 
 export function parseAssetPipelineStatusParam(
@@ -551,8 +608,9 @@ export function buildSystemMediaListQuery(input: {
   const query: AssetListQuery = {
     businessId: null,
     scope: "system",
-    status: parseMediaStatus(input.statusParam),
   };
+  const status = parseMediaStatus(input.statusParam);
+  if (status) query.status = status;
   if (tag) query.tags = tag;
   if (allowedIn) query.allowedIn = allowedIn;
   if (pipelineStatus) query.pipelineStatus = pipelineStatus;
@@ -590,16 +648,31 @@ export async function fetchSystemMediaClient(tagFilter: string): Promise<AssetIt
 }
 
 export async function fetchSystemMediaClientByQuery(input: {
+  search?: string;
   tag?: string;
+  formatKind?: MediaFormatKind;
+  assetRole?: MediaAssetRole;
+  allowedComponent?: MediaAllowedComponent;
+  reviewStatus?: MediaReviewStatus;
+  preferredUsage?: MediaPreferredUsage;
+  orientation?: MediaOrientation;
+  scope?: AssetScope | "all";
   allowedIn?: string;
   pipelineStatus?: AssetPipelineStatus;
   variantKey?: AssetVariantKey;
-  status?: AssetStatus;
+  status?: AssetStatus | "all";
 }): Promise<AssetItem[]> {
   const qs = new URLSearchParams();
-  qs.set("scope", "system");
+  qs.set("scope", input.scope ?? "system");
   qs.set("status", input.status ?? "active");
+  if (String(input.search || "").trim()) qs.set("search", String(input.search).trim());
   if (String(input.tag || "").trim()) qs.set("tag", String(input.tag).trim());
+  if (input.formatKind) qs.set("formatKind", input.formatKind);
+  if (input.assetRole) qs.set("assetRole", input.assetRole);
+  if (input.allowedComponent) qs.set("allowedComponent", input.allowedComponent);
+  if (input.reviewStatus) qs.set("reviewStatus", input.reviewStatus);
+  if (input.preferredUsage) qs.set("preferredUsage", input.preferredUsage);
+  if (input.orientation) qs.set("orientation", input.orientation);
   if (String(input.allowedIn || "").trim()) qs.set("allowedIn", String(input.allowedIn).trim());
   if (input.pipelineStatus) qs.set("pipelineStatus", input.pipelineStatus);
   if (input.variantKey) qs.set("variantKey", input.variantKey);

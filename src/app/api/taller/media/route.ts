@@ -10,6 +10,7 @@ import {
   updateSystemAssetMetadataRepository,
 } from "@/lib/taller/media/repository";
 import {
+  applyMediaListCanonicalFilters,
   buildSystemAssetStorageKey,
   buildSystemMediaListQuery,
   normalizeAssetItem,
@@ -50,7 +51,15 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const tag = (searchParams.get("tag") || "").trim();
   const allowedIn = (searchParams.get("allowedIn") || "").trim();
+  const search = (searchParams.get("search") || "").trim();
+  const scope = (searchParams.get("scope") || "").trim();
   const statusParam = (searchParams.get("status") || "active").trim();
+  const assetRole = (searchParams.get("assetRole") || "").trim();
+  const formatKind = (searchParams.get("formatKind") || "").trim();
+  const allowedComponent = (searchParams.get("allowedComponent") || "").trim();
+  const reviewStatus = (searchParams.get("reviewStatus") || "").trim();
+  const preferredUsage = (searchParams.get("preferredUsage") || "").trim();
+  const orientation = (searchParams.get("orientation") || "").trim();
   const pipelineStatus = (searchParams.get("pipelineStatus") || "").trim();
   const variantKey = (searchParams.get("variantKey") || "").trim();
 
@@ -61,7 +70,20 @@ export async function GET(req: NextRequest) {
     pipelineStatus,
     variantKey,
   });
-  const items = (await listSystemAssetsRepository(query)).map((item) => normalizeAssetItem(item));
+  const normalizedItems = (await listSystemAssetsRepository(query)).map((item) =>
+    normalizeAssetItem(item)
+  );
+  const items = applyMediaListCanonicalFilters(normalizedItems, {
+    search,
+    scope,
+    status: statusParam,
+    assetRole,
+    formatKind,
+    allowedComponent,
+    reviewStatus,
+    preferredUsage,
+    orientation,
+  });
   return NextResponse.json({ ok: true, items });
 }
 

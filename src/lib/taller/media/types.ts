@@ -93,12 +93,15 @@ export type AssetItem = {
 export type AssetListQuery = {
   businessId: AssetBusinessId;
   scope: AssetScope;
-  status: AssetStatus;
+  status?: AssetStatus;
   tags?: string;
   allowedIn?: string;
+  assetRole?: MediaAssetRole;
+  formatKind?: MediaFormatKind;
   allowedComponent?: MediaAllowedComponent;
   preferredUsage?: MediaPreferredUsage;
   reviewStatus?: MediaReviewStatus;
+  orientation?: MediaOrientation;
   variantKey?: AssetVariantKey;
   pipelineStatus?: AssetPipelineStatus;
 };
