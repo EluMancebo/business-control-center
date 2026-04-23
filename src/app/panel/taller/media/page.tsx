@@ -1,15 +1,25 @@
  "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BackToTop from "@/components/panel/BackToTop";
 import PageHeader from "@/components/panel/PageHeader";
 import PanelBadge from "@/components/panel/ui/PanelBadge";
 import PanelButton from "@/components/panel/ui/PanelButton";
 import PanelCard from "@/components/panel/ui/PanelCard";
-import type { AssetItem } from "@/lib/taller/media/types";
+import type {
+  AssetItem,
+  AssetScope,
+  AssetStatus,
+  MediaAllowedComponent,
+  MediaAssetRole,
+  MediaFormatKind,
+  MediaOrientation,
+  MediaPreferredUsage,
+  MediaReviewStatus,
+} from "@/lib/taller/media/types";
 import {
   deleteSystemMediaClient,
-  fetchSystemMediaClient,
+  fetchSystemMediaClientByQuery,
   formatBytes,
   type MediaVariantRequestResult,
   requestSystemAssetVariantClient,
@@ -17,9 +27,62 @@ import {
   uploadSystemMediaClient,
 } from "@/lib/taller/media/service";
 
-type KindFilter = "all" | AssetItem["kind"];
-type ScopeFilter = "all" | AssetItem["scope"];
+type FormatKindFilter = "all" | MediaFormatKind;
+type AssetRoleFilter = "all" | MediaAssetRole;
+type AllowedComponentFilter = "all" | MediaAllowedComponent;
+type ReviewStatusFilter = "all" | MediaReviewStatus;
+type ScopeFilter = "all" | AssetScope;
+type StatusFilter = "all" | AssetStatus;
+type PreferredUsageFilter = "all" | MediaPreferredUsage;
+type OrientationFilter = "all" | MediaOrientation;
 type RestrictionFilter = "all" | "restricted" | "open";
+
+const MEDIA_FORMAT_KIND_OPTIONS: MediaFormatKind[] = ["image", "svg", "video", "pdf"];
+const MEDIA_ASSET_ROLE_OPTIONS: MediaAssetRole[] = [
+  "logo",
+  "icon",
+  "photo",
+  "illustration",
+  "texture",
+  "document",
+  "video",
+];
+const MEDIA_ALLOWED_COMPONENT_OPTIONS: MediaAllowedComponent[] = [
+  "hero",
+  "banner",
+  "header",
+  "footer",
+  "popup",
+  "card",
+  "gallery",
+  "social",
+  "document",
+];
+const MEDIA_REVIEW_STATUS_OPTIONS: MediaReviewStatus[] = [
+  "draft",
+  "reviewed",
+  "approved",
+  "rejected",
+  "deprecated",
+];
+const MEDIA_PREFERRED_USAGE_OPTIONS: MediaPreferredUsage[] = [
+  "hero-background",
+  "hero-logo",
+  "navbar-logo",
+  "footer-mark",
+  "banner-background",
+  "popup-media",
+  "gallery-item",
+  "social-asset",
+  "card-media",
+  "document-embed",
+];
+const MEDIA_ORIENTATION_OPTIONS: MediaOrientation[] = [
+  "landscape",
+  "portrait",
+  "square",
+  "unknown",
+];
 
 const ALLOWED_IN_OPTIONS = [
   "hero.background",
@@ -105,7 +168,7 @@ const UPLOAD_FEEDBACK_META: Record<
 > = {
   uploading: {
     label: "Subiendo asset base...",
-    description: "Guardando archivo en la librería del sistema.",
+    description: "Guardando archivo en la libreria del sistema.",
     tone: "processing",
   },
   success: {
@@ -115,7 +178,7 @@ const UPLOAD_FEEDBACK_META: Record<
   },
   error: {
     label: "Error al subir.",
-    description: "Revisa el archivo e inténtalo de nuevo.",
+    description: "Revisa el archivo e intentalo de nuevo.",
     tone: "danger",
   },
 };
@@ -329,11 +392,11 @@ function buildSvgTechnicalDetail(
     parts.push(`${svgAnalysis.colorsCount} colores`);
   }
   if (svgAnimation?.suitability?.recommendedAnimation) {
-    parts.push(`animación ${svgAnimation.suitability.recommendedAnimation}`);
+    parts.push(`animacion ${svgAnimation.suitability.recommendedAnimation}`);
   }
 
   if (parts.length === 0) return undefined;
-  return parts.join(" · ");
+  return parts.join(" - ");
 }
 
 export default function TallerMediaPage() {
@@ -349,10 +412,17 @@ export default function TallerMediaPage() {
 
   const [searchFilter, setSearchFilter] = useState("");
   const [tagFilter, setTagFilter] = useState("");
-  const [kindFilter, setKindFilter] = useState<KindFilter>("all");
+  const [formatKindFilter, setFormatKindFilter] = useState<FormatKindFilter>("all");
+  const [assetRoleFilter, setAssetRoleFilter] = useState<AssetRoleFilter>("all");
+  const [allowedComponentFilter, setAllowedComponentFilter] = useState<AllowedComponentFilter>("all");
+  const [reviewStatusFilter, setReviewStatusFilter] = useState<ReviewStatusFilter>("all");
+  const [preferredUsageFilter, setPreferredUsageFilter] = useState<PreferredUsageFilter>("all");
+  const [orientationFilter, setOrientationFilter] = useState<OrientationFilter>("all");
   const [scopeFilter, setScopeFilter] = useState<ScopeFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
   const [restrictionFilter, setRestrictionFilter] = useState<RestrictionFilter>("all");
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [expandedVariantsByAssetId, setExpandedVariantsByAssetId] = useState<
     Record<string, true>
   >({});
@@ -404,14 +474,52 @@ export default function TallerMediaPage() {
     }
   }
 
-  async function load(options?: { silent?: boolean }) {
+  const currentListQuery = useMemo(
+    () => ({
+      scope: scopeFilter,
+      status: statusFilter,
+      search: searchFilter.trim() || undefined,
+      tag: tagFilter.trim() || undefined,
+      formatKind: formatKindFilter === "all" ? undefined : formatKindFilter,
+      assetRole: assetRoleFilter === "all" ? undefined : assetRoleFilter,
+      allowedComponent: allowedComponentFilter === "all" ? undefined : allowedComponentFilter,
+      reviewStatus: reviewStatusFilter === "all" ? undefined : reviewStatusFilter,
+      preferredUsage: preferredUsageFilter === "all" ? undefined : preferredUsageFilter,
+      orientation: orientationFilter === "all" ? undefined : orientationFilter,
+    }),
+    [
+      scopeFilter,
+      statusFilter,
+      searchFilter,
+      tagFilter,
+      formatKindFilter,
+      assetRoleFilter,
+      allowedComponentFilter,
+      reviewStatusFilter,
+      preferredUsageFilter,
+      orientationFilter,
+    ]
+  );
+
+  const load = useCallback(async (options?: { silent?: boolean }) => {
     const isSilentRefresh = options?.silent === true;
     if (!isSilentRefresh) {
       setLoading(true);
     }
     setError(null);
     try {
-      const nextItems = await fetchSystemMediaClient("");
+      const nextItems = await fetchSystemMediaClientByQuery({
+        scope: currentListQuery.scope,
+        status: currentListQuery.status,
+        search: currentListQuery.search,
+        tag: currentListQuery.tag,
+        formatKind: currentListQuery.formatKind,
+        assetRole: currentListQuery.assetRole,
+        allowedComponent: currentListQuery.allowedComponent,
+        reviewStatus: currentListQuery.reviewStatus,
+        preferredUsage: currentListQuery.preferredUsage,
+        orientation: currentListQuery.orientation,
+      });
       setItems(nextItems);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error loading assets");
@@ -420,11 +528,11 @@ export default function TallerMediaPage() {
         setLoading(false);
       }
     }
-  }
+  }, [currentListQuery]);
 
   useEffect(() => {
-    load();
-  }, []);
+    void load();
+  }, [load]);
 
   useEffect(() => {
     const shouldLockBody = isUploadSheetOpen || Boolean(editingId);
@@ -481,13 +589,23 @@ export default function TallerMediaPage() {
     const tag = tagFilter.trim().toLowerCase();
 
     return items.filter((item) => {
-      if (kindFilter !== "all" && item.kind !== kindFilter) return false;
+      if (formatKindFilter !== "all" && item.formatKind !== formatKindFilter) return false;
+      if (assetRoleFilter !== "all" && item.assetRole !== assetRoleFilter) return false;
+      if (allowedComponentFilter !== "all" && !item.allowedComponents.includes(allowedComponentFilter))
+        return false;
+      if (reviewStatusFilter !== "all" && item.reviewStatus !== reviewStatusFilter) return false;
+      if (preferredUsageFilter !== "all" && item.preferredUsage !== preferredUsageFilter) return false;
+      if (orientationFilter !== "all" && item.orientation !== orientationFilter) return false;
       if (scopeFilter !== "all" && item.scope !== scopeFilter) return false;
+      if (statusFilter !== "all" && item.status !== statusFilter) return false;
 
       if (restrictionFilter === "restricted" && item.allowedIn.length === 0) return false;
       if (restrictionFilter === "open" && item.allowedIn.length > 0) return false;
 
-      if (search && !item.label.toLowerCase().includes(search)) return false;
+      if (search) {
+        const searchText = `${item.label} ${item.tags.join(" ")} ${item.allowedIn.join(" ")}`.toLowerCase();
+        if (!searchText.includes(search)) return false;
+      }
 
       if (tag) {
         const tagsText = item.tags.join(" ").toLowerCase();
@@ -496,7 +614,20 @@ export default function TallerMediaPage() {
 
       return true;
     });
-  }, [items, searchFilter, tagFilter, kindFilter, scopeFilter, restrictionFilter]);
+  }, [
+    items,
+    searchFilter,
+    tagFilter,
+    formatKindFilter,
+    assetRoleFilter,
+    allowedComponentFilter,
+    reviewStatusFilter,
+    preferredUsageFilter,
+    orientationFilter,
+    scopeFilter,
+    statusFilter,
+    restrictionFilter,
+  ]);
 
   const groupedAssets = useMemo<AssetGroup[]>(() => {
     const originals = filteredItems.filter((item) => isOriginalAsset(item));
@@ -558,8 +689,14 @@ export default function TallerMediaPage() {
   const hasActiveFilters = Boolean(
     searchFilter.trim() ||
       tagFilter.trim() ||
-      kindFilter !== "all" ||
+      formatKindFilter !== "all" ||
+      assetRoleFilter !== "all" ||
+      allowedComponentFilter !== "all" ||
+      reviewStatusFilter !== "all" ||
+      preferredUsageFilter !== "all" ||
+      orientationFilter !== "all" ||
       scopeFilter !== "all" ||
+      statusFilter !== "active" ||
       restrictionFilter !== "all"
   );
 
@@ -625,7 +762,7 @@ export default function TallerMediaPage() {
       setUploadVisibility("shared");
       setUploadSector("general");
       setUploadFeedbackState("success");
-      setNotice('Asset base subido ✓. Genera derivadas desde "Ver variantes" cuando lo necesites.');
+      setNotice('Asset base subido ?. Genera derivadas desde "Ver variantes" cuando lo necesites.');
       if (closeSheetAfterSave) {
         uploadCloseSheetTimerRef.current = window.setTimeout(() => {
           setIsUploadSheetOpen(false);
@@ -703,7 +840,7 @@ export default function TallerMediaPage() {
         allowedIn: [...editAllowedInSelection, ...editAllowedInExtra].join(", "),
       });
       cancelEdit();
-      setNotice("Asset actualizado ✓");
+      setNotice("Asset actualizado ?");
       await load({ silent: true });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Update failed");
@@ -714,7 +851,7 @@ export default function TallerMediaPage() {
 
   async function removeAsset(item: AssetItem) {
     const confirmed = window.confirm(
-      `¿Borrar asset "${item.label}"? Esta acción elimina el archivo y su metadata.`
+      `?Borrar asset "${item.label}"? Esta accion elimina el archivo y su metadata.`
     );
     if (!confirmed) return;
 
@@ -727,7 +864,7 @@ export default function TallerMediaPage() {
       if (editingId === item._id) {
         cancelEdit();
       }
-      setNotice("Asset eliminado ✓");
+      setNotice("Asset eliminado ?");
       await load();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Delete failed");
@@ -743,7 +880,7 @@ export default function TallerMediaPage() {
         [original._id]: {
           tone: "error",
           title: "No se pudo iniciar la variante.",
-          detail: "Solo se pueden generar variantes desde un asset raíz.",
+          detail: "Solo se pueden generar variantes desde un asset raiz.",
         },
       }));
       return;
@@ -825,7 +962,7 @@ export default function TallerMediaPage() {
   async function copy(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      setNotice("URL copiada ✓");
+      setNotice("URL copiada ?");
     } catch {
       setNotice("No se pudo copiar la URL");
     }
@@ -838,9 +975,16 @@ export default function TallerMediaPage() {
   function clearFilters() {
     setSearchFilter("");
     setTagFilter("");
-    setKindFilter("all");
+    setFormatKindFilter("all");
+    setAssetRoleFilter("all");
+    setAllowedComponentFilter("all");
+    setReviewStatusFilter("all");
+    setPreferredUsageFilter("all");
+    setOrientationFilter("all");
     setScopeFilter("all");
+    setStatusFilter("active");
     setRestrictionFilter("all");
+    setIsAdvancedFiltersOpen(false);
   }
 
   function toggleVariantsVisibility(assetId: string) {
@@ -973,8 +1117,8 @@ export default function TallerMediaPage() {
         }
       />
 
-      <div className="min-h-16">
-        <div className={`rounded-xl p-3 text-sm transition-opacity duration-200 ${globalFeedbackClass}`}>
+      <div className="min-h-12">
+        <div className={`rounded-xl p-2 text-sm transition-opacity duration-200 ${globalFeedbackClass}`}>
           <div className="flex items-center gap-2">
             <PanelBadge
               tone={globalFeedbackTone === "idle" ? "neutral" : globalFeedbackTone}
@@ -1005,9 +1149,9 @@ export default function TallerMediaPage() {
           id="media-filters-panel"
           className={`${isMobileFiltersOpen ? "mt-3" : "hidden"} space-y-3 lg:mt-0 lg:block lg:space-y-0`}
         >
-          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_auto]">
+          <div className="grid items-end gap-2 lg:grid-cols-3 xl:grid-cols-[minmax(260px,1.6fr)_repeat(4,minmax(120px,1fr))_auto]">
             <label className="grid gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Buscar por label</span>
+              <span className="text-xs font-medium text-muted-foreground">Buscar</span>
               <input
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
@@ -1016,8 +1160,8 @@ export default function TallerMediaPage() {
               />
             </label>
 
-            <label className="grid gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Tag libre</span>
+            <label className={`grid gap-1 ${isAdvancedFiltersOpen ? "" : "hidden"}`}>
+              <span className="text-xs font-medium text-muted-foreground">Etiqueta libre</span>
               <input
                 value={tagFilter}
                 onChange={(e) => setTagFilter(e.target.value)}
@@ -1027,7 +1171,103 @@ export default function TallerMediaPage() {
             </label>
 
             <label className="grid gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Tag guiado</span>
+              <span className="text-xs font-medium text-muted-foreground">Formato</span>
+              <select
+                value={formatKindFilter}
+                onChange={(e) => setFormatKindFilter(e.target.value as FormatKindFilter)}
+                className={selectClass}
+              >
+                <option value="all">Todos</option>
+                {MEDIA_FORMAT_KIND_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Rol de asset</span>
+              <select
+                value={assetRoleFilter}
+                onChange={(e) => setAssetRoleFilter(e.target.value as AssetRoleFilter)}
+                className={selectClass}
+              >
+                <option value="all">Todos</option>
+                {MEDIA_ASSET_ROLE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Componente permitido</span>
+              <select
+                value={allowedComponentFilter}
+                onChange={(e) => setAllowedComponentFilter(e.target.value as AllowedComponentFilter)}
+                className={selectClass}
+              >
+                <option value="all">Todos</option>
+                {MEDIA_ALLOWED_COMPONENT_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {isAdvancedFiltersOpen ? (
+              <div className="lg:col-span-3 xl:col-span-6 mt-1 rounded-md border border-border/60 px-2 py-1 text-[11px] font-medium text-muted-foreground [background:var(--surface-2,var(--background))]">
+                Filtros heredados / avanzados
+              </div>
+            ) : null}
+
+            <label className={`grid gap-1 ${isAdvancedFiltersOpen ? "" : "hidden"}`}>
+              <span className="text-xs font-medium text-muted-foreground">Estado de revisión</span>
+              <select
+                value={reviewStatusFilter}
+                onChange={(e) => setReviewStatusFilter(e.target.value as ReviewStatusFilter)}
+                className={selectClass}
+              >
+                <option value="all">Todos</option>
+                {MEDIA_REVIEW_STATUS_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className={`grid gap-1 ${isAdvancedFiltersOpen ? "" : "hidden"}`}>
+              <span className="text-xs font-medium text-muted-foreground">Ámbito</span>
+              <select
+                value={scopeFilter}
+                onChange={(e) => setScopeFilter(e.target.value as ScopeFilter)}
+                className={selectClass}
+              >
+                <option value="all">Todos</option>
+                <option value="system">Sistema</option>
+                <option value="tenant">Cliente</option>
+              </select>
+            </label>
+
+            <label className="grid gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Estado</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                className={selectClass}
+              >
+                <option value="active">Activo</option>
+                <option value="archived">Archivado</option>
+                <option value="all">Todos</option>
+              </select>
+            </label>
+
+            <label className={`grid gap-1 ${isAdvancedFiltersOpen ? "" : "hidden"}`}>
+              <span className="text-xs font-medium text-muted-foreground">Etiqueta guiada</span>
               <select
                 value={selectedTagFromCatalog}
                 onChange={(e) => setTagFilter(e.target.value)}
@@ -1042,85 +1282,104 @@ export default function TallerMediaPage() {
               </select>
             </label>
 
-            <label className="grid gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Tipo</span>
+            <label className={`grid gap-1 ${isAdvancedFiltersOpen ? "" : "hidden"}`}>
+              <span className="text-xs font-medium text-muted-foreground">Uso preferente</span>
               <select
-                value={kindFilter}
-                onChange={(e) => setKindFilter(e.target.value as KindFilter)}
+                value={preferredUsageFilter}
+                onChange={(e) => setPreferredUsageFilter(e.target.value as PreferredUsageFilter)}
                 className={selectClass}
               >
                 <option value="all">Todos</option>
-                <option value="image">Imagen</option>
-                <option value="svg">SVG</option>
-                <option value="video">Video</option>
+                {MEDIA_PREFERRED_USAGE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
               </select>
             </label>
 
-            <label className="grid gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Scope</span>
+            <label className={`grid gap-1 ${isAdvancedFiltersOpen ? "" : "hidden"}`}>
+              <span className="text-xs font-medium text-muted-foreground">Orientación</span>
               <select
-                value={scopeFilter}
-                onChange={(e) => setScopeFilter(e.target.value as ScopeFilter)}
+                value={orientationFilter}
+                onChange={(e) => setOrientationFilter(e.target.value as OrientationFilter)}
                 className={selectClass}
               >
-                <option value="all">Todos</option>
-                <option value="system">System</option>
-                <option value="tenant">Tenant</option>
+                <option value="all">Todas</option>
+                {MEDIA_ORIENTATION_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
               </select>
             </label>
 
-            <div className="flex items-end">
-              <PanelButton type="button" onClick={clearFilters} className="h-10 w-full">
+            <div className="flex items-end gap-2 xl:justify-end">
+              <PanelButton
+                type="button"
+                onClick={() => setIsAdvancedFiltersOpen((prev) => !prev)}
+                className="h-10 px-3 text-xs"
+              >
+                {isAdvancedFiltersOpen ? "Ocultar avanzados" : "Más filtros"}
+              </PanelButton>
+              <PanelButton type="button" onClick={clearFilters} className="h-10 px-3 text-xs">
                 Limpiar
               </PanelButton>
             </div>
           </div>
 
-          {tagStats.length > 0 ? (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {tagStats.slice(0, 10).map((entry) => (
+          {isAdvancedFiltersOpen ? (
+            <div className="mt-3 rounded-md border border-border/60 p-2 [background:var(--surface-2,var(--background))]">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs font-medium text-muted-foreground">Restricción heredada:</span>
                 <button
-                  key={entry.tag}
                   type="button"
-                  onClick={() => setTagFilter(entry.tag)}
-                  className="inline-flex items-center rounded-full border border-(--badge-bg) px-2 py-1 text-xs transition-colors duration-200 bg-(--badge-bg) text-(--badge-fg) hover:opacity-90"
+                  onClick={() => setRestrictionFilter("all")}
+                  className="rounded-full border border-border px-2 py-0.5 text-[11px] [background:var(--surface-1,var(--background))] text-(--text-subtle)"
                 >
-                  {entry.tag} · {entry.count}
+                  Todos
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => setRestrictionFilter("restricted")}
+                  className="rounded-full border border-border px-2 py-0.5 text-[11px] [background:var(--surface-1,var(--background))] text-(--text-subtle)"
+                >
+                  Restringidos (`allowedIn`)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRestrictionFilter("open")}
+                  className="rounded-full border border-border px-2 py-0.5 text-[11px] [background:var(--surface-1,var(--background))] text-(--text-subtle)"
+                >
+                  Uso libre
+                </button>
+              </div>
+
+              {tagStats.length > 0 ? (
+                <div className="mt-2 border-t border-border/60 pt-2">
+                  <p className="mb-1 text-[11px] font-medium text-muted-foreground">Tags frecuentes</p>
+                  <div className="flex max-h-20 flex-wrap gap-1.5 overflow-y-auto pr-1">
+                    {tagStats.slice(0, 8).map((entry) => (
+                      <button
+                        key={entry.tag}
+                        type="button"
+                        onClick={() => setTagFilter(entry.tag)}
+                        className="inline-flex items-center rounded-full border border-(--badge-bg) px-2 py-0.5 text-[11px] transition-colors duration-200 bg-(--badge-bg) text-(--badge-fg) hover:opacity-90"
+                      >
+                        {entry.tag} - {entry.count}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-muted-foreground">Uso:</span>
-            <button
-              type="button"
-              onClick={() => setRestrictionFilter("all")}
-              className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] text-(--text-subtle)"
-            >
-              Todos
-            </button>
-            <button
-              type="button"
-              onClick={() => setRestrictionFilter("restricted")}
-              className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] text-(--text-subtle)"
-            >
-              Restringidos (`allowedIn`)
-            </button>
-            <button
-              type="button"
-              onClick={() => setRestrictionFilter("open")}
-              className="rounded-full border border-border px-2 py-1 text-xs [background:var(--surface-2,var(--background))] text-(--text-subtle)"
-            >
-              Uso libre
-            </button>
-          </div>
         </div>
 
         <div className="mt-4 rounded-lg border border-border px-3 py-2 text-xs shadow-sm [background:var(--surface-2,var(--background))] text-(--text-subtle)">
           {loading
             ? "Cargando assets..."
-            : `${filteredItems.length} visibles de ${items.length} activos · filtro de restriccion: ${restrictionFilter}`}
+            : `${filteredItems.length} visibles de ${items.length} cargados - estado: ${statusFilter} - restricción: ${restrictionFilter}`}
         </div>
       </section>
 
@@ -1128,12 +1387,12 @@ export default function TallerMediaPage() {
         <PanelCard className="hidden p-5 lg:block">
           <div className="text-sm font-semibold">Subir nuevo asset</div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Alta guiada para libreria del sistema (Capa 1), con taxonomía controlada.
+            Alta guiada para libreria del sistema (Capa 1), con taxonomia controlada.
           </p>
 
           <form onSubmit={onUpload} className="mt-4 grid gap-3">
             <PanelCard variant="task" className="p-3">
-              <p className="text-xs font-semibold text-foreground">Bloque 1 · Asset base</p>
+              <p className="text-xs font-semibold text-foreground">Bloque 1 - Asset base</p>
               <div className="mt-2 grid gap-3">
                 <label className="grid gap-1">
                   <span className="text-xs font-medium text-muted-foreground">Archivo</span>
@@ -1154,7 +1413,7 @@ export default function TallerMediaPage() {
                     {desktopSelectedFileName ? "Cambiar archivo" : "Seleccionar archivo"}
                   </PanelButton>
                   <span className="min-h-4 text-[11px] text-(--text-subtle)">
-                    {desktopSelectedFileName || "Aún no has seleccionado un archivo."}
+                    {desktopSelectedFileName || "Aun no has seleccionado un archivo."}
                   </span>
                 </label>
 
@@ -1171,10 +1430,10 @@ export default function TallerMediaPage() {
             </PanelCard>
 
             <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
-              <p className="text-xs font-semibold text-foreground">Bloque 2 · Clasificación base</p>
+              <p className="text-xs font-semibold text-foreground">Bloque 2 - Clasificacion base</p>
               <div className="mt-2 grid gap-3">
                 <label className="grid gap-1">
-                  <span className="text-xs font-medium text-muted-foreground">Categoría visual</span>
+                  <span className="text-xs font-medium text-muted-foreground">Categoria visual</span>
                   <select
                     value={visualCategory}
                     onChange={(e) => setVisualCategory(e.target.value as VisualCategory)}
@@ -1201,10 +1460,10 @@ export default function TallerMediaPage() {
             </div>
 
             <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
-              <p className="text-xs font-semibold text-foreground">Bloque 3 · Perfil visual</p>
+              <p className="text-xs font-semibold text-foreground">Bloque 3 - Perfil visual</p>
               <div className="mt-2 grid gap-3">
                 <div className="grid gap-1">
-                  <span className="text-xs font-medium text-muted-foreground">Estilo (máx. 2)</span>
+                  <span className="text-xs font-medium text-muted-foreground">Estilo (max. 2)</span>
                   <div className="flex flex-wrap gap-2">
                     {STYLE_OPTIONS.map((option) => {
                       const selected = styleSelection.includes(option);
@@ -1234,7 +1493,7 @@ export default function TallerMediaPage() {
                 </div>
 
                 <div className="grid gap-1">
-                  <span className="text-xs font-medium text-muted-foreground">Color (máx. 2)</span>
+                  <span className="text-xs font-medium text-muted-foreground">Color (max. 2)</span>
                   <div className="flex flex-wrap gap-2">
                     {COLOR_OPTIONS.map((option) => {
                       const selected = colorSelection.includes(option);
@@ -1264,7 +1523,7 @@ export default function TallerMediaPage() {
                 </div>
 
                 <div className="grid gap-1">
-                  <span className="text-xs font-medium text-muted-foreground">Intención (máx. 3)</span>
+                  <span className="text-xs font-medium text-muted-foreground">Intencion (max. 3)</span>
                   <div className="flex flex-wrap gap-2">
                     {INTENTION_OPTIONS.map((option) => {
                       const selected = intentionSelection.includes(option);
@@ -1296,7 +1555,7 @@ export default function TallerMediaPage() {
             </div>
 
             <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
-              <p className="text-xs font-semibold text-foreground">Bloque 4 · Ownership / alcance</p>
+              <p className="text-xs font-semibold text-foreground">Bloque 4 - Ownership / alcance</p>
               <div className="mt-2 grid gap-3">
                 <label className="grid gap-1">
                   <span className="text-xs font-medium text-muted-foreground">Scope</span>
@@ -1348,14 +1607,14 @@ export default function TallerMediaPage() {
                 <label className="grid gap-1">
                   <span className="text-xs font-medium text-muted-foreground">Business / client (siguiente fase)</span>
                   <select disabled className={`${uploadSelectClass} opacity-60`} value="">
-                    <option value="">No conectado aún</option>
+                    <option value="">No conectado aun</option>
                   </select>
                 </label>
               </div>
             </div>
 
             <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
-              <p className="text-xs font-semibold text-foreground">Bloque 5 · Restricción de uso (`allowedIn`)</p>
+              <p className="text-xs font-semibold text-foreground">Bloque 5 - Restriccion de uso (`allowedIn`)</p>
               <p className="mt-1 text-[11px] text-muted-foreground">
                 Si no seleccionas nada, el asset queda en uso libre.
               </p>
@@ -1436,7 +1695,7 @@ export default function TallerMediaPage() {
                 const availableVariantKeys = availableVariantSlots.map((slot) => slot.title);
                 const availableVariantSummary =
                   availableVariantKeys.length > 0
-                    ? availableVariantKeys.join(" · ")
+                    ? availableVariantKeys.join(" - ")
                     : "Sin variantes generadas";
                 const busyVariantParts = variantBusyKey?.split(":") ?? [];
                 const busySourceAssetId = busyVariantParts[0] ?? null;
@@ -1489,7 +1748,7 @@ export default function TallerMediaPage() {
                         ? variantFeedbackState?.title ?? "Error al generar"
                         : variantFeedbackState?.title ??
                           (missingVariantSlots.length > 0
-                            ? "Generación manual de variantes"
+                            ? "Generacion manual de variantes"
                             : "Variantes completas");
                 const feedbackDetail = feedbackTone === "processing"
                   ? `Trabajando en ${busyVariantSlot?.title ?? "la variante"}...`
@@ -1504,7 +1763,7 @@ export default function TallerMediaPage() {
                             ? `Selecciona un slot para generar: ${missingVariantSlots
                                 .map((slot) => slot.title)
                                 .join(", ")}.`
-                            : "Todas las variantes principales están generadas.");
+                            : "Todas las variantes principales estan generadas.");
                 const feedbackTechnicalDetail =
                   semanticFeedbackTone === "success"
                     ? variantFeedbackState?.technicalDetail
@@ -1536,7 +1795,7 @@ export default function TallerMediaPage() {
                               <div className="min-w-0">
                                 <h3 className="truncate text-sm font-semibold text-foreground">{original.label}</h3>
                                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                                  {formatBytes(original.bytes)} · {original.mime || original.kind}
+                                  {formatBytes(original.bytes)} - {original.mime || original.kind}
                                 </p>
                               </div>
 
@@ -1942,7 +2201,7 @@ export default function TallerMediaPage() {
             <div className="max-h-[calc(88vh-64px)] overflow-y-auto p-4">
               <form onSubmit={onUpload} className="grid gap-3">
                 <PanelCard variant="task" className="p-3">
-                  <p className="text-xs font-semibold text-foreground">Bloque 1 · Asset base</p>
+                  <p className="text-xs font-semibold text-foreground">Bloque 1 - Asset base</p>
                   <div className="mt-2 grid gap-3">
                     <label className="grid gap-1">
                       <span className="text-xs font-medium text-muted-foreground">Archivo</span>
@@ -1963,7 +2222,7 @@ export default function TallerMediaPage() {
                         {mobileSelectedFileName ? "Cambiar archivo" : "Seleccionar archivo"}
                       </PanelButton>
                       <span className="min-h-4 text-[11px] text-(--text-subtle)">
-                        {mobileSelectedFileName || "Aún no has seleccionado un archivo."}
+                        {mobileSelectedFileName || "Aun no has seleccionado un archivo."}
                       </span>
                     </label>
 
@@ -1980,10 +2239,10 @@ export default function TallerMediaPage() {
                 </PanelCard>
 
                 <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
-                  <p className="text-xs font-semibold text-foreground">Bloque 2 · Clasificación base</p>
+                  <p className="text-xs font-semibold text-foreground">Bloque 2 - Clasificacion base</p>
                   <div className="mt-2 grid gap-3">
                     <label className="grid gap-1">
-                      <span className="text-xs font-medium text-muted-foreground">Categoría visual</span>
+                      <span className="text-xs font-medium text-muted-foreground">Categoria visual</span>
                       <select
                         value={visualCategory}
                         onChange={(e) => setVisualCategory(e.target.value as VisualCategory)}
@@ -2010,10 +2269,10 @@ export default function TallerMediaPage() {
                 </div>
 
                 <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
-                  <p className="text-xs font-semibold text-foreground">Bloque 3 · Perfil visual</p>
+                  <p className="text-xs font-semibold text-foreground">Bloque 3 - Perfil visual</p>
                   <div className="mt-2 grid gap-3">
                     <div className="grid gap-1">
-                      <span className="text-xs font-medium text-muted-foreground">Estilo (máx. 2)</span>
+                      <span className="text-xs font-medium text-muted-foreground">Estilo (max. 2)</span>
                       <div className="flex flex-wrap gap-2">
                         {STYLE_OPTIONS.map((option) => {
                           const selected = styleSelection.includes(option);
@@ -2043,7 +2302,7 @@ export default function TallerMediaPage() {
                     </div>
 
                     <div className="grid gap-1">
-                      <span className="text-xs font-medium text-muted-foreground">Color (máx. 2)</span>
+                      <span className="text-xs font-medium text-muted-foreground">Color (max. 2)</span>
                       <div className="flex flex-wrap gap-2">
                         {COLOR_OPTIONS.map((option) => {
                           const selected = colorSelection.includes(option);
@@ -2073,7 +2332,7 @@ export default function TallerMediaPage() {
                     </div>
 
                     <div className="grid gap-1">
-                      <span className="text-xs font-medium text-muted-foreground">Intención (máx. 3)</span>
+                      <span className="text-xs font-medium text-muted-foreground">Intencion (max. 3)</span>
                       <div className="flex flex-wrap gap-2">
                         {INTENTION_OPTIONS.map((option) => {
                           const selected = intentionSelection.includes(option);
@@ -2105,7 +2364,7 @@ export default function TallerMediaPage() {
                 </div>
 
                 <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
-                  <p className="text-xs font-semibold text-foreground">Bloque 4 · Ownership / alcance</p>
+                  <p className="text-xs font-semibold text-foreground">Bloque 4 - Ownership / alcance</p>
                   <div className="mt-2 grid gap-3">
                     <label className="grid gap-1">
                       <span className="text-xs font-medium text-muted-foreground">Scope</span>
@@ -2157,14 +2416,14 @@ export default function TallerMediaPage() {
                     <label className="grid gap-1">
                       <span className="text-xs font-medium text-muted-foreground">Business / client (siguiente fase)</span>
                       <select disabled className={`${uploadSelectClass} opacity-60`} value="">
-                        <option value="">No conectado aún</option>
+                        <option value="">No conectado aun</option>
                       </select>
                     </label>
                   </div>
                 </div>
 
                 <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
-                  <p className="text-xs font-semibold text-foreground">Bloque 5 · Restricción de uso (`allowedIn`)</p>
+                  <p className="text-xs font-semibold text-foreground">Bloque 5 - Restriccion de uso (`allowedIn`)</p>
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     Si no seleccionas nada, el asset queda en uso libre.
                   </p>
@@ -2256,10 +2515,10 @@ export default function TallerMediaPage() {
               </label>
 
               <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
-                <p className="text-xs font-semibold text-foreground">Clasificación</p>
+                <p className="text-xs font-semibold text-foreground">Clasificacion</p>
                 <div className="mt-2 grid gap-3">
                   <label className="grid gap-1">
-                    <span className="text-xs font-medium text-muted-foreground">Categoría visual</span>
+                    <span className="text-xs font-medium text-muted-foreground">Categoria visual</span>
                     <select
                       value={editVisualCategory}
                       onChange={(e) => setEditVisualCategory(e.target.value as VisualCategory)}
@@ -2279,12 +2538,12 @@ export default function TallerMediaPage() {
                       value={editFreeTags}
                       onChange={(e) => setEditFreeTags(e.target.value)}
                       className={inputClass}
-                      placeholder="hero:background, campaña:abril"
+                      placeholder="hero:background, campana:abril"
                     />
                   </label>
 
                   <div className="grid gap-1">
-                    <span className="text-xs font-medium text-muted-foreground">Estilo (máx. 2)</span>
+                    <span className="text-xs font-medium text-muted-foreground">Estilo (max. 2)</span>
                     <div className="flex flex-wrap gap-2">
                       {STYLE_OPTIONS.map((option) => {
                         const selected = editStyleSelection.includes(option);
@@ -2314,7 +2573,7 @@ export default function TallerMediaPage() {
                   </div>
 
                   <div className="grid gap-1">
-                    <span className="text-xs font-medium text-muted-foreground">Color (máx. 2)</span>
+                    <span className="text-xs font-medium text-muted-foreground">Color (max. 2)</span>
                     <div className="flex flex-wrap gap-2">
                       {COLOR_OPTIONS.map((option) => {
                         const selected = editColorSelection.includes(option);
@@ -2344,7 +2603,7 @@ export default function TallerMediaPage() {
                   </div>
 
                   <div className="grid gap-1">
-                    <span className="text-xs font-medium text-muted-foreground">Intención (máx. 3)</span>
+                    <span className="text-xs font-medium text-muted-foreground">Intencion (max. 3)</span>
                     <div className="flex flex-wrap gap-2">
                       {INTENTION_OPTIONS.map((option) => {
                         const selected = editIntentionSelection.includes(option);
@@ -2426,7 +2685,7 @@ export default function TallerMediaPage() {
               </div>
 
               <div className="rounded-xl border border-border/70 p-3 [background:var(--surface-1,var(--background))]">
-                <p className="text-xs font-semibold text-foreground">Restricción de uso (`allowedIn`)</p>
+                <p className="text-xs font-semibold text-foreground">Restriccion de uso (`allowedIn`)</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   Si no seleccionas nada, el asset queda en uso libre.
                 </p>
