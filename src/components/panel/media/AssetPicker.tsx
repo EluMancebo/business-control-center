@@ -9,6 +9,7 @@ import type {
   AssetItem,
   AssetScope,
   AssetStatus,
+  AssetVariantKey,
   MediaAllowedComponent,
   MediaAssetRole,
   MediaFormatKind,
@@ -30,7 +31,7 @@ export type AssetPickerInitialFilters = {
   orientation?: MediaOrientation;
 };
 
-type AssetPickerProps = {
+export type AssetPickerProps = {
   value?: string | null;
   onSelect: (asset: AssetItem) => void;
   onSelectId?: (assetId: string) => void;
@@ -44,6 +45,9 @@ type AssetPickerProps = {
   emptyMessage?: string;
   status?: AssetStatus | "all";
   scope?: AssetScope | "all";
+  variantPreference?: AssetVariantKey;
+  allowedVariantKeys?: AssetVariantKey[];
+  hideNonPreferredVariants?: boolean;
 };
 
 const MEDIA_FORMAT_KIND_OPTIONS: MediaFormatKind[] = ["image", "svg", "video", "pdf"];
@@ -92,6 +96,37 @@ const MEDIA_ORIENTATION_OPTIONS: MediaOrientation[] = [
   "square",
   "unknown",
 ];
+const ASSET_VARIANT_KEY_OPTIONS: AssetVariantKey[] = [
+  "original",
+  "optimized",
+  "vectorized-svg",
+  "thumbnail",
+];
+
+function getAssetFamilyId(item: AssetItem) {
+  return item.sourceAssetId ?? item._id;
+}
+
+function getAssetTimestamp(item: AssetItem) {
+  const value = Date.parse(item.updatedAt || item.createdAt || "");
+  return Number.isFinite(value) ? value : 0;
+}
+
+function getVariantRank(variantKey: AssetVariantKey, variantPreference?: AssetVariantKey) {
+  if (variantPreference && variantKey === variantPreference) return -1;
+  const index = ASSET_VARIANT_KEY_OPTIONS.indexOf(variantKey);
+  return index === -1 ? ASSET_VARIANT_KEY_OPTIONS.length : index;
+}
+
+function compareByVariantPriority(
+  left: AssetItem,
+  right: AssetItem,
+  variantPreference?: AssetVariantKey
+) {
+  const rankDiff = getVariantRank(left.variantKey, variantPreference) - getVariantRank(right.variantKey, variantPreference);
+  if (rankDiff !== 0) return rankDiff;
+  return getAssetTimestamp(right) - getAssetTimestamp(left);
+}
 
 function getReviewTone(reviewStatus: MediaReviewStatus) {
   if (reviewStatus === "approved") return "success" as const;
@@ -139,6 +174,9 @@ export default function AssetPicker({
   emptyMessage = "No hay assets para los filtros activos.",
   status = "active",
   scope = "system",
+  variantPreference,
+  allowedVariantKeys,
+  hideNonPreferredVariants = false,
 }: AssetPickerProps) {
   const [items, setItems] = useState<AssetItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -204,6 +242,16 @@ export default function AssetPicker({
     ]
   );
 
+  const allowedVariantKeysNormalized = useMemo(() => {
+    if (!Array.isArray(allowedVariantKeys) || allowedVariantKeys.length === 0) return null;
+    return Array.from(new Set(allowedVariantKeys));
+  }, [allowedVariantKeys]);
+
+  const allowedVariantKeySet = useMemo(() => {
+    if (!allowedVariantKeysNormalized) return null;
+    return new Set<AssetVariantKey>(allowedVariantKeysNormalized);
+  }, [allowedVariantKeysNormalized]);
+
   useEffect(() => {
     let active = true;
 
@@ -221,6 +269,10 @@ export default function AssetPicker({
           reviewStatus: reviewStatusFilter === "all" ? undefined : reviewStatusFilter,
           preferredUsage: preferredUsageFilter === "all" ? undefined : preferredUsageFilter,
           orientation: orientationFilter === "all" ? undefined : orientationFilter,
+          variantKey:
+            allowedVariantKeysNormalized && allowedVariantKeysNormalized.length === 1
+              ? allowedVariantKeysNormalized[0]
+              : undefined,
         });
         if (!active) return;
         setItems(next);
@@ -247,11 +299,75 @@ export default function AssetPicker({
     reviewStatusFilter,
     preferredUsageFilter,
     orientationFilter,
+    allowedVariantKeysNormalized,
   ]);
 
+  const displayItems = useMemo(() => {
+    const groupedByFamily = new Map<string, AssetItem[]>();
+
+    items.forEach((item) => {
+      if (allowedVariantKeySet && !allowedVariantKeySet.has(item.variantKey)) return;
+      const familyId = getAssetFamilyId(item);
+      const current = groupedByFamily.get(familyId);
+      if (current) {
+        current.push(item);
+        return;
+      }
+      groupedByFamily.set(familyId, [item]);
+    });
+
+    const orderedFamilies = Array.from(groupedByFamily.entries())
+      .map(([familyId, familyItems]) => {
+        const latestTimestamp = familyItems.reduce((acc, item) => {
+          const timestamp = getAssetTimestamp(item);
+          return timestamp > acc ? timestamp : acc;
+        }, 0);
+        return { familyId, familyItems, latestTimestamp };
+      })
+      .sort((left, right) => {
+        if (right.latestTimestamp !== left.latestTimestamp) {
+          return right.latestTimestamp - left.latestTimestamp;
+        }
+        return left.familyId.localeCompare(right.familyId);
+      });
+
+    const flattened: AssetItem[] = [];
+    orderedFamilies.forEach(({ familyItems }) => {
+      const sortedFamily = [...familyItems].sort((left, right) =>
+        compareByVariantPriority(left, right, variantPreference)
+      );
+
+      if (hideNonPreferredVariants && variantPreference) {
+        const preferred = sortedFamily.filter((item) => item.variantKey === variantPreference);
+        if (preferred.length > 0) {
+          flattened.push(...preferred);
+          return;
+        }
+      }
+
+      flattened.push(...sortedFamily);
+    });
+
+    return flattened;
+  }, [allowedVariantKeySet, hideNonPreferredVariants, items, variantPreference]);
+
+  useEffect(() => {
+    if (!displayItems.length) {
+      if (selectedId) setSelectedId("");
+      return;
+    }
+    const isCurrentSelectionVisible = displayItems.some((item) => item._id === selectedId);
+    if (!isCurrentSelectionVisible) {
+      setSelectedId(displayItems[0]._id);
+    }
+  }, [displayItems, selectedId]);
+
   const selectedAsset = useMemo(
-    () => items.find((item) => item._id === selectedId) ?? null,
-    [items, selectedId]
+    () =>
+      displayItems.find((item) => item._id === selectedId) ??
+      items.find((item) => item._id === selectedId) ??
+      null,
+    [displayItems, items, selectedId]
   );
 
   const contextChips = useMemo(() => {
@@ -262,6 +378,13 @@ export default function AssetPicker({
     if (initialFilters?.preferredUsage) chips.push(`Uso: ${initialFilters.preferredUsage}`);
     if (initialFilters?.reviewStatus) chips.push(`Revision: ${initialFilters.reviewStatus}`);
     if (initialFilters?.orientation) chips.push(`Orientacion: ${initialFilters.orientation}`);
+    if (variantPreference) chips.push(`Variante preferida: ${variantPreference}`);
+    if (allowedVariantKeysNormalized && allowedVariantKeysNormalized.length > 0) {
+      chips.push(`Variantes permitidas: ${allowedVariantKeysNormalized.join(", ")}`);
+    }
+    if (hideNonPreferredVariants && variantPreference) {
+      chips.push("Ocultar variantes no preferidas");
+    }
     return chips;
   }, [
     initialFilters?.assetRole,
@@ -270,6 +393,9 @@ export default function AssetPicker({
     initialFilters?.preferredUsage,
     initialFilters?.reviewStatus,
     initialFilters?.orientation,
+    variantPreference,
+    allowedVariantKeysNormalized,
+    hideNonPreferredVariants,
   ]);
 
   function selectAndMaybeCommit(item: AssetItem) {
@@ -303,7 +429,7 @@ export default function AssetPicker({
         <PanelBadge tone={mode === "contextual" ? "processing" : "neutral"}>{mode}</PanelBadge>
       </div>
 
-      {mode === "contextual" && contextChips.length > 0 ? (
+      {contextChips.length > 0 ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {contextChips.map((chip) => (
             <PanelBadge key={chip} className="h-5 px-2 text-[10px]">
@@ -456,12 +582,13 @@ export default function AssetPicker({
           <p className="px-3 py-8 text-center text-xs text-muted-foreground">Cargando assets...</p>
         ) : error ? (
           <p className="px-3 py-8 text-center text-xs text-red-600">{error}</p>
-        ) : items.length === 0 ? (
+        ) : displayItems.length === 0 ? (
           <p className="px-3 py-8 text-center text-xs text-muted-foreground">{emptyMessage}</p>
         ) : (
           <div className="grid gap-2 p-2 sm:grid-cols-2 xl:grid-cols-3">
-            {items.map((item) => {
+            {displayItems.map((item) => {
               const isSelected = item._id === selectedId;
+              const variantIsPreferred = variantPreference === item.variantKey;
               return (
                 <button
                   key={item._id}
@@ -482,6 +609,12 @@ export default function AssetPicker({
                     {formatBytes(item.bytes)} - {item.formatKind}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1">
+                    <PanelBadge
+                      tone={variantIsPreferred ? "processing" : "neutral"}
+                      className="h-5 px-2 text-[10px]"
+                    >
+                      {item.variantKey}
+                    </PanelBadge>
                     <PanelBadge className="h-5 px-2 text-[10px]">{item.assetRole}</PanelBadge>
                     <PanelBadge className="h-5 px-2 text-[10px]">{item.reviewStatus}</PanelBadge>
                     {item.preferredUsage ? (
