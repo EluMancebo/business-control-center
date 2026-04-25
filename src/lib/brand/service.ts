@@ -1,5 +1,5 @@
  //src/lib/brand/Service.ts
- 
+
  "use client";
 
 import type { Brand } from "./types";
@@ -41,7 +41,7 @@ function resolveApplyToDocument(
   return store.applyToDocument;
 }
 
-function getOrCreateStore(storageKey: string, channel: string, fallback?: Brand): Store {
+function getOrCreateStore(storageKey: string, channel: string, fallback?: Brand, options?: SetBrandOptions): Store {
   const key = makeKey(storageKey, channel);
 
   const existing = stores.get(key);
@@ -53,7 +53,7 @@ function getOrCreateStore(storageKey: string, channel: string, fallback?: Brand)
     storageKey,
     channel,
     brand: initial,
-    applyToDocument: true,
+    applyToDocument: typeof options?.applyToDocument === "boolean" ? options.applyToDocument : true,
     listeners: new Set<Listener>(),
   };
 
@@ -79,7 +79,7 @@ export function setBrand(
   fallback?: Brand,
   options?: SetBrandOptions
 ) {
-  const store = getOrCreateStore(storageKey, channel, fallback);
+  const store = getOrCreateStore(storageKey, channel, fallback, options);
   store.brand = next;
   store.applyToDocument = resolveApplyToDocument(store, options);
 
@@ -125,7 +125,7 @@ export function syncBrandFromStorage(
   fallback?: Brand,
   options?: SetBrandOptions
 ) {
-  const store = getOrCreateStore(storageKey, channel, fallback);
+  const store = getOrCreateStore(storageKey, channel, fallback, options);
   const fromStorage = loadBrandFromStorage(storageKey, fallback ?? DEFAULT_BRAND);
   store.brand = fromStorage;
   store.applyToDocument = resolveApplyToDocument(store, options);

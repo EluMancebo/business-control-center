@@ -1,6 +1,9 @@
 // src/components/web/hero/PublicHero.tsx
+"use client";
+
 import { useId, type ChangeEvent, type MouseEvent, type ReactNode } from "react";
 import { resolveHeroAppearance } from "./appearance";
+import CreatedByMini from "@/components/footer/CreatedByMini";
 import type { HeroAppearanceVariant } from "@/lib/web/hero/types";
 import type { PublicHeroPayload } from "@/lib/web/hero/publicPayload";
 
@@ -15,6 +18,20 @@ export type BusinessPublic = {
   email?: string;
   footerSignature?: string;
 };
+
+export type LabHeroPiece =
+  | "logo"
+  | "headline"
+  | "subheadline"
+  | "cta-group"
+  | "badge"
+  | "nav-burger"
+  | "theme-toggle"
+  | "footer-hero"
+  | "contact-strip"
+  | "animated-signature"
+  | "background-media"
+  | "overlay-atmosphere";
 
 type PublicHeroProps = {
   data: PublicHeroPayload;
@@ -74,6 +91,7 @@ type PublicHeroProps = {
   footerVisualStyle?: "minimal" | "solid" | "glass";
   footerDensity?: "compact" | "balanced" | "spacious";
   footerSignatureSeparation?: "tight" | "normal" | "relaxed";
+  ctaRegulation?: "balanced" | "primary-focus";
   mobileHeadlineScale?: "compact" | "balanced" | "expressive";
   mobileLogoScale?: "compact" | "balanced" | "expressive";
   gapLogoHeadline?: "tight" | "normal" | "relaxed";
@@ -84,6 +102,36 @@ type PublicHeroProps = {
   isLabMode?: boolean;
   labSceneOverlayClassName?: string;
   onLabMenuOpenChange?: (open: boolean) => void;
+  selectedLabPiece?: LabHeroPiece | null;
+  onLabPieceSelect?: (piece: LabHeroPiece) => void;
+  showLabLogo?: boolean;
+  showLabHeadline?: boolean;
+  showLabSubheadline?: boolean;
+  showLabCtaGroup?: boolean;
+  showLabBadge?: boolean;
+  showLabNavBurger?: boolean;
+  showLabThemeToggle?: boolean;
+  showNavLinks?: boolean;
+  showLabFooterHero?: boolean;
+  showLabContactStrip?: boolean;
+  showLabAnimatedSignature?: boolean;
+  showLabBackgroundMedia?: boolean;
+  showLabOverlayAtmosphere?: boolean;
+  themeToggleDefault?: "light" | "dark" | "auto";
+  themeToggleStyle?: "minimal" | "solid" | "glass";
+  themeTogglePosition?: "left" | "right";
+  labLogoClassName?: string;
+  labNavBurgerClassName?: string;
+  labThemeToggleClassName?: string;
+  labFooterHeroClassName?: string;
+  labContactStripClassName?: string;
+  labAnimatedSignatureClassName?: string;
+  labHeadlineClassName?: string;
+  labSubheadlineClassName?: string;
+  labCtaGroupClassName?: string;
+  labPrimaryCtaClassName?: string;
+  labSecondaryCtaClassName?: string;
+  showFooterIcons?: boolean;
 };
 
 type HeroOverlayColor = NonNullable<PublicHeroProps["overlayColor"]>;
@@ -144,8 +192,8 @@ const HERO_MENU_MODE_TOKEN_CLASS = {
 } as const;
 
 const HERO_LAB_HEADLINE_TONE_TOKEN_CLASS: Record<HeroLabHeadlineTone, string> = {
-  white: "[--hero-lab-headline:#ffffff]",
-  black: "[--hero-lab-headline:#0f172a]",
+  white: "[--hero-lab-headline:var(--hero-text-inverse)]",
+  black: "[--hero-lab-headline:var(--foreground)]",
   inverse: "[--hero-lab-headline:var(--hero-text-inverse)]",
   "muted-light":
     "[--hero-lab-headline:color-mix(in_oklab,var(--hero-text-inverse)_88%,var(--muted,var(--surface-3,var(--card)))_12%)]",
@@ -220,12 +268,22 @@ function Pill({
   );
 }
 
-function FooterInlineItem({ icon, text }: { icon: string; text: string }) {
+function FooterInlineItem({
+  icon,
+  text,
+  showIcon = true,
+}: {
+  icon: string;
+  text: string;
+  showIcon?: boolean;
+}) {
   return (
     <span className="inline-flex max-w-full items-start gap-2 text-xs [color:var(--hero-text-85)]">
-      <span aria-hidden="true" className="pt-0.5">
-        {icon}
-      </span>
+      {showIcon ? (
+        <span aria-hidden="true" className="pt-0.5">
+          {icon}
+        </span>
+      ) : null}
       <span className="min-w-0 break-words">{text}</span>
     </span>
   );
@@ -296,6 +354,7 @@ export default function PublicHero({
   footerVisualStyle = "solid",
   footerDensity = "balanced",
   footerSignatureSeparation = "normal",
+  ctaRegulation = "balanced",
   mobileHeadlineScale = "balanced",
   mobileLogoScale = "balanced",
   gapLogoHeadline = "normal",
@@ -306,8 +365,39 @@ export default function PublicHero({
   isLabMode = false,
   labSceneOverlayClassName,
   onLabMenuOpenChange,
+  selectedLabPiece = null,
+  onLabPieceSelect,
+  showLabLogo = true,
+  showLabHeadline = true,
+  showLabSubheadline = true,
+  showLabCtaGroup = true,
+  showLabBadge = true,
+  showLabNavBurger = true,
+  showLabThemeToggle = true,
+  showNavLinks = true,
+  showLabFooterHero = true,
+  showLabContactStrip = true,
+  showLabAnimatedSignature = true,
+  showLabBackgroundMedia = true,
+  showLabOverlayAtmosphere = true,
+  themeToggleDefault = "auto",
+  themeToggleStyle = "glass",
+  themeTogglePosition = "right",
+  labLogoClassName,
+  labNavBurgerClassName,
+  labThemeToggleClassName,
+  labFooterHeroClassName,
+  labContactStripClassName,
+  labAnimatedSignatureClassName,
+  labHeadlineClassName,
+  labSubheadlineClassName,
+  labCtaGroupClassName,
+  labPrimaryCtaClassName,
+  labSecondaryCtaClassName,
+  showFooterIcons = true,
 }: PublicHeroProps) {
   const mobileMenuInputId = useId();
+  const themeToggleInputId = useId();
   const titleRaw = data.title ?? "El centro de mando de tu negocio";
   const { lead: titleLead, accent: titleAccent } = splitTitleForAccent(titleRaw);
 
@@ -316,7 +406,8 @@ export default function PublicHero({
     "Publica ofertas, popups, heros por eventos, campañas y recordatorios.";
 
   const badge = data.badge ?? "Barbería Premium";
-  const showBadge = typeof badge === "string" ? badge.trim().length > 0 : Boolean(badge);
+  const showBadge =
+    showLabBadge && (typeof badge === "string" ? badge.trim().length > 0 : Boolean(badge));
 
   const cta1 = (data.primaryCtaLabel as string) ?? "Pedir cita";
   const cta2 = (data.secondaryCtaLabel as string) ?? "Servicios";
@@ -324,13 +415,14 @@ export default function PublicHero({
   const href2 = (data.secondaryCtaHref as string) ?? "#";
   const dataRecord = data as unknown as Record<string, unknown>;
 
-  const bg = normalizeAssetUrl(data.backgroundImageUrl);
+  const rawBg = normalizeAssetUrl(data.backgroundImageUrl);
+  const bg = showLabBackgroundMedia ? rawBg : undefined;
   const hasLabSceneOverlay = Boolean(labSceneOverlayClassName?.trim());
   const heroAppearance = resolveHeroAppearance(data as unknown);
   const heroAppearanceTokenClassName =
     HERO_APPEARANCE_TOKEN_CLASS[heroAppearance.variant];
   const heroOverlayTintTokenClassName =
-    overlayStyleMode === "none"
+    !showLabOverlayAtmosphere || overlayStyleMode === "none"
       ? HERO_OVERLAY_STYLE_NONE_TOKEN_CLASS
       : overlayStyleMode === "solid"
         ? HERO_OVERLAY_SOLID_TINT_TOKEN_CLASS[overlayColor]
@@ -390,10 +482,10 @@ export default function PublicHero({
     "email@cliente.com"
   ) as string;
   const footerContactItems = [
-    { id: "address", icon: "📍", text: footerAddress },
-    { id: "phone", icon: "☎️", text: footerPhone },
-    { id: "whatsapp", icon: "💬", text: footerWhatsapp },
-    { id: "email", icon: "✉️", text: footerEmail },
+    { id: "address", icon: "Dir.", text: footerAddress },
+    { id: "phone", icon: "Tel.", text: footerPhone },
+    { id: "whatsapp", icon: "WA", text: footerWhatsapp },
+    { id: "email", icon: "Mail", text: footerEmail },
   ];
   const isMenuControlled = typeof forceMobileMenuOpen === "boolean";
   const shouldBindLabMenuHandlers = isLabMode && isMenuControlled;
@@ -427,7 +519,13 @@ export default function PublicHero({
   const effectiveNavTriggerHover = isLabMode ? navTriggerHover : "soft";
   const effectiveNavOpenBehavior = isLabMode ? navOpenBehavior : "overlay";
   const effectiveNavPanelWidth = isLabMode ? navPanelWidth : "normal";
-  const effectiveNavPanelOrigin = isLabMode ? navPanelOrigin : "right";
+  const navPanelOriginFromPosition: "left" | "center" | "right" =
+    navPosition === "left" ? "left" : navPosition === "center" ? "center" : "right";
+  const effectiveNavPanelOrigin = isLabMode
+    ? navigationMode === "mobile"
+      ? navPanelOriginFromPosition
+      : navPanelOrigin
+    : "right";
   const effectiveNavPanelIncludeLogo = isLabMode ? navPanelIncludeLogo : true;
   const effectiveNavPanelStyle = isLabMode
     ? navPanelStyle
@@ -653,6 +751,17 @@ export default function PublicHero({
       ? `flex items-center gap-3 ${navDesktopPositionClass} ${headerNavRelationClass}`
       : `hidden items-center gap-3 md:flex ${navDesktopPositionClass} ${headerNavRelationClass}`;
   const mobileNavClass = isDesktopNavigation ? "hidden" : isMobileNavigation ? "block" : "md:hidden";
+  const mobileNavPositionClass =
+    navPosition === "left" ? "mr-auto" : navPosition === "center" ? "mx-auto" : "ml-auto";
+  const themeTogglePositionClass =
+    themeTogglePosition === "left" ? "order-[-1] mr-auto" : "order-[3]";
+  const themeToggleStyleClass =
+    themeToggleStyle === "minimal"
+      ? "border-transparent [background:transparent]"
+      : themeToggleStyle === "glass"
+        ? "[background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_54%,transparent)] backdrop-blur-[2px]"
+        : "[background:var(--hero-chrome-surface-bg)]";
+  const themeToggleDefaultChecked = themeToggleDefault === "dark";
 
   const copyPositionClass =
     resolvedCopyPosition === "center-left"
@@ -691,14 +800,14 @@ export default function PublicHero({
     relaxed: "mt-6",
   });
   const ctaFooterGapClass = mapGapLevelToClass(gapCtaFooter, {
-    tight: "pb-5",
-    normal: "pb-8",
-    relaxed: "pb-11",
+    tight: "pb-4",
+    normal: "pb-5",
+    relaxed: "pb-7",
   });
   const footerDataSignatureGapClass = mapGapLevelToClass(gapFooterDataSignature, {
-    tight: "mt-2 gap-1.5",
-    normal: "mt-3 gap-2",
-    relaxed: "mt-5 gap-3",
+    tight: "mt-1.5 gap-1.5",
+    normal: "mt-2 gap-2",
+    relaxed: "mt-3 gap-3",
   });
   const ctaMobileLayoutClass = useLabMobileComposition
     ? `${textCtaGapClass} mb-6 grid grid-cols-1 gap-2 sm:grid-cols-2 ${ctaMobilePositionClass}`
@@ -735,12 +844,12 @@ export default function PublicHero({
         ? "flex items-center gap-2 opacity-90"
         : "flex items-center gap-3";
   const heroMainClass = useLabMobileComposition
-    ? `min-h-0 flex-1 pt-6 ${ctaFooterGapClass}`
+    ? `min-h-0 flex-1 pt-4 ${ctaFooterGapClass}`
     : "min-h-0 flex-1 pt-5 pb-36 md:pb-0";
   const footerShellClass =
     isFooterSeparated
-      ? "mt-auto pt-4 pb-3"
-      : "mt-auto pt-3 pb-3";
+      ? "mt-auto pt-3 pb-2"
+      : "mt-auto pt-2 pb-2";
   const footerVisualClass =
     normalizedFooterVisualStyle === "minimal"
       ? "border-0 [background:transparent] shadow-none"
@@ -895,6 +1004,14 @@ export default function PublicHero({
       : effectiveNavPanelStyle === "glass"
         ? `block rounded-xl border border-transparent transition hover:[border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_68%,transparent)] hover:[background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_58%,transparent)] ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`
         : `block rounded-xl border border-transparent transition hover:[background:var(--hero-chrome-surface-bg)] ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`;
+  const ctaRegulationClassName =
+    ctaRegulation === "primary-focus"
+      ? {
+          primary:
+            "!scale-[1.02] !shadow-[0_16px_30px_color-mix(in_oklab,var(--foreground)_26%,transparent)]",
+          secondary: "opacity-80",
+        }
+      : { primary: "", secondary: "" };
 
   const handleMenuStateChange = (open: boolean) => {
     if (isMenuControlled) onLabMenuOpenChange?.(open);
@@ -905,6 +1022,56 @@ export default function PublicHero({
     event.preventDefault();
     onLabMenuOpenChange?.(false);
   };
+
+  const handleLabPieceClick = (
+    event: MouseEvent<HTMLElement>,
+    piece: LabHeroPiece
+  ) => {
+    if (!isLabMode || !onLabPieceSelect) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onLabPieceSelect(piece);
+  };
+  const selectLabPiece = (piece: LabHeroPiece) => {
+    if (!isLabMode || !onLabPieceSelect) return;
+    onLabPieceSelect(piece);
+  };
+
+  const getLabPieceClassName = (piece: LabHeroPiece): string => {
+    if (!isLabMode || !onLabPieceSelect) return "";
+    return selectedLabPiece === piece
+      ? "cursor-pointer rounded-xl ring-2 ring-sky-300/90 ring-offset-2 ring-offset-transparent [background:color-mix(in_oklab,var(--surface-1,var(--background))_24%,transparent)] shadow-[0_2px_10px_color-mix(in_oklab,var(--foreground)_16%,transparent)] transition"
+      : "cursor-pointer rounded-xl ring-1 ring-transparent transition hover:ring-sky-200/75 hover:[background:color-mix(in_oklab,var(--surface-1,var(--background))_14%,transparent)]";
+  };
+
+  const mobilePrimaryCtaClassName = [
+    "inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition [background:var(--hero-cta-primary)] [color:var(--hero-cta-primary-foreground)] hover:[background:var(--hero-cta-primary-hover)]",
+    labPrimaryCtaClassName,
+    ctaRegulationClassName.primary,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const mobileSecondaryCtaClassName = [
+    "inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition [background:var(--hero-cta-secondary)] [color:var(--hero-cta-secondary-foreground)] hover:[background:var(--hero-cta-secondary-hover)]",
+    labSecondaryCtaClassName,
+    ctaRegulationClassName.secondary,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const desktopPrimaryCtaClassName = [
+    "inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition [background:var(--hero-cta-primary)] [color:var(--hero-cta-primary-foreground)] hover:[background:var(--hero-cta-primary-hover)]",
+    labPrimaryCtaClassName,
+    ctaRegulationClassName.primary,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const desktopSecondaryCtaClassName = [
+    "inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition [background:var(--hero-cta-secondary)] [color:var(--hero-cta-secondary-foreground)] hover:[background:var(--hero-cta-secondary-hover)]",
+    labSecondaryCtaClassName,
+    ctaRegulationClassName.secondary,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <section
@@ -921,12 +1088,29 @@ export default function PublicHero({
         .join(" ")}
       data-hero-appearance={heroAppearance.variant}
     >
+      <input
+        id={themeToggleInputId}
+        type="checkbox"
+        defaultChecked={themeToggleDefaultChecked}
+        className="peer/theme sr-only"
+      />
+
       {bg ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={bg} alt="" className={backgroundImageClass} />
-          {!hasLabSceneOverlay ? (
-            <div className="pointer-events-none absolute inset-0 z-[2] [background:var(--hero-overlay-tint-bg)] [opacity:var(--hero-overlay-tint-opacity)]" />
+          <img
+            src={bg}
+            alt=""
+            data-lab-piece="background-media"
+            onClick={(event) => handleLabPieceClick(event, "background-media")}
+            className={`${backgroundImageClass} peer-checked/theme:brightness-[0.76] peer-checked/theme:saturate-[0.82] ${getLabPieceClassName("background-media")}`}
+          />
+          {!hasLabSceneOverlay && showLabOverlayAtmosphere ? (
+            <div
+              data-lab-piece="overlay-atmosphere"
+              onClick={(event) => handleLabPieceClick(event, "overlay-atmosphere")}
+              className={`absolute inset-0 z-[2] [background:var(--hero-overlay-tint-bg)] [opacity:var(--hero-overlay-tint-opacity)] ${getLabPieceClassName("overlay-atmosphere")}`}
+            />
           ) : null}
         </>
       ) : (
@@ -939,7 +1123,7 @@ export default function PublicHero({
         />
       ) : null}
 
-      <div className={heroContentClass}>
+      <div className={`${heroContentClass} peer-checked/theme:[filter:saturate(0.9)]`}>
         <header className={headerTopSpacingClass}>
           <div className={`flex items-center justify-between overflow-hidden ${headerRegionClass}`}>
             <div className={headerLogoGroupClass}>
@@ -967,28 +1151,63 @@ export default function PublicHero({
               </div>
             </div>
 
-            <nav className={desktopNavClass}>
-              <a
-                href="#"
-                className={desktopNavItemClass}
-              >
-                Home
-              </a>
-              <a
-                href="#"
-                className={desktopNavItemClass}
-              >
-                Services
-              </a>
-              <a
-                href="#"
-                className={desktopNavItemClass}
-              >
-                Contact
-              </a>
-            </nav>
+            {showNavLinks ? (
+              <nav className={desktopNavClass}>
+                <a
+                  href="#"
+                  className={desktopNavItemClass}
+                >
+                  Home
+                </a>
+                <a
+                  href="#"
+                  className={desktopNavItemClass}
+                >
+                  Services
+                </a>
+                <a
+                  href="#"
+                  className={desktopNavItemClass}
+                >
+                  Contact
+                </a>
+              </nav>
+            ) : null}
 
-            <div className={mobileNavClass}>
+            {showLabThemeToggle ? (
+              <label
+                htmlFor={themeToggleInputId}
+                data-lab-piece="theme-toggle"
+                onClick={() => selectLabPiece("theme-toggle")}
+                className={[
+                  "inline-flex h-8 items-center justify-center rounded-full border px-3 text-[10px] font-semibold uppercase tracking-wide transition md:h-9",
+                  "cursor-pointer [border-color:var(--hero-chrome-surface-border-safe)] [color:var(--hero-text-inverse)]",
+                  themeTogglePositionClass,
+                  themeToggleStyleClass,
+                  "peer-checked/theme:[background:color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_22%,var(--hero-chrome-surface-bg))]",
+                  getLabPieceClassName("theme-toggle"),
+                  labThemeToggleClassName,
+                ].join(" ")}
+                title="Alternar modo oscuro/claro"
+                aria-label="Alternar modo oscuro/claro"
+              >
+                <span className="peer-checked/theme:hidden">Light</span>
+                <span className="hidden peer-checked/theme:inline">Dark</span>
+              </label>
+            ) : null}
+
+            <div
+              className={[
+                showLabNavBurger ? mobileNavClass : "hidden",
+                mobileNavPositionClass,
+                getLabPieceClassName("nav-burger"),
+                labNavBurgerClassName,
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              data-lab-piece="nav-burger"
+              onClick={() => selectLabPiece("nav-burger")}
+            >
               <input
                 id={mobileMenuInputId}
                 type="checkbox"
@@ -1049,29 +1268,33 @@ export default function PublicHero({
               <div
                 className={`mt-2 flex flex-1 flex-col ${menuContentPositionClass} ${menuSafeTopClass} ${menuSafeSideClass}`}
               >
-                <div className={`flex w-full flex-col ${menuContentAlignClass} ${menuVerticalSpacingClass}`}>
-                  <a
-                    href="#"
-                    className={menuItemClass}
-                    {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
-                  >
-                    Home
-                  </a>
-                  <a
-                    href="#"
-                    className={menuItemClass}
-                    {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
-                  >
-                    Services
-                  </a>
-                  <a
-                    href="#"
-                    className={menuItemClass}
-                    {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
-                  >
-                    Contact
-                  </a>
-                </div>
+                {showNavLinks ? (
+                  <div className={`flex w-full flex-col ${menuContentAlignClass} ${menuVerticalSpacingClass}`}>
+                    <a
+                      href="#"
+                      className={menuItemClass}
+                      {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
+                    >
+                      Home
+                    </a>
+                    <a
+                      href="#"
+                      className={menuItemClass}
+                      {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
+                    >
+                      Services
+                    </a>
+                    <a
+                      href="#"
+                      className={menuItemClass}
+                      {...(shouldBindLabMenuHandlers ? { onClick: handleLabNavItemClick } : {})}
+                    >
+                      Contact
+                    </a>
+                  </div>
+                ) : (
+                  <div className="text-sm [color:var(--hero-text-82)]">Links de navegación ocultos.</div>
+                )}
               </div>
             </div>
           </div>
@@ -1081,10 +1304,12 @@ export default function PublicHero({
         <main className={heroMainClass}>
           <div className={heroGridClass}>
             <div className={`${copyPositionClass} ${copyPaneOrderClass} ${copyPaneSpacingClass}`}>
-              {useLabMobileComposition ? (
+              {showLabLogo && useLabMobileComposition ? (
                 <div className={logoHeadlineGapClass}>
                   <div
-                    className={`relative mx-auto flex w-full items-center rounded-3xl ${mobileLogoFrameClass} ${logoAlignClass} ${logoFramePaddingClass} ${visualFrameSurfaceClass}`}
+                    className={`relative mx-auto flex w-full items-center rounded-3xl ${mobileLogoFrameClass} ${logoAlignClass} ${logoFramePaddingClass} ${visualFrameSurfaceClass} ${getLabPieceClassName("logo")} ${labLogoClassName || ""}`}
+                    data-lab-piece="logo"
+                    onClick={(event) => handleLabPieceClick(event, "logo")}
                   >
                     {heroLogoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -1105,22 +1330,40 @@ export default function PublicHero({
                 </div>
               ) : null}
 
-              {showBadge ? <Pill className={useLabMobileComposition ? logoHeadlineGapClass : "mb-3"}>{badge}</Pill> : null}
+              {showBadge ? (
+                <div
+                  className={getLabPieceClassName("badge")}
+                  data-lab-piece="badge"
+                  onClick={(event) => handleLabPieceClick(event, "badge")}
+                >
+                  <Pill className={useLabMobileComposition ? logoHeadlineGapClass : "mb-3"}>{badge}</Pill>
+                </div>
+              ) : null}
 
-              <h1 className={`${resolvedHeadlineSizeClass} ${headlineToneClassName} ${headlinePositionClass}`}>
-                <span>{titleLead || titleRaw}</span>
-                {titleAccent ? (
-                  <>
-                    <br />
-                    <span className="[color:var(--accent-strong,var(--primary))]">
-                      {titleAccent}
-                    </span>
-                  </>
-                ) : null}
-              </h1>
+              {showLabHeadline ? (
+                <h1
+                  className={`${resolvedHeadlineSizeClass} ${headlineToneClassName} ${headlinePositionClass} ${getLabPieceClassName("headline")} ${labHeadlineClassName || ""}`}
+                  data-lab-piece="headline"
+                  onClick={(event) => handleLabPieceClick(event, "headline")}
+                >
+                  <span>{titleLead || titleRaw}</span>
+                  {titleAccent ? (
+                    <>
+                      <br />
+                      <span className="[color:var(--accent-strong,var(--primary))]">
+                        {titleAccent}
+                      </span>
+                    </>
+                  ) : null}
+                </h1>
+              ) : null}
 
-              <div className={useLabMobileComposition ? "hidden" : "mt-1.5 md:hidden"}>
-                <div className={`relative mx-auto flex aspect-[16/7] w-full max-w-sm items-center rounded-3xl ${logoAlignClass} ${logoFramePaddingClass} ${visualFrameSurfaceClass}`}>
+              <div className={useLabMobileComposition || !showLabLogo ? "hidden" : "mt-1.5 md:hidden"}>
+                <div
+                  className={`relative mx-auto flex aspect-[16/7] w-full max-w-sm items-center rounded-3xl ${logoAlignClass} ${logoFramePaddingClass} ${visualFrameSurfaceClass} ${getLabPieceClassName("logo")} ${labLogoClassName || ""}`}
+                  data-lab-piece="logo"
+                  onClick={(event) => handleLabPieceClick(event, "logo")}
+                >
                   {heroLogoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -1139,49 +1382,81 @@ export default function PublicHero({
                 </div>
               </div>
 
-              <p className={mobileSubtitleClass}>
-                {subtitle}
-              </p>
-
-              <div className={ctaMobileLayoutClass}>
-                <a
-                  href={href1}
-                  className="inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition [background:var(--hero-cta-primary)] [color:var(--hero-cta-primary-foreground)] hover:[background:var(--hero-cta-primary-hover)]"
+              {showLabSubheadline ? (
+                <p
+                  className={`${mobileSubtitleClass} ${getLabPieceClassName("subheadline")} ${labSubheadlineClassName || ""}`}
+                  data-lab-piece="subheadline"
+                  onClick={(event) => handleLabPieceClick(event, "subheadline")}
                 >
-                  {cta1}
-                </a>
+                  {subtitle}
+                </p>
+              ) : null}
 
-                <a
-                  href={href2}
-                  className="inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition [background:var(--hero-cta-secondary)] [color:var(--hero-cta-secondary-foreground)] hover:[background:var(--hero-cta-secondary-hover)]"
+              {showLabCtaGroup ? (
+                <div
+                  className={`${ctaMobileLayoutClass} ${getLabPieceClassName("cta-group")} ${labCtaGroupClassName || ""}`}
+                  data-lab-piece="cta-group"
+                  onClick={(event) => handleLabPieceClick(event, "cta-group")}
                 >
-                  {cta2}
-                </a>
-              </div>
+                  <a
+                    href={href1}
+                    className={mobilePrimaryCtaClassName}
+                    onClick={(event) => handleLabPieceClick(event, "cta-group")}
+                  >
+                    {cta1}
+                  </a>
 
-              <p className={desktopSubtitleClass}>
-                {subtitle}
-              </p>
+                  <a
+                    href={href2}
+                    className={mobileSecondaryCtaClassName}
+                    onClick={(event) => handleLabPieceClick(event, "cta-group")}
+                  >
+                    {cta2}
+                  </a>
+                </div>
+              ) : null}
 
-              <div className={desktopCtaClass}>
-                <a
-                  href={href1}
-                  className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition [background:var(--hero-cta-primary)] [color:var(--hero-cta-primary-foreground)] hover:[background:var(--hero-cta-primary-hover)]"
+              {showLabSubheadline ? (
+                <p
+                  className={`${desktopSubtitleClass} ${getLabPieceClassName("subheadline")} ${labSubheadlineClassName || ""}`}
+                  data-lab-piece="subheadline"
+                  onClick={(event) => handleLabPieceClick(event, "subheadline")}
                 >
-                  {cta1}
-                </a>
+                  {subtitle}
+                </p>
+              ) : null}
 
-                <a
-                  href={href2}
-                  className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition [background:var(--hero-cta-secondary)] [color:var(--hero-cta-secondary-foreground)] hover:[background:var(--hero-cta-secondary-hover)]"
+              {showLabCtaGroup ? (
+                <div
+                  className={`${desktopCtaClass} ${getLabPieceClassName("cta-group")} ${labCtaGroupClassName || ""}`}
+                  data-lab-piece="cta-group"
+                  onClick={(event) => handleLabPieceClick(event, "cta-group")}
                 >
-                  {cta2}
-                </a>
-              </div>
+                  <a
+                    href={href1}
+                    className={desktopPrimaryCtaClassName}
+                    onClick={(event) => handleLabPieceClick(event, "cta-group")}
+                  >
+                    {cta1}
+                  </a>
+
+                  <a
+                    href={href2}
+                    className={desktopSecondaryCtaClassName}
+                    onClick={(event) => handleLabPieceClick(event, "cta-group")}
+                  >
+                    {cta2}
+                  </a>
+                </div>
+              ) : null}
             </div>
 
-            <div className={visualPaneClass}>
-              <div className={`relative mx-auto flex aspect-[16/7] w-full items-center rounded-[28px] ${logoAlignClass} ${logoFramePaddingClass} ${visualFrameSurfaceClass} ${visualFrameAspectClass}`}>
+            <div className={showLabLogo ? visualPaneClass : "hidden"}>
+              <div
+                className={`relative mx-auto flex aspect-[16/7] w-full items-center rounded-[28px] ${logoAlignClass} ${logoFramePaddingClass} ${visualFrameSurfaceClass} ${visualFrameAspectClass} ${getLabPieceClassName("logo")} ${labLogoClassName || ""}`}
+                data-lab-piece="logo"
+                onClick={(event) => handleLabPieceClick(event, "logo")}
+              >
                 {heroLogoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -1202,20 +1477,31 @@ export default function PublicHero({
           </div>
         </main>
 
-        <footer className={footerShellClass}>
+        {showLabFooterHero ? (
+        <footer
+          className={`${footerShellClass} ${getLabPieceClassName("footer-hero")} ${labFooterHeroClassName || ""}`}
+          data-lab-piece="footer-hero"
+          onClick={(event) => handleLabPieceClick(event, "footer-hero")}
+        >
           <div className={`${footerRadiusClass} ${footerDensityClass} ${footerVisualClass} [color:var(--hero-text-88)]`}>
             <div className={`mx-auto flex w-full max-w-5xl flex-col gap-2 ${footerDesktopAlignClass}`}>
-              <div className={footerContactGridClass}>
-                {footerContactItems.map((item) => (
-                  <div
-                    key={item.id}
-                    data-footer-part={item.id}
-                    className={useLabMobileComposition ? "min-w-0 text-center sm:text-left" : "min-w-0"}
-                  >
-                    <FooterInlineItem icon={item.icon} text={item.text} />
-                  </div>
-                ))}
-              </div>
+              {showLabContactStrip ? (
+                <div
+                  className={`${footerContactGridClass} ${getLabPieceClassName("contact-strip")} ${labContactStripClassName || ""}`}
+                  data-lab-piece="contact-strip"
+                  onClick={(event) => handleLabPieceClick(event, "contact-strip")}
+                >
+                  {footerContactItems.map((item) => (
+                    <div
+                      key={item.id}
+                      data-footer-part={item.id}
+                      className={useLabMobileComposition ? "min-w-0 text-center sm:text-left" : "min-w-0"}
+                    >
+                      <FooterInlineItem icon={item.icon} text={item.text} showIcon={showFooterIcons} />
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
 
             <div className={footerMetaRowClass}>
@@ -1229,22 +1515,30 @@ export default function PublicHero({
                   />
                 ) : null}
                 <span className="min-w-0 break-words">
-                  © 2026{" "}
+                  {"\u00A9"} 2026{" "}
                   <span className="font-semibold [color:var(--hero-text-inverse)]">
                     {footerBusinessName}
                   </span>
                 </span>
               </div>
 
-              <div className="min-w-0 shrink-0 text-right" data-footer-part="signature">
-                <span className="text-[11px] [color:var(--hero-text-80)]">
-                  {footerSignatureText}
-                </span>
-              </div>
+              {showLabAnimatedSignature ? (
+                <div
+                  className={`min-w-0 shrink-0 text-right ${getLabPieceClassName("animated-signature")} ${labAnimatedSignatureClassName || ""}`}
+                  data-footer-part="signature"
+                  data-lab-piece="animated-signature"
+                  onClick={(event) => handleLabPieceClick(event, "animated-signature")}
+                >
+                  <span className="sr-only">{footerSignatureText}</span>
+                  <CreatedByMini />
+                </div>
+              ) : null}
             </div>
           </div>
         </footer>
+        ) : null}
       </div>
     </section>
   );
 }
+

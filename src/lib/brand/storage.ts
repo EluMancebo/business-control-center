@@ -67,15 +67,9 @@ export function loadBrandFromStorage(storageKey: string, fallback: Brand): Brand
     const raw = window.localStorage.getItem(storageKey);
 
     // Compat: migración suave desde clave antigua (antes todo usaba STORAGE_KEY_BASE)
-    const legacyRaw =
-      !raw && storageKey.startsWith(`${STORAGE_KEY_BASE}.panel`)
-        ? window.localStorage.getItem(STORAGE_KEY_BASE)
-        : null;
+        if (!raw) return fallback;
 
-    const finalRaw = raw ?? legacyRaw;
-    if (!finalRaw) return fallback;
-
-    const parsed = JSON.parse(finalRaw) as Partial<Brand>;
+    const parsed = JSON.parse(raw) as Partial<Brand>;
 
     return {
       brandName:

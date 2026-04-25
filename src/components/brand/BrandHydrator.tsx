@@ -2,7 +2,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { applyBrandToDocument } from "@/lib/brand/apply";
+import {
+  applyBrandToDocument,
+  registerBrandScope,
+  unregisterBrandScope,
+} from "@/lib/brand/apply";
 import {
   getBrand,
   shouldApplyBrandToDocument,
@@ -48,6 +52,8 @@ export default function BrandHydrator({
     const semanticRuntimeEnabled = isBrandThemeSemanticRuntimeEnabled(scope);
     let resetSemanticRuntime: (() => void) | null = null;
 
+    registerBrandScope(scope);
+
     const applyCurrentBrand = () => {
       if (!shouldApplyBrandToDocument(storageKey, channel, fallback)) return;
       const stateV1 = loadBrandThemeStateV1(scope, resolvedSlug);
@@ -72,16 +78,10 @@ export default function BrandHydrator({
         resetSemanticRuntime();
         resetSemanticRuntime = null;
       }
-      applyBrandToDocument(getBrand(storageKey, channel, fallback));
+      applyBrandToDocument(getBrand(storageKey, channel, fallback), scope);
     };
 
-    // 1) Rehidratación inicial
-    syncBrandFromStorage(storageKey, channel, fallback, { applyToDocument });
-
-    // 2) Aplicar estado actual
-    applyCurrentBrand();
-
-    // 3) Suscripción a cambios del store
+    // 1) Suscripción antes del sync para que notify la alcance en la rehidratación inicial
     const unsubscribe = subscribeBrand(
       applyCurrentBrand,
       storageKey,
@@ -89,12 +89,15 @@ export default function BrandHydrator({
       fallback
     );
 
-    // 4) Evento local
+    // 2) Rehidratación inicial — notify dispara applyCurrentBrand
+    syncBrandFromStorage(storageKey, channel, fallback, { applyToDocument });
+
+    // 3) Evento local
     const onLocal = () =>
       syncBrandFromStorage(storageKey, channel, fallback, { applyToDocument });
     window.addEventListener(channel, onLocal);
 
-    // 5) Cross-tab
+    // 4) Cross-tab
     let bc: BroadcastChannel | null = null;
     if (typeof BroadcastChannel !== "undefined") {
       bc = new BroadcastChannel(channel);
@@ -102,7 +105,7 @@ export default function BrandHydrator({
         syncBrandFromStorage(storageKey, channel, fallback, { applyToDocument });
     }
 
-    // 6) Storage (otras pestañas)
+    // 5) Storage (otras pestañas)
     const onStorage = (e: StorageEvent) => {
       if (e.key === storageKey) {
         syncBrandFromStorage(storageKey, channel, fallback, { applyToDocument });
@@ -112,6 +115,7 @@ export default function BrandHydrator({
 
     return () => {
       unsubscribe();
+      unregisterBrandScope(scope);
       window.removeEventListener(channel, onLocal);
       window.removeEventListener("storage", onStorage);
       if (bc) bc.close();
@@ -123,7 +127,3 @@ export default function BrandHydrator({
 
   return null;
 }
-
-
-
- 

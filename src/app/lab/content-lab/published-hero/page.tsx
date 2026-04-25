@@ -8,34 +8,82 @@ import {
   type CSSProperties,
   type ReactElement,
 } from "react";
-import PublicHero from "@/components/web/hero/PublicHero";
 import BrandHydrator from "@/components/brand/BrandHydrator";
+import PanelBadge from "@/components/panel/ui/PanelBadge";
+import PanelButton from "@/components/panel/ui/PanelButton";
+import PanelCard from "@/components/panel/ui/PanelCard";
+import PublicHero, { type LabHeroPiece } from "@/components/web/hero/PublicHero";
 import type { BrandScope } from "@/lib/brand/storage";
 import {
-  createDefaultFreeLayout,
-  type FreeLayoutDraft,
-  type FreeLayoutSlot,
-  type FreeLayoutViewportId,
-} from "@/lib/content-lab/free-layout/types";
+  COMPONENT_REGISTRY,
+} from "@/lib/content/components/registry";
+import type { ComponentId } from "@/lib/content/components/types";
 import { mapPublishedSnapshotToContentPayload } from "@/lib/content-lab/published/mapPublishedSnapshotToContentPayload";
 import type { PublishedPieceSnapshot } from "@/lib/content-lab/published/types";
-import type { HeroAppearanceVariant } from "@/lib/web/hero/types";
-import type { AssetItem } from "@/lib/taller/media/types";
-import { fetchSystemMediaClientByQuery } from "@/lib/taller/media/service";
 import {
   getTallerLabVisualCssVars,
   getTallerPanelVisualCssVars,
 } from "@/lib/panel/tallerVisualContract";
+import type { HeroAppearanceVariant } from "@/lib/web/hero/types";
+import { fetchSystemMediaClientByQuery } from "@/lib/taller/media/service";
+import type {
+  AssetItem,
+  AssetVariantKey,
+  MediaOrientation,
+  MediaReviewStatus,
+} from "@/lib/taller/media/types";
 
 type CandidateId = "barber-pro" | "urban-studio";
-type PreviewViewport = FreeLayoutViewportId;
-type MenuStyle = "opaque" | "integrated";
-type CopyWidth = "compact" | "balanced" | "expanded";
-type PositionX = "left" | "center" | "right";
-type CopyBlockPosition = "left" | "center-left" | "center" | "right";
-type CtaPosition = "start" | "center" | "end";
+type PieceFamily = "hero" | "banner" | "landing" | "cards" | "promos" | "more";
+type CanvasMode = "preview" | "layout";
+type PreviewViewport = "mobile" | "tablet" | "desktop" | "wide";
+type SourceMode = "preset" | "hero-safe-media";
+type VisualSourceKind = "hero-image" | "logo" | "video";
+type Blueprint = "centered" | "split" | "poster" | "logo-first";
+type LayoutZone =
+  | "top-left"
+  | "top-center"
+  | "top-right"
+  | "center-left"
+  | "center"
+  | "center-right"
+  | "bottom-left"
+  | "bottom-center"
+  | "bottom-right";
+type LayoutPiece = Extract<LabHeroPiece, "logo" | "headline" | "subheadline" | "cta-group">;
+type OperationalPlacementPiece = Extract<
+  LabHeroPiece,
+  "nav-burger" | "theme-toggle" | "footer-hero" | "contact-strip" | "animated-signature"
+>;
+type StructuralAlign = "start" | "center" | "end";
+type StructuralWidth = "narrow" | "medium" | "wide";
+type StructuralEmphasis = "soft" | "balanced" | "dominant";
+type StructuralSpacing = "compact" | "normal" | "relaxed";
+type TextStyleScale = "S" | "M" | "L" | "XL" | "Display";
+type TextStyleWeight = "regular" | "medium" | "semibold" | "bold";
+type TextStyleColor =
+  | "auto"
+  | "default"
+  | "white"
+  | "dark"
+  | "accent"
+  | "subtle"
+  | "inverse"
+  | "highlight";
+type TextStyleShadow = "off" | "soft" | "medium";
+type TextStyleEmphasis = "soft" | "balanced" | "dominant";
+type TextStyleFont = "sans" | "display";
+type TextStyleLineHeight = "tight" | "normal" | "relaxed";
+type TextStyleTracking = "tight" | "normal" | "wide";
+type CtaStyle = "filled" | "outline" | "soft";
+type LayoutDensity = "compact" | "balanced" | "airy";
+type LayoutBalance = "copy-first" | "balanced" | "media-first";
+type LayoutContentWidth = "narrow" | "medium" | "wide";
+type LayoutMediaDominance = "low" | "medium" | "high";
+type LayoutSafeArea = "tight" | "normal" | "relaxed";
 type OverlayColor = "blue" | "green" | "amber" | "purple" | "smoke";
 type OverlayStyleMode = "gradient" | "solid" | "none";
+type BackgroundEmphasis = "low" | "medium" | "high";
 type LabHeadlineTone =
   | "white"
   | "black"
@@ -43,147 +91,489 @@ type LabHeadlineTone =
   | "muted-light"
   | "warm-light"
   | "cool-light";
-type PositionXOverride = PositionX | "auto";
-type CopyBlockPositionOverride = CopyBlockPosition | "auto";
-type BackgroundEmphasis = "low" | "medium" | "high";
-type CtaMode = "balanced" | "primary-focus";
-type Verdict = "weak" | "promising" | "preset-candidate";
-type LabComponentType = "hero" | "banner" | "landing";
-type HeroLayoutType = "centered" | "split" | "logo-focus" | "media-heavy";
-type ActionPriority = "alta" | "media" | "baja";
-type CanvasMode = "preview" | "layout";
-type SourceMode = "preset" | "hero-safe-media";
-type HierarchyScale = "compact" | "balanced" | "expressive";
-type SeparationLevel = "tight" | "normal" | "relaxed";
-type NavTriggerSize = "sm" | "md" | "lg";
-type NavTriggerAura = "none" | "soft" | "strong";
-type NavTriggerSurface = "minimal" | "solid" | "glass";
-type NavTriggerTone = "inverse" | "primary" | "muted";
-type NavTriggerHover = "soft" | "lift" | "glow";
-type DesktopNavSize = "sm" | "md" | "lg";
-type DesktopNavTone = "inverse" | "primary" | "muted";
-type DesktopNavSurface = "minimal" | "solid" | "glass";
-type DesktopNavHover = "soft" | "lift" | "glow";
-type DesktopNavPresence = "low" | "medium" | "high";
-type NavigationEditTarget = "auto" | "desktop" | "burger";
-type NavOpenBehavior = "overlay" | "drawer" | "fullscreen";
-type NavPanelWidth = "narrow" | "normal" | "wide";
-type NavPanelOrigin = "right" | "left" | "center";
-type NavPanelStyle = "solid" | "glass" | "minimal";
-type NavOverlayDensity = "low" | "medium" | "high";
-type NavOverlayStyle = "tinted" | "neutral" | "none";
-type NavReadabilityBoost = "none" | "soft" | "strong";
-type NavMenuBlockPosition = "top" | "center" | "bottom";
-type NavMenuAlignment = "left" | "center" | "right";
-type NavMenuItemSize = "sm" | "md" | "lg";
-type NavMenuSafeOffset = "tight" | "normal" | "relaxed";
-type NavMenuVerticalSpacing = "tight" | "normal" | "relaxed";
-type NavMenuTextTone = "inverse" | "muted" | "primary";
-type HeaderIntegration = "integrated" | "separated";
-type HeaderVisualStyle = "minimal" | "solid" | "glass";
-type HeaderTopSpacing = "tight" | "normal" | "relaxed";
-type HeaderRelation = "balanced" | "logo-focus" | "nav-focus";
-type FooterIntegration = "integrated" | "separated";
-type FooterVisualStyle = "minimal" | "solid" | "glass";
-type FooterDensity = "compact" | "balanced" | "spacious";
-type FooterSignatureSeparation = "tight" | "normal" | "relaxed";
-type BriefObjective = "bookings" | "services" | "campaign";
-type BriefTone = "premium" | "close" | "urgent";
-type BriefAudience = "new-clients" | "returning-clients" | "mixed";
-type BriefCtaIntent = "direct-booking" | "service-discovery" | "conversation";
-type BriefPriority = "conversion" | "clarity" | "brand";
-
-type Metric = {
-  score: number;
-  level: "alto" | "medio" | "bajo";
-  reasons: string[];
-};
-
-type HeroBrief = {
-  objective: BriefObjective;
-  tone: BriefTone;
-  audience: BriefAudience;
-  ctaIntent: BriefCtaIntent;
-  priority: BriefPriority;
-};
-
-type CtaSuggestion = {
-  primary: string;
-  secondary: string;
-};
-
-type RecommendedAction = {
-  priority: ActionPriority;
-  action: string;
-  reason: string;
-};
-
-type QualityScoreItem = {
-  key: "conversion" | "communication" | "visual-design" | "ux-ui" | "responsive" | "seo-a11y-perf";
+type CtaRegulation = "balanced" | "primary-focus";
+type AssetPickerView = "closed" | "open";
+type AssetComponentFilter = "all" | "hero" | "logo" | "icon";
+type AssetContextFilter = "all" | "hero" | "navbar" | "footer";
+type QualityDimensionKey =
+  | "conversion"
+  | "design"
+  | "ux"
+  | "seo"
+  | "responsive"
+  | "chromia"
+  | "accessibility"
+  | "performance"
+  | "branding";
+type QualityDimension = {
+  key: QualityDimensionKey;
   label: string;
   score: number;
-  note: string;
+  warning: string;
+  recommendation: string;
 };
 
-type HeroSafeMediaSource = {
-  id: string;
-  label: string;
-  url: string;
-  thematic: string;
-  sector: string;
-  component: string;
-  derived: string;
-  format: string;
-  ratio: string;
-  scope: string;
-  allowedComponents: string;
-  reviewState: string;
+type PieceVisibility = Record<LabHeroPiece, boolean>;
+type PieceStructure = {
+  align: StructuralAlign;
+  width: StructuralWidth;
+  emphasis: StructuralEmphasis;
+  spacing: StructuralSpacing;
 };
-
-const BRIEF_OBJECTIVE_LABEL: Record<BriefObjective, string> = {
-  bookings: "Captar reservas",
-  services: "Descubrir servicios",
-  campaign: "Campana temporal",
+type TextStyle = {
+  scale: TextStyleScale;
+  weight: TextStyleWeight;
+  color: TextStyleColor;
+  shadow: TextStyleShadow;
+  emphasis: TextStyleEmphasis;
+  font: TextStyleFont;
+  lineHeight: TextStyleLineHeight;
+  tracking: TextStyleTracking;
 };
-
-const BRIEF_TONE_LABEL: Record<BriefTone, string> = {
-  premium: "Premium",
-  close: "Cercano",
-  urgent: "Urgente",
+type SessionRole = "admin" | "owner" | "marketing" | "staff" | null;
+type ContentProperty =
+  | "headlineDraft"
+  | "subheadlineDraft"
+  | "primaryCtaDraft"
+  | "secondaryCtaDraft"
+  | "primaryCtaHrefDraft"
+  | "secondaryCtaHrefDraft";
+type VariantContentOverrides = Record<PreviewViewport, Record<ContentProperty, boolean>>;
+type VariantSnapshot = {
+  pieceVisibility: PieceVisibility;
+  headlineDraft: string;
+  subheadlineDraft: string;
+  badgeDraft: string;
+  primaryCtaDraft: string;
+  secondaryCtaDraft: string;
+  primaryCtaHrefDraft: string;
+  secondaryCtaHrefDraft: string;
+  textStyles: Record<Extract<LabHeroPiece, "headline" | "subheadline" | "cta-group">, TextStyle>;
+  ctaStyle: CtaStyle;
+  overlayDensity: HeroAppearanceVariant;
+  overlayStyleMode: OverlayStyleMode;
+  overlayTint: OverlayColor;
+  labHeadlineTone: LabHeadlineTone;
+  backgroundEmphasis: BackgroundEmphasis;
+  ctaRegulation: CtaRegulation;
+  blueprint: Blueprint;
+  pieceZones: Record<LayoutPiece, LayoutZone>;
+  operationalPieceZones: Record<OperationalPlacementPiece, LayoutZone>;
+  pieceStructure: Record<LayoutPiece, PieceStructure>;
+  layoutDensity: LayoutDensity;
+  layoutBalance: LayoutBalance;
+  layoutContentWidth: LayoutContentWidth;
+  layoutMediaDominance: LayoutMediaDominance;
+  layoutSafeArea: LayoutSafeArea;
+  mobileLogoScale: "compact" | "balanced" | "expressive";
+  navTriggerSize: "sm" | "md" | "lg";
+  navTriggerTone: "inverse" | "primary" | "muted";
+  navTriggerSurface: "minimal" | "solid" | "glass";
+  navTriggerAura: "none" | "soft" | "strong";
+  navOpenBehavior: "overlay" | "drawer" | "fullscreen";
+  navLinksVisible: boolean;
+  navPlacement: "auto" | "left" | "center" | "right";
+  logoOpacity: number;
+  logoShadow: "none" | "soft" | "medium";
+  logoFrameStyle: "minimal" | "solid" | "glass";
+  themeToggleDefault: "light" | "dark" | "auto";
+  themeToggleStyle: "minimal" | "solid" | "glass";
+  themeTogglePosition: "left" | "right";
+  footerAddress: string;
+  footerPhone: string;
+  footerWhatsapp: string;
+  footerEmail: string;
+  contactDensity: "compact" | "balanced" | "spacious";
+  contactContrast: "soft" | "medium" | "strong";
+  footerIconsVisible: boolean;
+  footerPlacement: "auto" | "left" | "center" | "right";
+  footerSignatureSeparation: "tight" | "normal" | "relaxed";
+  signatureSize: "sm" | "md" | "lg";
+  signatureOpacity: number;
+  signatureAnimation: "pulse" | "float" | "none";
 };
+type VariantSnapshotSet = Record<PreviewViewport, VariantSnapshot>;
+type HeadlineTransformMode = "shorten" | "commercial" | "seo-local";
 
-const BRIEF_AUDIENCE_LABEL: Record<BriefAudience, string> = {
-  "new-clients": "Nuevos clientes",
-  "returning-clients": "Clientes recurrentes",
-  mixed: "Mixta",
+const HERO_CANDIDATES: Record<CandidateId, PublishedPieceSnapshot> = {
+  "barber-pro": {
+    id: "snapshot-lab-hero-001",
+    businessId: "business-lab-001",
+    pieceType: "hero",
+    zone: "home.hero",
+    status: "published",
+    meta: {
+      version: 1,
+      publishedAt: "2026-04-12T10:00:00.000Z",
+      publishedByUserId: "user-lab-001",
+      sourcePresetVaultItemId: "preset-vault-lab-001",
+      sourcePublisherInstanceId: "publisher-instance-lab-001",
+    },
+    payload: {
+      badgeText: "LAB - Barber Pro",
+      headline: "Controla la escena visual sin romper el flujo publicado",
+      subheadline:
+        "Snapshot publicado, mapper y renderer real en una sola superficie de validacion.",
+      primaryCta: { label: "Reservar cita", href: "#reservar" },
+      secondaryCta: { label: "Ver servicios", href: "#servicios" },
+      media: {
+        url: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1800&q=80",
+        alt: "Barberia en primer plano",
+        format: "jpg",
+      },
+      accent: "#2563eb",
+      overlay: "soft",
+    },
+  },
+  "urban-studio": {
+    id: "snapshot-lab-hero-002",
+    businessId: "business-lab-001",
+    pieceType: "hero",
+    zone: "home.hero",
+    status: "published",
+    meta: {
+      version: 1,
+      publishedAt: "2026-04-12T10:00:00.000Z",
+      publishedByUserId: "user-lab-001",
+      sourcePresetVaultItemId: "preset-vault-lab-002",
+      sourcePublisherInstanceId: "publisher-instance-lab-002",
+    },
+    payload: {
+      badgeText: "LAB - Urban Studio",
+      headline: "Preview real del hero publicado para iterar sin tocar produccion",
+      subheadline:
+        "El laboratorio orquesta configuracion visual en vivo mientras mantiene el renderer real.",
+      primaryCta: { label: "Agendar ahora", href: "#agendar" },
+      secondaryCta: { label: "Conocer plan", href: "#plan" },
+      media: {
+        url: "https://images.unsplash.com/photo-1503951458645-643d53bfd90f?auto=format&fit=crop&w=1800&q=80",
+        alt: "Estudio con iluminacion",
+        format: "jpg",
+      },
+      accent: "#14b8a6",
+      overlay: "solid",
+    },
+  },
 };
+const INITIAL_CANDIDATE_HERO = mapPublishedSnapshotToContentPayload(HERO_CANDIDATES["barber-pro"]);
 
-const BRIEF_CTA_INTENT_LABEL: Record<BriefCtaIntent, string> = {
-  "direct-booking": "Reserva directa",
-  "service-discovery": "Explorar servicios",
-  conversation: "Conversacion guiada",
-};
-
-const BRIEF_PRIORITY_LABEL: Record<BriefPriority, string> = {
-  conversion: "Conversion",
-  clarity: "Claridad",
-  brand: "Marca",
-};
-
-const COMPONENT_TYPE_LABEL: Record<LabComponentType, string> = {
-  hero: "Hero",
-  banner: "Banner",
-  landing: "Landing",
-};
-
-const COMPONENT_TYPES: readonly { id: LabComponentType; status: "active" | "planned" }[] = [
-  { id: "hero", status: "active" },
-  { id: "banner", status: "planned" },
-  { id: "landing", status: "planned" },
+const PIECE_FAMILY_TABS: readonly { id: PieceFamily; label: string; status: "active" | "planned" }[] = [
+  { id: "hero", label: "Hero", status: "active" },
+  { id: "banner", label: "Banner", status: "planned" },
+  { id: "landing", label: "Landing", status: "planned" },
+  { id: "cards", label: "Cards", status: "planned" },
+  { id: "promos", label: "Promos", status: "planned" },
+  { id: "more", label: "More", status: "planned" },
 ];
-const FUTURE_COMPONENT_TYPES_COUNT = 3;
 
-const viewportIconClassName = "h-4 w-4";
+const COMPONENT_TO_LAB_PIECE: Partial<Record<ComponentId, LabHeroPiece>> = {
+  "nav-burger": "nav-burger",
+  "theme-toggle": "theme-toggle",
+  badge: "badge",
+  headline: "headline",
+  subheadline: "subheadline",
+  "cta-group": "cta-group",
+  "cta-button": "cta-group",
+  "background-media": "background-media",
+  logo: "logo",
+  overlay: "overlay-atmosphere",
+  "contact-strip": "contact-strip",
+  "animated-signature": "animated-signature",
+};
+
+const LAB_PIECE_LABEL: Record<LabHeroPiece, string> = {
+  logo: "Logo",
+  headline: "Titular",
+  subheadline: "Subtitulo",
+  "cta-group": "Botones CTA",
+  badge: "Badge",
+  "nav-burger": "Navegacion / hamburguesa",
+  "theme-toggle": "Claro/Oscuro",
+  "footer-hero": "Footer hero",
+  "contact-strip": "Contacto hero",
+  "animated-signature": "Firma animada",
+  "background-media": "Fondo / media",
+  "overlay-atmosphere": "Overlay / atmosfera",
+};
+
+const LAYOUT_ENABLED_PIECES = new Set<LabHeroPiece>(["logo", "headline", "subheadline", "cta-group"]);
+const OPERATIONAL_PLACEMENT_PIECES: readonly OperationalPlacementPiece[] = [
+  "nav-burger",
+  "theme-toggle",
+  "footer-hero",
+  "contact-strip",
+  "animated-signature",
+];
+const OPERATIONAL_PLACEMENT_PIECE_SET = new Set<LabHeroPiece>(OPERATIONAL_PLACEMENT_PIECES);
+
+const PIECE_LIBRARY: readonly { id: LabHeroPiece; label: string; layoutEnabled: boolean }[] = (() => {
+  const pieces: { id: LabHeroPiece; label: string; layoutEnabled: boolean }[] = [];
+  const seen = new Set<LabHeroPiece>();
+
+  COMPONENT_REGISTRY.forEach((component) => {
+    if (!component.enabled) return;
+
+    const mappedPiece = COMPONENT_TO_LAB_PIECE[component.id];
+    if (!mappedPiece || seen.has(mappedPiece)) return;
+
+    seen.add(mappedPiece);
+    pieces.push({
+      id: mappedPiece,
+      label: LAB_PIECE_LABEL[mappedPiece],
+      layoutEnabled: LAYOUT_ENABLED_PIECES.has(mappedPiece),
+    });
+  });
+
+  if (!seen.has("badge")) {
+    pieces.push({
+      id: "badge",
+      label: LAB_PIECE_LABEL.badge,
+      layoutEnabled: false,
+    });
+  }
+
+  if (!seen.has("footer-hero")) {
+    pieces.push({
+      id: "footer-hero",
+      label: LAB_PIECE_LABEL["footer-hero"],
+      layoutEnabled: false,
+    });
+  }
+
+  return pieces;
+})();
+
+const OVERLAY_TINT_PREVIEW_CLASS: Record<OverlayColor, string> = {
+  blue: "bg-gradient-to-r from-blue-700 to-slate-900",
+  green: "bg-gradient-to-r from-emerald-700 to-teal-900",
+  amber: "bg-gradient-to-r from-amber-700 to-stone-900",
+  purple: "bg-gradient-to-r from-violet-700 to-indigo-900",
+  smoke: "bg-gradient-to-r from-slate-700 to-slate-950",
+};
+
+const LAYOUT_PIECES: readonly LayoutPiece[] = ["logo", "headline", "subheadline", "cta-group"];
+const LAYOUT_ZONES: readonly LayoutZone[] = [
+  "top-left",
+  "top-center",
+  "top-right",
+  "center-left",
+  "center",
+  "center-right",
+  "bottom-left",
+  "bottom-center",
+  "bottom-right",
+];
+
+const VIEWPORTS: Record<PreviewViewport, { width: number; height: number; label: string }> = {
+  mobile: { width: 375, height: 812, label: "Mobile" },
+  tablet: { width: 768, height: 1024, label: "Tablet" },
+  desktop: { width: 1280, height: 800, label: "Desktop" },
+  wide: { width: 1440, height: 900, label: "Wide" },
+};
+const VIEWPORT_INHERITANCE_ORDER: readonly PreviewViewport[] = [
+  "mobile",
+  "tablet",
+  "desktop",
+  "wide",
+];
+const VARIANT_FILTERS: readonly (AssetVariantKey | "all")[] = [
+  "all",
+  "optimized",
+  "original",
+  "thumbnail",
+  "vectorized-svg",
+];
+const ORIENTATION_FILTERS: readonly (MediaOrientation | "all")[] = [
+  "all",
+  "landscape",
+  "portrait",
+  "square",
+];
+const REVIEW_FILTERS: readonly (MediaReviewStatus | "all")[] = [
+  "all",
+  "approved",
+  "reviewed",
+  "draft",
+];
+
+const HERO_SOURCE_ALLOWED_CONTEXT = "home.hero.background";
+const HERO_SOURCE_ALLOWED_CONTEXT_LEGACY = "hero.background";
+const PREVIEW_STAGE_PADDING: Record<PreviewViewport, { x: number; y: number }> = {
+  mobile: { x: 24, y: 34 },
+  tablet: { x: 36, y: 48 },
+  desktop: { x: 30, y: 42 },
+  wide: { x: 30, y: 42 },
+};
+const PREVIEW_MIN_SCALE: Record<PreviewViewport, number> = {
+  mobile: 0.32,
+  tablet: 0.27,
+  desktop: 0.45,
+  wide: 0.45,
+};
+const WORKSPACE_VIEWPORT_BOTTOM_GUTTER = 12;
+const CONTENT_PROPERTIES: readonly ContentProperty[] = [
+  "headlineDraft",
+  "subheadlineDraft",
+  "primaryCtaDraft",
+  "secondaryCtaDraft",
+  "primaryCtaHrefDraft",
+  "secondaryCtaHrefDraft",
+];
+const OPERATIONAL_INSPECTOR_PIECES = new Set<LabHeroPiece>([
+  "nav-burger",
+  "theme-toggle",
+  "footer-hero",
+  "contact-strip",
+  "animated-signature",
+]);
+
+const DEFAULT_PIECE_VISIBILITY: PieceVisibility = {
+  logo: true,
+  headline: true,
+  subheadline: true,
+  "cta-group": true,
+  badge: true,
+  "nav-burger": true,
+  "theme-toggle": true,
+  "footer-hero": true,
+  "contact-strip": true,
+  "animated-signature": true,
+  "background-media": true,
+  "overlay-atmosphere": true,
+};
+
+const DEFAULT_PIECE_ZONES: Record<LayoutPiece, LayoutZone> = {
+  logo: "top-left",
+  headline: "center-left",
+  subheadline: "center-left",
+  "cta-group": "bottom-left",
+};
+const DEFAULT_OPERATIONAL_PIECE_ZONES: Record<OperationalPlacementPiece, LayoutZone> = {
+  "nav-burger": "top-right",
+  "theme-toggle": "top-left",
+  "footer-hero": "bottom-center",
+  "contact-strip": "bottom-left",
+  "animated-signature": "bottom-right",
+};
+
+const DEFAULT_PIECE_STRUCTURE: Record<LayoutPiece, PieceStructure> = {
+  logo: { align: "start", width: "medium", emphasis: "balanced", spacing: "normal" },
+  headline: { align: "start", width: "wide", emphasis: "dominant", spacing: "normal" },
+  subheadline: { align: "start", width: "medium", emphasis: "balanced", spacing: "normal" },
+  "cta-group": { align: "start", width: "medium", emphasis: "balanced", spacing: "normal" },
+};
+
+const DEFAULT_TEXT_STYLES: Record<Extract<LabHeroPiece, "headline" | "subheadline" | "cta-group">, TextStyle> = {
+  headline: {
+    scale: "Display",
+    weight: "bold",
+    color: "auto",
+    shadow: "soft",
+    emphasis: "dominant",
+    font: "display",
+    lineHeight: "tight",
+    tracking: "tight",
+  },
+  subheadline: {
+    scale: "M",
+    weight: "medium",
+    color: "subtle",
+    shadow: "off",
+    emphasis: "balanced",
+    font: "sans",
+    lineHeight: "normal",
+    tracking: "normal",
+  },
+  "cta-group": {
+    scale: "M",
+    weight: "semibold",
+    color: "default",
+    shadow: "off",
+    emphasis: "balanced",
+    font: "sans",
+    lineHeight: "normal",
+    tracking: "normal",
+  },
+};
+
+const BLUEPRINT_PRESETS: Record<
+  Blueprint,
+  {
+    navPosition: "left" | "center" | "right";
+    visualPosition: "left" | "center" | "right";
+    footerPosition: "left" | "center" | "right";
+    logoPosition: "left" | "center" | "right";
+  }
+> = {
+  centered: {
+    navPosition: "center",
+    visualPosition: "center",
+    footerPosition: "center",
+    logoPosition: "center",
+  },
+  split: {
+    navPosition: "left",
+    visualPosition: "right",
+    footerPosition: "left",
+    logoPosition: "left",
+  },
+  poster: {
+    navPosition: "center",
+    visualPosition: "center",
+    footerPosition: "center",
+    logoPosition: "center",
+  },
+  "logo-first": {
+    navPosition: "center",
+    visualPosition: "center",
+    footerPosition: "center",
+    logoPosition: "center",
+  },
+};
+
+const BLUEPRINT_ZONE_PRESETS: Record<Blueprint, Record<LayoutPiece, LayoutZone>> = {
+  centered: {
+    logo: "top-center",
+    headline: "center",
+    subheadline: "center",
+    "cta-group": "bottom-center",
+  },
+  split: {
+    logo: "top-left",
+    headline: "center-left",
+    subheadline: "center-left",
+    "cta-group": "bottom-left",
+  },
+  poster: {
+    logo: "top-center",
+    headline: "center-left",
+    subheadline: "center-left",
+    "cta-group": "bottom-left",
+  },
+  "logo-first": {
+    logo: "center",
+    headline: "center-left",
+    subheadline: "bottom-left",
+    "cta-group": "bottom-right",
+  },
+};
+
+function buildOperationalZonesFromBlueprint(
+  blueprint: Blueprint
+): Record<OperationalPlacementPiece, LayoutZone> {
+  const preset = BLUEPRINT_PRESETS[blueprint];
+  const navColumn = preset.navPosition;
+  const themeColumn = navColumn === "left" ? "right" : "left";
+  const footerColumn = preset.footerPosition;
+
+  return {
+    "nav-burger": `top-${navColumn}` as LayoutZone,
+    "theme-toggle": `top-${themeColumn}` as LayoutZone,
+    "footer-hero": `bottom-${footerColumn}` as LayoutZone,
+    "contact-strip": `bottom-${footerColumn}` as LayoutZone,
+    "animated-signature": "bottom-right",
+  };
+}
 
 function SmartphoneIcon({ className }: { className?: string }) {
   return (
@@ -213,206 +603,300 @@ function DesktopIcon({ className }: { className?: string }) {
   );
 }
 
-function WideDesktopIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <rect x="2.5" y="5" width="19" height="11" rx="1.8" />
-      <path d="M8.5 20h7M12 16v4M18.8 7.8l2.2 2.2-2.2 2.2" />
-    </svg>
-  );
-}
-
-const VIEWPORT_BUTTON_LABEL: Record<
-  PreviewViewport,
-  { label: string; Icon: (props: { className?: string }) => ReactElement }
-> = {
-  mobile: { Icon: SmartphoneIcon, label: "mobile" },
-  tablet: { Icon: TabletIcon, label: "tablet" },
-  desktop: { Icon: DesktopIcon, label: "desktop" },
-  wide: { Icon: WideDesktopIcon, label: "wide" },
+const VIEWPORT_ICON: Record<PreviewViewport, (props: { className?: string }) => ReactElement> = {
+  mobile: SmartphoneIcon,
+  tablet: TabletIcon,
+  desktop: DesktopIcon,
+  wide: DesktopIcon,
 };
 
-const HERO_LAYOUT_TYPES: readonly HeroLayoutType[] = [
-  "centered",
-  "split",
-  "logo-focus",
-  "media-heavy",
-];
+function clamp(value: number) {
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
 
-const HERO_LAYOUT_CLASS: Record<
-  HeroLayoutType,
-  {
-    navPosition: PositionX;
-    headlinePosition: PositionX;
-    copyBlockPosition: CopyBlockPosition;
-    ctaPosition: CtaPosition;
-    footerPosition: PositionX;
-    visualPosition: PositionX;
-    logoPosition: PositionX;
+function resolveLabBrandScopeFromRole(role: SessionRole): Extract<BrandScope, "panel" | "studio"> {
+  return role === "admin" ? "studio" : "panel";
+}
+
+function zoneToColumn(zone: LayoutZone): "left" | "center" | "right" {
+  if (zone.endsWith("left")) return "left";
+  if (zone.endsWith("right")) return "right";
+  return "center";
+}
+
+function zoneToRow(zone: LayoutZone): "top" | "center" | "bottom" {
+  if (zone.startsWith("top")) return "top";
+  if (zone.startsWith("bottom")) return "bottom";
+  return "center";
+}
+
+function zoneToCopyBlock(zone: LayoutZone): "left" | "center-left" | "center" | "right" {
+  const column = zoneToColumn(zone);
+  if (column === "left") return "left";
+  if (column === "right") return "right";
+  return "center";
+}
+
+function columnToCtaPosition(column: "left" | "center" | "right"): "start" | "center" | "end" {
+  if (column === "left") return "start";
+  if (column === "right") return "end";
+  return "center";
+}
+
+function structuralAlignToColumn(align: StructuralAlign): "left" | "center" | "right" {
+  if (align === "center") return "center";
+  if (align === "end") return "right";
+  return "left";
+}
+
+function structuralAlignToTextClass(align: StructuralAlign): string {
+  if (align === "center") return "text-center";
+  if (align === "end") return "text-right";
+  return "text-left";
+}
+
+function structuralAlignToContainerClass(align: StructuralAlign): string {
+  if (align === "center") return "mx-auto";
+  if (align === "end") return "ml-auto";
+  return "";
+}
+
+function columnToStructuralAlign(column: "left" | "center" | "right"): StructuralAlign {
+  if (column === "center") return "center";
+  if (column === "right") return "end";
+  return "start";
+}
+
+function resolveViewportNavigationMode(viewport: PreviewViewport): "mobile" | "desktop" {
+  if (viewport === "desktop" || viewport === "wide") return "desktop";
+  return "mobile";
+}
+
+function resolveViewportNavPanelOrigin(
+  viewport: PreviewViewport,
+  navPlacement: "auto" | "left" | "center" | "right",
+  navPosition: "left" | "center" | "right"
+): "left" | "center" | "right" {
+  if (resolveViewportNavigationMode(viewport) === "desktop") {
+    return navPosition;
   }
-> = {
-  centered: {
-    navPosition: "center",
-    headlinePosition: "center",
-    copyBlockPosition: "center",
-    ctaPosition: "center",
-    footerPosition: "center",
-    visualPosition: "center",
-    logoPosition: "center",
-  },
-  split: {
-    navPosition: "left",
-    headlinePosition: "left",
-    copyBlockPosition: "left",
-    ctaPosition: "start",
-    footerPosition: "left",
-    visualPosition: "right",
-    logoPosition: "left",
-  },
-  "logo-focus": {
-    navPosition: "center",
-    headlinePosition: "center",
-    copyBlockPosition: "center-left",
-    ctaPosition: "center",
-    footerPosition: "center",
-    visualPosition: "center",
-    logoPosition: "center",
-  },
-  "media-heavy": {
-    navPosition: "right",
-    headlinePosition: "right",
-    copyBlockPosition: "right",
-    ctaPosition: "end",
-    footerPosition: "right",
-    visualPosition: "left",
-    logoPosition: "right",
-  },
-};
-
-const HERO_LAYOUT_LABEL: Record<HeroLayoutType, string> = {
-  centered: "Centered",
-  split: "Split",
-  "logo-focus": "Logo focus",
-  "media-heavy": "Media heavy",
-};
-
-const OVERLAY_TINT_PREVIEW_CLASS: Record<OverlayColor, string> = {
-  blue: "bg-gradient-to-r from-blue-700 to-slate-900",
-  green: "bg-gradient-to-r from-emerald-700 to-teal-900",
-  amber: "bg-gradient-to-r from-amber-700 to-stone-900",
-  purple: "bg-gradient-to-r from-violet-700 to-indigo-900",
-  smoke: "bg-gradient-to-r from-slate-700 to-slate-950",
-};
-
-const LAB_HEADLINE_TONE_LABEL: Record<LabHeadlineTone, string> = {
-  white: "white",
-  black: "black",
-  inverse: "inverse",
-  "muted-light": "muted light",
-  "warm-light": "warm light",
-  "cool-light": "cool light",
-};
-
-const HERO_CANDIDATES: Record<CandidateId, PublishedPieceSnapshot> = {
-  "barber-pro": {
-    id: "snapshot-lab-hero-001",
-    businessId: "business-lab-001",
-    pieceType: "hero",
-    zone: "home.hero",
-    status: "published",
-    meta: {
-      version: 1,
-      publishedAt: "2026-04-12T10:00:00.000Z",
-      publishedByUserId: "user-lab-001",
-      sourcePresetVaultItemId: "preset-vault-lab-001",
-      sourcePublisherInstanceId: "publisher-instance-lab-001",
-    },
-    payload: {
-      badgeText: "LAB - Barber Pro",
-      headline: "Controla la escena visual sin romper el flujo publicado",
-      subheadline:
-        "Snapshot publicado -> mapper -> HeroData -> renderer real en una sola superficie de validacion.",
-      primaryCta: { label: "Reservar cita", href: "#reservar" },
-      secondaryCta: { label: "Ver servicios", href: "#servicios" },
-      media: {
-        url: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1800&q=80",
-        alt: "Barberia en primer plano",
-        format: "jpg",
-      },
-      accent: "#2563eb",
-      overlay: "soft",
-    },
-  },
-  "urban-studio": {
-    id: "snapshot-lab-hero-002",
-    businessId: "business-lab-001",
-    pieceType: "hero",
-    zone: "home.hero",
-    status: "published",
-    meta: {
-      version: 1,
-      publishedAt: "2026-04-12T10:00:00.000Z",
-      publishedByUserId: "user-lab-001",
-      sourcePresetVaultItemId: "preset-vault-lab-002",
-      sourcePublisherInstanceId: "publisher-instance-lab-002",
-    },
-    payload: {
-      badgeText: "LAB - Urban Studio",
-      headline: "Preview real del hero publicado para iterar sin tocar produccion",
-      subheadline:
-        "El laboratorio orquesta configuracion visual en vivo mientras mantiene el renderer real del proyecto.",
-      primaryCta: { label: "Agendar ahora", href: "#agendar" },
-      secondaryCta: { label: "Conocer plan", href: "#plan" },
-      media: {
-        url: "https://images.unsplash.com/photo-1503951458645-643d53bfd90f?auto=format&fit=crop&w=1800&q=80",
-        alt: "Estudio con iluminacion",
-        format: "jpg",
-      },
-      accent: "#14b8a6",
-      overlay: "solid",
-    },
-  },
-};
-
-const VIEWPORTS: Record<
-  PreviewViewport,
-  { width: number; height: number; navigationMode: "mobile" | "desktop" }
-> = {
-  mobile: { width: 375, height: 812, navigationMode: "mobile" },
-  tablet: { width: 768, height: 1024, navigationMode: "mobile" },
-  desktop: { width: 1280, height: 800, navigationMode: "desktop" },
-  wide: { width: 1440, height: 900, navigationMode: "desktop" },
-};
-const SHOW_LAYOUT_GUIDES = false;
-const PREVIEW_STAGE_HORIZONTAL_PADDING = 24;
-const PREVIEW_STAGE_VERTICAL_PADDING = 40;
-const WORKSPACE_VIEWPORT_BOTTOM_GUTTER = 12;
-const HERO_SOURCE_ALLOWED_CONTEXT = "home.hero.background";
-const HERO_SOURCE_ALLOWED_CONTEXT_LEGACY = "hero.background";
-
-function greatestCommonDivisor(a: number, b: number): number {
-  let x = Math.max(1, Math.abs(Math.round(a)));
-  let y = Math.max(1, Math.abs(Math.round(b)));
-  while (y !== 0) {
-    const temp = y;
-    y = x % y;
-    x = temp;
+  if (navPlacement === "left" || navPlacement === "center" || navPlacement === "right") {
+    return navPlacement;
   }
-  return x;
+  return navPosition;
 }
 
-function toRatioLabel(width: number, height: number): string {
-  if (!width || !height) return "n/a";
-  const divisor = greatestCommonDivisor(width, height);
-  const ratioW = Math.max(1, Math.round(width / divisor));
-  const ratioH = Math.max(1, Math.round(height / divisor));
-  return `${ratioW}:${ratioH}`;
+function structuralEmphasisToClass(emphasis: StructuralEmphasis): string {
+  if (emphasis === "soft") return "opacity-90";
+  if (emphasis === "dominant") return "scale-[1.02]";
+  return "";
 }
 
-function readTag(tags: string[], prefix: string): string {
-  const match = tags.find((tag) => tag.startsWith(prefix));
-  if (!match) return "";
-  return match.slice(prefix.length).trim();
+function structuralWidthToPieceClass(
+  piece: LayoutPiece,
+  width: StructuralWidth
+): string {
+  if (piece === "logo") {
+    if (width === "narrow") return "max-w-[14rem]";
+    if (width === "wide") return "max-w-[30rem]";
+    return "max-w-[22rem]";
+  }
+
+  if (piece === "subheadline") {
+    if (width === "narrow") return "max-w-md";
+    if (width === "wide") return "max-w-3xl";
+    return "max-w-2xl";
+  }
+
+  if (piece === "cta-group") {
+    if (width === "narrow") return "max-w-sm";
+    if (width === "wide") return "max-w-2xl";
+    return "max-w-xl";
+  }
+
+  return "";
+}
+
+function zoneRowToOffsetClass(row: "top" | "center" | "bottom"): string {
+  if (row === "top") return "-translate-y-2";
+  if (row === "bottom") return "translate-y-2";
+  return "translate-y-0";
+}
+
+function alignPieceStructureToZones(
+  current: Record<LayoutPiece, PieceStructure>,
+  zones: Record<LayoutPiece, LayoutZone>
+): Record<LayoutPiece, PieceStructure> {
+  return {
+    logo: {
+      ...current.logo,
+      align: columnToStructuralAlign(zoneToColumn(zones.logo)),
+    },
+    headline: {
+      ...current.headline,
+      align: columnToStructuralAlign(zoneToColumn(zones.headline)),
+    },
+    subheadline: {
+      ...current.subheadline,
+      align: columnToStructuralAlign(zoneToColumn(zones.subheadline)),
+    },
+    "cta-group": {
+      ...current["cta-group"],
+      align: columnToStructuralAlign(zoneToColumn(zones["cta-group"])),
+    },
+  };
+}
+
+function structuralWidthToCopyWidth(width: StructuralWidth): "narrow" | "normal" | "wide" {
+  if (width === "narrow") return "narrow";
+  if (width === "wide") return "wide";
+  return "normal";
+}
+
+function structuralSpacingToGap(value: StructuralSpacing): "tight" | "normal" | "relaxed" {
+  if (value === "compact") return "tight";
+  if (value === "relaxed") return "relaxed";
+  return "normal";
+}
+
+function textStyleToClass(piece: "headline" | "subheadline" | "cta-group", style: TextStyle): string {
+  const scaleClass =
+    piece === "headline"
+      ? style.scale === "S"
+        ? "!text-2xl sm:!text-3xl md:!text-4xl"
+        : style.scale === "M"
+          ? "!text-3xl sm:!text-4xl md:!text-5xl"
+          : style.scale === "L"
+            ? "!text-4xl sm:!text-5xl md:!text-6xl"
+            : style.scale === "XL"
+              ? "!text-[2.9rem] sm:!text-[3.5rem] md:!text-[4.2rem]"
+              : "!text-[3.25rem] sm:!text-[3.9rem] md:!text-[4.8rem]"
+      : style.scale === "S"
+        ? "!text-xs"
+        : style.scale === "M"
+          ? "!text-sm md:!text-base"
+          : style.scale === "L"
+            ? "!text-base md:!text-lg"
+            : style.scale === "XL"
+              ? "!text-lg md:!text-xl"
+              : "!text-xl md:!text-2xl";
+
+  const weightClass =
+    style.weight === "regular"
+      ? "!font-normal"
+      : style.weight === "medium"
+        ? "!font-medium"
+        : style.weight === "semibold"
+          ? "!font-semibold"
+          : "!font-bold";
+  const fontClass = style.font === "display" ? "font-display" : "font-sans";
+
+  const colorClass =
+    style.color === "auto"
+      ? ""
+      : style.color === "accent"
+        ? piece === "headline"
+          ? "![color:var(--accent-strong,var(--primary))]"
+          : "[color:var(--accent-strong,var(--primary))]"
+        : style.color === "subtle"
+          ? "[color:var(--hero-text-82)]"
+          : style.color === "inverse"
+            ? piece === "headline"
+              ? "![color:var(--hero-text-inverse)]"
+              : "[color:var(--hero-text-inverse)]"
+            : style.color === "highlight"
+              ? "[color:var(--warning,var(--accent-strong,var(--primary)))]"
+              : style.color === "white"
+                ? piece === "headline"
+                  ? "![color:var(--hero-text-inverse)]"
+                  : "[color:var(--hero-text-inverse)]"
+                : style.color === "dark"
+                  ? piece === "headline"
+                    ? "![color:var(--foreground)]"
+                    : "[color:var(--foreground)]"
+                  : style.color === "default" && piece === "headline"
+                    ? "![color:var(--hero-text-inverse)]"
+                    : "";
+
+  const shadowClass =
+    style.shadow === "soft"
+      ? "[text-shadow:0_8px_20px_color-mix(in_oklab,var(--foreground)_24%,transparent)]"
+      : style.shadow === "medium"
+        ? "[text-shadow:0_10px_24px_color-mix(in_oklab,var(--foreground)_38%,transparent)]"
+        : "";
+
+  const emphasisClass =
+    style.emphasis === "soft"
+      ? "opacity-90"
+      : style.emphasis === "dominant"
+        ? "opacity-100 tracking-tight"
+        : "opacity-95";
+  const lineHeightClass =
+    style.lineHeight === "tight"
+      ? "leading-[1.02]"
+      : style.lineHeight === "relaxed"
+        ? "leading-[1.45]"
+        : "leading-[1.2]";
+  const trackingClass =
+    style.tracking === "tight"
+      ? "tracking-tight"
+      : style.tracking === "wide"
+        ? "tracking-wide"
+        : "tracking-normal";
+
+  return [
+    scaleClass,
+    weightClass,
+    fontClass,
+    colorClass,
+    shadowClass,
+    emphasisClass,
+    lineHeightClass,
+    trackingClass,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function ctaStyleClasses(style: CtaStyle): { primary: string; secondary: string } {
+  if (style === "outline") {
+    return {
+      primary:
+        "border border-[color:var(--hero-text-inverse)] !bg-transparent [color:var(--hero-text-inverse)] hover:[background:color-mix(in_oklab,var(--hero-text-inverse)_14%,transparent)]",
+      secondary:
+        "border border-[color:var(--hero-text-90)] !bg-transparent [color:var(--hero-text-90)] hover:[background:color-mix(in_oklab,var(--hero-text-inverse)_10%,transparent)]",
+    };
+  }
+
+  if (style === "soft") {
+    return {
+      primary:
+        "border border-transparent ![background:color-mix(in_oklab,var(--hero-cta-primary)_60%,var(--surface-3,var(--card))_40%)] [color:var(--hero-cta-primary-foreground)]",
+      secondary:
+        "border border-transparent ![background:color-mix(in_oklab,var(--hero-cta-secondary)_78%,var(--surface-3,var(--card))_22%)] [color:var(--hero-cta-secondary-foreground)]",
+    };
+  }
+
+  return { primary: "", secondary: "" };
+}
+
+function getAssetPreviewTone(item: AssetItem): "processing" | "success" | "warning" {
+  if (item.reviewStatus === "approved") return "success";
+  if (item.reviewStatus === "reviewed") return "processing";
+  return "warning";
+}
+
+function sortByRecent(left: AssetItem, right: AssetItem): number {
+  const leftTime = Date.parse(left.updatedAt || left.createdAt || "") || 0;
+  const rightTime = Date.parse(right.updatedAt || right.createdAt || "") || 0;
+  return rightTime - leftTime;
+}
+
+function getVariantScore(item: AssetItem): number {
+  if (item.variantKey === "optimized") return 40;
+  if (item.variantKey === "original") return 30;
+  if (item.variantKey === "thumbnail") return 20;
+  return 10;
 }
 
 function includesHeroAllowedContext(allowedIn: string[]): boolean {
@@ -421,14 +905,7 @@ function includesHeroAllowedContext(allowedIn: string[]): boolean {
   );
 }
 
-function variantScore(item: AssetItem): number {
-  if (item.variantKey === "optimized") return 40;
-  if (item.variantKey === "original") return 30;
-  if (item.variantKey === "thumbnail") return 20;
-  return 10;
-}
-
-function toHeroSafeMediaSources(items: AssetItem[]): HeroSafeMediaSource[] {
+function toHeroSafeMediaSources(items: AssetItem[]): AssetItem[] {
   const groupedBySource = new Map<string, AssetItem>();
 
   items.forEach((item) => {
@@ -438,124 +915,167 @@ function toHeroSafeMediaSources(items: AssetItem[]): HeroSafeMediaSource[] {
       item.kind !== "video" &&
       Boolean(item.url?.trim()) &&
       includesHeroAllowedContext(item.allowedIn);
+
     if (!isEligible) return;
 
     const rootId = item.sourceAssetId || item._id;
     const previous = groupedBySource.get(rootId);
-    if (!previous || variantScore(item) > variantScore(previous)) {
+    if (!previous || getVariantScore(item) > getVariantScore(previous)) {
       groupedBySource.set(rootId, item);
     }
   });
 
-  return Array.from(groupedBySource.values())
-    .sort((a, b) => {
-      if (variantScore(a) !== variantScore(b)) return variantScore(b) - variantScore(a);
-      return b.updatedAt?.localeCompare(a.updatedAt || "") || 0;
-    })
-    .map((item) => {
-      const thematic = readTag(item.tags, "intent:") || readTag(item.tags, "style:") || "general";
-      const sector = readTag(item.tags, "sector:") || "general";
-      const component = readTag(item.tags, "visual:") || "photo";
-      const mimeParts = item.mime.split("/");
-      const format = mimeParts[mimeParts.length - 1] || "unknown";
-
-      return {
-        id: item._id,
-        label: item.label || "Asset sin nombre",
-        url: item.url,
-        thematic,
-        sector,
-        component,
-        derived: item.variantKey,
-        format,
-        ratio: toRatioLabel(item.width, item.height),
-        scope: item.scope,
-        allowedComponents:
-          item.allowedIn.length > 0 ? item.allowedIn.join(", ") : HERO_SOURCE_ALLOWED_CONTEXT,
-        reviewState: `${item.status} / ${item.pipelineStatus}`,
-      };
-    });
+  return Array.from(groupedBySource.values()).sort(sortByRecent);
 }
 
-const SCENE_OVERLAY_GRADIENT_TINT_CLASS: Record<OverlayColor, string> = {
-  blue:
-    "[background:linear-gradient(136deg,color-mix(in_oklab,var(--processing,var(--accent,var(--primary)))_78%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_54%,var(--hero-overlay,var(--foreground)))_48%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_80%,var(--foreground)))]",
-  green:
-    "[background:linear-gradient(136deg,color-mix(in_oklab,var(--success,var(--accent,var(--primary)))_78%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_54%,var(--hero-overlay,var(--foreground)))_48%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_80%,var(--foreground)))]",
-  amber:
-    "[background:linear-gradient(136deg,color-mix(in_oklab,var(--warning,var(--accent,var(--primary)))_78%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_54%,var(--hero-overlay,var(--foreground)))_48%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_80%,var(--foreground)))]",
-  purple:
-    "[background:linear-gradient(136deg,color-mix(in_oklab,var(--accent-strong,var(--accent,var(--primary)))_78%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_54%,var(--hero-overlay,var(--foreground)))_48%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_80%,var(--foreground)))]",
-  smoke:
-    "[background:linear-gradient(136deg,color-mix(in_oklab,var(--foreground,var(--primary))_80%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--surface-3,var(--muted))_58%,var(--hero-overlay,var(--foreground)))_48%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_82%,var(--foreground)))]",
-};
+function scoreAssetForVisualSource(item: AssetItem, sourceKind: VisualSourceKind): number {
+  if (sourceKind === "video") return 0;
 
-const SCENE_OVERLAY_SOLID_TINT_CLASS: Record<OverlayColor, string> = {
-  blue:
-    "[background:color-mix(in_oklab,var(--processing,var(--accent,var(--primary)))_74%,var(--hero-overlay-strong,var(--foreground)))]",
-  green:
-    "[background:color-mix(in_oklab,var(--success,var(--accent,var(--primary)))_74%,var(--hero-overlay-strong,var(--foreground)))]",
-  amber:
-    "[background:color-mix(in_oklab,var(--warning,var(--accent,var(--primary)))_74%,var(--hero-overlay-strong,var(--foreground)))]",
-  purple:
-    "[background:color-mix(in_oklab,var(--accent-strong,var(--accent,var(--primary)))_74%,var(--hero-overlay-strong,var(--foreground)))]",
-  smoke:
-    "[background:color-mix(in_oklab,var(--foreground,var(--primary))_78%,var(--hero-overlay-strong,var(--foreground)))]",
-};
+  const variant = item.variantKey;
+  const orientation = item.orientation;
+  const normalizedUrl = String(item.url || "").toLowerCase();
 
-const SCENE_OVERLAY_OPACITY_CLASS: Record<
-  HeroAppearanceVariant,
-  Record<BackgroundEmphasis, string>
-> = {
-  transparent: {
-    low: "opacity-32",
-    medium: "opacity-24",
-    high: "opacity-18",
-  },
-  soft: {
-    low: "opacity-46",
-    medium: "opacity-38",
-    high: "opacity-30",
-  },
-  solid: {
-    low: "opacity-58",
-    medium: "opacity-50",
-    high: "opacity-42",
-  },
-};
+  if (sourceKind === "hero-image") {
+    const variantScore = variant === "optimized" ? 50 : variant === "original" ? 30 : 10;
+    const orientationScore = orientation === "landscape" ? 30 : orientation === "square" ? 10 : 0;
+    const heroSafeBoost = includesHeroAllowedContext(item.allowedIn) ? 20 : 0;
+    return variantScore + orientationScore + heroSafeBoost;
+  }
 
-function clamp(value: number): number {
-  return Math.min(100, Math.max(0, Math.round(value)));
+  const logoVariantScore =
+    variant === "vectorized-svg" ? 50 : variant === "optimized" ? 35 : variant === "original" ? 20 : 10;
+  const transparentBoost =
+    variant === "vectorized-svg" || normalizedUrl.endsWith(".svg") || normalizedUrl.endsWith(".png")
+      ? 24
+      : 0;
+  const roleBoost = item.assetRole === "logo" || item.assetRole === "icon" ? 18 : 0;
+  return logoVariantScore + transparentBoost + roleBoost;
 }
 
-function levelFromPositive(score: number): "alto" | "medio" | "bajo" {
-  if (score >= 75) return "alto";
-  if (score >= 50) return "medio";
-  return "bajo";
+function pieceLabel(piece: LabHeroPiece) {
+  return PIECE_LIBRARY.find((item) => item.id === piece)?.label ?? piece;
 }
 
-function levelFromNoise(score: number): "alto" | "medio" | "bajo" {
-  if (score >= 70) return "alto";
-  if (score >= 45) return "medio";
-  return "bajo";
+function zoneLabel(zone: LayoutZone) {
+  return zone.replace("-", " ");
 }
 
-function evalMetricPositive(score: number, reasons: string[]): Metric {
-  return { score: clamp(score), level: levelFromPositive(score), reasons };
+function isTextEditablePiece(piece: LabHeroPiece | null): piece is "headline" | "subheadline" | "cta-group" {
+  return piece === "headline" || piece === "subheadline" || piece === "cta-group";
 }
 
-function evalMetricNoise(score: number, reasons: string[]): Metric {
-  return { score: clamp(score), level: levelFromNoise(score), reasons };
+function cloneSnapshot<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function formatRectPercent(value: number): string {
-  return `${Math.round(value * 100)}%`;
+function readContentProperty(snapshot: VariantSnapshot, property: ContentProperty): string {
+  return snapshot[property];
 }
 
-type SessionRole = "admin" | "owner" | "marketing" | "staff" | null;
+function writeContentProperty(snapshot: VariantSnapshot, property: ContentProperty, value: string) {
+  snapshot[property] = value;
+}
 
-function resolveLabBrandScopeFromRole(role: SessionRole): Extract<BrandScope, "panel" | "studio"> {
-  return role === "admin" ? "studio" : "panel";
+function createDefaultContentOverrides(): VariantContentOverrides {
+  return {
+    mobile: {
+      headlineDraft: true,
+      subheadlineDraft: true,
+      primaryCtaDraft: true,
+      secondaryCtaDraft: true,
+      primaryCtaHrefDraft: true,
+      secondaryCtaHrefDraft: true,
+    },
+    tablet: {
+      headlineDraft: false,
+      subheadlineDraft: false,
+      primaryCtaDraft: false,
+      secondaryCtaDraft: false,
+      primaryCtaHrefDraft: false,
+      secondaryCtaHrefDraft: false,
+    },
+    desktop: {
+      headlineDraft: false,
+      subheadlineDraft: false,
+      primaryCtaDraft: false,
+      secondaryCtaDraft: false,
+      primaryCtaHrefDraft: false,
+      secondaryCtaHrefDraft: false,
+    },
+    wide: {
+      headlineDraft: false,
+      subheadlineDraft: false,
+      primaryCtaDraft: false,
+      secondaryCtaDraft: false,
+      primaryCtaHrefDraft: false,
+      secondaryCtaHrefDraft: false,
+    },
+  };
+}
+
+function resolveContentInheritanceSource(
+  viewport: PreviewViewport,
+  property: ContentProperty,
+  overrides: VariantContentOverrides
+): PreviewViewport {
+  const viewportIndex = VIEWPORT_INHERITANCE_ORDER.indexOf(viewport);
+  if (viewportIndex <= 0) return "mobile";
+
+  for (let index = viewportIndex; index >= 0; index -= 1) {
+    const candidate = VIEWPORT_INHERITANCE_ORDER[index];
+    if (candidate === "mobile") return "mobile";
+    if (overrides[candidate][property]) return candidate;
+  }
+
+  return "mobile";
+}
+
+function snapshotsAreEqual(left: VariantSnapshot, right: VariantSnapshot): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function resolveViewportInheritanceSource(
+  viewport: PreviewViewport,
+  overrides: Record<PreviewViewport, boolean>
+): PreviewViewport {
+  const viewportIndex = VIEWPORT_INHERITANCE_ORDER.indexOf(viewport);
+  if (viewportIndex <= 0) return "mobile";
+
+  for (let index = viewportIndex; index >= 0; index -= 1) {
+    const candidate = VIEWPORT_INHERITANCE_ORDER[index];
+    if (candidate === "mobile") return "mobile";
+    if (overrides[candidate]) return candidate;
+  }
+
+  return "mobile";
+}
+
+function resolveViewportSnapshotWithInheritance(
+  snapshots: VariantSnapshotSet,
+  overrides: Record<PreviewViewport, boolean>,
+  viewport: PreviewViewport
+): VariantSnapshot {
+  const sourceViewport = resolveViewportInheritanceSource(viewport, overrides);
+  return snapshots[sourceViewport] ?? snapshots.mobile;
+}
+
+function propagateViewportSnapshotToDescendants(
+  snapshots: VariantSnapshotSet,
+  overrides: Record<PreviewViewport, boolean>,
+  sourceViewport: PreviewViewport,
+  snapshot: VariantSnapshot
+) {
+  const sourceIndex = VIEWPORT_INHERITANCE_ORDER.indexOf(sourceViewport);
+  if (sourceIndex < 0) return;
+
+  for (let index = sourceIndex + 1; index < VIEWPORT_INHERITANCE_ORDER.length; index += 1) {
+    const targetViewport = VIEWPORT_INHERITANCE_ORDER[index];
+    if (overrides[targetViewport]) continue;
+
+    const inheritedSource = resolveViewportInheritanceSource(targetViewport, overrides);
+    if (inheritedSource !== sourceViewport) continue;
+    snapshots[targetViewport] = cloneSnapshot(snapshot);
+  }
 }
 
 export default function PublishedHeroLabPage({
@@ -565,122 +1085,520 @@ export default function PublishedHeroLabPage({
 }) {
   const [brandScope, setBrandScope] = useState<Extract<BrandScope, "panel" | "studio">>("panel");
   const [sessionRole, setSessionRole] = useState<SessionRole>(null);
-  const [componentType, setComponentType] = useState<LabComponentType>("hero");
-  const [candidateId, setCandidateId] = useState<CandidateId>("barber-pro");
-  const [sourceMode, setSourceMode] = useState<SourceMode>("preset");
-  const [heroSafeMediaSources, setHeroSafeMediaSources] = useState<HeroSafeMediaSource[]>([]);
-  const [heroSafeMediaSourceId, setHeroSafeMediaSourceId] = useState<string>("");
-  const [heroSafeMediaState, setHeroSafeMediaState] = useState<
-    "idle" | "loading" | "ready" | "error"
-  >("loading");
-  const [heroSafeMediaError, setHeroSafeMediaError] = useState<string>("");
-  const [brief, setBrief] = useState<HeroBrief>({
-    objective: "bookings",
-    tone: "premium",
-    audience: "new-clients",
-    ctaIntent: "direct-booking",
-    priority: "conversion",
-  });
-  const [viewport, setViewport] = useState<PreviewViewport>("mobile");
+
+  const [pieceFamily, setPieceFamily] = useState<PieceFamily>("hero");
   const [canvasMode, setCanvasMode] = useState<CanvasMode>("preview");
-  const [heroLayoutType, setHeroLayoutType] = useState<HeroLayoutType>("split");
-  const [menuStyle] = useState<MenuStyle>("integrated");
+  const [viewport, setViewport] = useState<PreviewViewport>("mobile");
+  const [sourceMode, setSourceMode] = useState<SourceMode>("hero-safe-media");
+  const candidateId: CandidateId = "barber-pro";
+  const [variantName, setVariantName] = useState<string>("base");
+  const [actionNotice, setActionNotice] = useState<string>("");
+  const [variantCounter, setVariantCounter] = useState<number>(1);
+
+  const [visualSourceKind, setVisualSourceKind] = useState<VisualSourceKind>("hero-image");
+  const [assetPickerView, setAssetPickerView] = useState<AssetPickerView>("closed");
+  const [showAssetFilters, setShowAssetFilters] = useState<boolean>(false);
+  const [variantFilter, setVariantFilter] = useState<AssetVariantKey | "all">("optimized");
+  const [orientationFilter, setOrientationFilter] = useState<MediaOrientation | "all">("landscape");
+  const [reviewFilter, setReviewFilter] = useState<MediaReviewStatus | "all">("approved");
+  const [assetComponentFilter, setAssetComponentFilter] = useState<AssetComponentFilter>("hero");
+  const [assetContextFilter, setAssetContextFilter] = useState<AssetContextFilter>("hero");
+  const [allAssets, setAllAssets] = useState<AssetItem[]>([]);
+  const [assetState, setAssetState] = useState<"idle" | "loading" | "ready" | "error">("loading");
+  const [assetError, setAssetError] = useState<string>("");
+  const [selectedHeroAssetId, setSelectedHeroAssetId] = useState<string>("");
+  const [selectedLogoAssetId, setSelectedLogoAssetId] = useState<string>("");
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
-  const [navigationEditTarget, setNavigationEditTarget] = useState<NavigationEditTarget>("auto");
-  const [navTriggerSize, setNavTriggerSize] = useState<NavTriggerSize>("md");
-  const [navTriggerAura, setNavTriggerAura] = useState<NavTriggerAura>("none");
-  const [navTriggerSurface, setNavTriggerSurface] = useState<NavTriggerSurface>("minimal");
-  const [navTriggerTone, setNavTriggerTone] = useState<NavTriggerTone>("inverse");
-  const [navTriggerHover, setNavTriggerHover] = useState<NavTriggerHover>("soft");
-  const [desktopNavSize, setDesktopNavSize] = useState<DesktopNavSize>("md");
-  const [desktopNavTone, setDesktopNavTone] = useState<DesktopNavTone>("muted");
-  const [desktopNavSurface, setDesktopNavSurface] = useState<DesktopNavSurface>("solid");
-  const [desktopNavHover, setDesktopNavHover] = useState<DesktopNavHover>("soft");
-  const [desktopNavPresence, setDesktopNavPresence] = useState<DesktopNavPresence>("medium");
-  const [navOpenBehavior, setNavOpenBehavior] = useState<NavOpenBehavior>("overlay");
-  const [navPanelWidth, setNavPanelWidth] = useState<NavPanelWidth>("normal");
-  const [navPanelOrigin, setNavPanelOrigin] = useState<NavPanelOrigin>("right");
-  const [navPanelIncludeLogo, setNavPanelIncludeLogo] = useState<boolean>(true);
-  const [navPanelStyle, setNavPanelStyle] = useState<NavPanelStyle>("solid");
-  const [navOverlayDensity, setNavOverlayDensity] = useState<NavOverlayDensity>("medium");
-  const [navOverlayStyle, setNavOverlayStyle] = useState<NavOverlayStyle>("tinted");
-  const [navReadabilityBoost, setNavReadabilityBoost] = useState<NavReadabilityBoost>("soft");
-  const [navMenuBlockPosition, setNavMenuBlockPosition] =
-    useState<NavMenuBlockPosition>("top");
-  const [navMenuAlignment, setNavMenuAlignment] = useState<NavMenuAlignment>("left");
-  const [navMenuItemSize, setNavMenuItemSize] = useState<NavMenuItemSize>("md");
-  const [navMenuSafeTopOffset, setNavMenuSafeTopOffset] =
-    useState<NavMenuSafeOffset>("normal");
-  const [navMenuSafeSideOffset, setNavMenuSafeSideOffset] =
-    useState<NavMenuSafeOffset>("normal");
-  const [navMenuVerticalSpacing, setNavMenuVerticalSpacing] =
-    useState<NavMenuVerticalSpacing>("normal");
-  const [navMenuTextTone, setNavMenuTextTone] = useState<NavMenuTextTone>("inverse");
-  const [headerIntegration, setHeaderIntegration] = useState<HeaderIntegration>("integrated");
-  const [headerVisualStyle, setHeaderVisualStyle] = useState<HeaderVisualStyle>("solid");
-  const [headerTopSpacing, setHeaderTopSpacing] = useState<HeaderTopSpacing>("normal");
-  const [headerRelation, setHeaderRelation] = useState<HeaderRelation>("balanced");
-  const [footerIntegration, setFooterIntegration] = useState<FooterIntegration>("integrated");
-  const [footerVisualStyle, setFooterVisualStyle] = useState<FooterVisualStyle>("solid");
-  const [footerDensity, setFooterDensity] = useState<FooterDensity>("balanced");
-  const [footerSignatureSeparation, setFooterSignatureSeparation] =
-    useState<FooterSignatureSeparation>("normal");
-  const [footerPositionOverride, setFooterPositionOverride] = useState<PositionXOverride>("auto");
-  const [copyWidth, setCopyWidth] = useState<CopyWidth>("balanced");
-  const [mobileHeadlineScale, setMobileHeadlineScale] = useState<HierarchyScale>("balanced");
-  const [mobileLogoScale, setMobileLogoScale] = useState<HierarchyScale>("balanced");
-  const [gapLogoHeadline, setGapLogoHeadline] = useState<SeparationLevel>("normal");
-  const [gapHeadlineSubheadline, setGapHeadlineSubheadline] = useState<SeparationLevel>("normal");
-  const [gapTextCta, setGapTextCta] = useState<SeparationLevel>("normal");
-  const [gapCtaFooter, setGapCtaFooter] = useState<SeparationLevel>("normal");
-  const [gapFooterDataSignature, setGapFooterDataSignature] = useState<SeparationLevel>("normal");
-  const [ctaMode, setCtaMode] = useState<CtaMode>("balanced");
-  const [overlayMode, setOverlayMode] = useState<HeroAppearanceVariant>("soft");
+
+  const [pieceVisibility, setPieceVisibility] = useState<PieceVisibility>(DEFAULT_PIECE_VISIBILITY);
+  const [selectedPiece, setSelectedPiece] = useState<LabHeroPiece | null>(null);
+  const [activeLayoutPiece, setActiveLayoutPiece] = useState<LayoutPiece>("headline");
+
+  const [headlineDraft, setHeadlineDraft] = useState<string>(INITIAL_CANDIDATE_HERO.title);
+  const [subheadlineDraft, setSubheadlineDraft] = useState<string>(INITIAL_CANDIDATE_HERO.description);
+  const [badgeDraft, setBadgeDraft] = useState<string>(INITIAL_CANDIDATE_HERO.badge);
+  const [primaryCtaDraft, setPrimaryCtaDraft] = useState<string>(INITIAL_CANDIDATE_HERO.primaryCtaLabel);
+  const [secondaryCtaDraft, setSecondaryCtaDraft] = useState<string>(INITIAL_CANDIDATE_HERO.secondaryCtaLabel);
+  const [primaryCtaHrefDraft, setPrimaryCtaHrefDraft] = useState<string>(
+    INITIAL_CANDIDATE_HERO.primaryCtaHref
+  );
+  const [secondaryCtaHrefDraft, setSecondaryCtaHrefDraft] = useState<string>(
+    INITIAL_CANDIDATE_HERO.secondaryCtaHref
+  );
+
+  const [textStyles, setTextStyles] = useState(DEFAULT_TEXT_STYLES);
+  const [ctaStyle, setCtaStyle] = useState<CtaStyle>("filled");
+  const [overlayDensity, setOverlayDensity] = useState<HeroAppearanceVariant>("soft");
   const [overlayStyleMode, setOverlayStyleMode] = useState<OverlayStyleMode>("gradient");
-  const [overlayColor, setOverlayColor] = useState<OverlayColor>("blue");
+  const [overlayTint, setOverlayTint] = useState<OverlayColor>("blue");
   const [labHeadlineTone, setLabHeadlineTone] = useState<LabHeadlineTone>("white");
   const [backgroundEmphasis, setBackgroundEmphasis] = useState<BackgroundEmphasis>("medium");
-  const [navPositionOverride, setNavPositionOverride] = useState<PositionXOverride>("auto");
-  const [logoPositionOverride, setLogoPositionOverride] = useState<PositionXOverride>("auto");
-  const [visualPositionOverride, setVisualPositionOverride] = useState<PositionXOverride>("auto");
-  const [copyBlockPositionOverride, setCopyBlockPositionOverride] =
-    useState<CopyBlockPositionOverride>("auto");
-  const [badgeVisible, setBadgeVisible] = useState<boolean>(true);
-  const [headlineDraft, setHeadlineDraft] = useState<string>("");
-  const [subheadlineDraft, setSubheadlineDraft] = useState<string>("");
-  const [primaryCtaDraft, setPrimaryCtaDraft] = useState<string>("");
-  const [secondaryCtaDraft, setSecondaryCtaDraft] = useState<string>("");
+  const [ctaRegulation, setCtaRegulation] = useState<CtaRegulation>("balanced");
+
+  const [blueprint, setBlueprint] = useState<Blueprint>("split");
+  const [pieceZones, setPieceZones] = useState<Record<LayoutPiece, LayoutZone>>(DEFAULT_PIECE_ZONES);
+  const [operationalPieceZones, setOperationalPieceZones] =
+    useState<Record<OperationalPlacementPiece, LayoutZone>>(buildOperationalZonesFromBlueprint("split"));
+  const [pieceStructure, setPieceStructure] =
+    useState<Record<LayoutPiece, PieceStructure>>(DEFAULT_PIECE_STRUCTURE);
+
+  const [layoutDensity, setLayoutDensity] = useState<LayoutDensity>("balanced");
+  const [layoutBalance, setLayoutBalance] = useState<LayoutBalance>("copy-first");
+  const [layoutContentWidth, setLayoutContentWidth] = useState<LayoutContentWidth>("medium");
+  const [layoutMediaDominance, setLayoutMediaDominance] =
+    useState<LayoutMediaDominance>("medium");
+  const [layoutSafeArea, setLayoutSafeArea] = useState<LayoutSafeArea>("normal");
+  const [mobileLogoScale, setMobileLogoScale] = useState<"compact" | "balanced" | "expressive">(
+    "balanced"
+  );
+  const [navTriggerSize, setNavTriggerSize] = useState<"sm" | "md" | "lg">("md");
+  const [navTriggerTone, setNavTriggerTone] = useState<"inverse" | "primary" | "muted">("inverse");
+  const [navTriggerSurface, setNavTriggerSurface] = useState<"minimal" | "solid" | "glass">("glass");
+  const [navTriggerAura, setNavTriggerAura] = useState<"none" | "soft" | "strong">("soft");
+  const [navOpenBehavior, setNavOpenBehavior] = useState<"overlay" | "drawer" | "fullscreen">("overlay");
+  const [navLinksVisible, setNavLinksVisible] = useState<boolean>(true);
+  const [navPlacement, setNavPlacement] = useState<"auto" | "left" | "center" | "right">("auto");
+  const [logoOpacity, setLogoOpacity] = useState<number>(96);
+  const [logoShadow, setLogoShadow] = useState<"none" | "soft" | "medium">("soft");
+  const [logoFrameStyle, setLogoFrameStyle] = useState<"minimal" | "solid" | "glass">("glass");
+  const [themeToggleDefault, setThemeToggleDefault] = useState<"light" | "dark" | "auto">("auto");
+  const [themeToggleStyle, setThemeToggleStyle] = useState<"minimal" | "solid" | "glass">("glass");
+  const [themeTogglePosition, setThemeTogglePosition] = useState<"left" | "right">("right");
+  const [footerAddress, setFooterAddress] = useState<string>("Direccion (pendiente)");
+  const [footerPhone, setFooterPhone] = useState<string>("Telefono");
+  const [footerWhatsapp, setFooterWhatsapp] = useState<string>("WhatsApp");
+  const [footerEmail, setFooterEmail] = useState<string>("email@cliente.com");
+  const [contactDensity, setContactDensity] = useState<"compact" | "balanced" | "spacious">("balanced");
+  const [contactContrast, setContactContrast] = useState<"soft" | "medium" | "strong">("medium");
+  const [footerIconsVisible, setFooterIconsVisible] = useState<boolean>(true);
+  const [footerPlacement, setFooterPlacement] = useState<"auto" | "left" | "center" | "right">("auto");
+  const [footerSignatureSeparation, setFooterSignatureSeparation] =
+    useState<"tight" | "normal" | "relaxed">("normal");
+  const [signatureSize, setSignatureSize] = useState<"sm" | "md" | "lg">("md");
+  const [signatureOpacity, setSignatureOpacity] = useState<number>(80);
+  const [signatureAnimation, setSignatureAnimation] = useState<"pulse" | "float" | "none">("pulse");
+  const [headlineProposal, setHeadlineProposal] = useState<string>("");
+  const [headlineProposalMode, setHeadlineProposalMode] = useState<HeadlineTransformMode | null>(null);
+  const [deviceEditingNotice, setDeviceEditingNotice] = useState<string>("Este ajuste afecta solo a Mobile.");
+
   const workspaceViewportRef = useRef<HTMLElement | null>(null);
-  const [workspaceViewportHeight, setWorkspaceViewportHeight] = useState<number | null>(null);
   const previewStageRef = useRef<HTMLDivElement | null>(null);
+  const viewportRef = useRef<PreviewViewport>("mobile");
+  const breakpointSnapshotsRef = useRef<VariantSnapshotSet | null>(null);
+  const variantSnapshotsRef = useRef<Record<string, VariantSnapshotSet>>({});
+  const variantOverridesRef = useRef<Record<string, Record<PreviewViewport, boolean>>>({});
+  const variantContentOverridesRef = useRef<Record<string, VariantContentOverrides>>({});
+  const [workspaceViewportHeight, setWorkspaceViewportHeight] = useState<number | null>(null);
   const [previewStageSize, setPreviewStageSize] = useState<{ width: number; height: number }>({
     width: 0,
     height: 0,
   });
 
-  const viewportConfig = VIEWPORTS[viewport];
-  const canvasWidth = viewportConfig.width;
-  const canvasHeight = viewportConfig.height;
-  const canEditDesktopNavigation = viewportConfig.navigationMode === "desktop";
-  const canEditBurgerNavigation = viewportConfig.navigationMode === "mobile";
-  const governedNavigationEditTarget =
-    navigationEditTarget === "desktop" && !canEditDesktopNavigation
-      ? "auto"
-      : navigationEditTarget === "burger" && !canEditBurgerNavigation
-        ? "auto"
-        : navigationEditTarget;
-  const resolvedNavigationEditTarget =
-    governedNavigationEditTarget === "auto"
-      ? viewportConfig.navigationMode === "mobile"
-        ? "burger"
-        : "desktop"
-      : governedNavigationEditTarget;
-  const previewNavigationMode = resolvedNavigationEditTarget === "burger" ? "mobile" : "desktop";
-  const menuToggleEnabled = previewNavigationMode === "mobile";
-  const effectiveMenuOpen = menuToggleEnabled ? menuOpen : false;
-  const desktopNavigationControlsVisible = resolvedNavigationEditTarget === "desktop";
-  const burgerNavigationControlsVisible = resolvedNavigationEditTarget === "burger";
-  const burgerControlsLiveOnViewport = previewNavigationMode === "mobile";
+  const candidateSnapshot = HERO_CANDIDATES[candidateId];
+  const candidateHero = useMemo(
+    () => mapPublishedSnapshotToContentPayload(candidateSnapshot),
+    [candidateSnapshot]
+  );
+
+  function captureSnapshot(): VariantSnapshot {
+    return {
+      pieceVisibility,
+      headlineDraft,
+      subheadlineDraft,
+      badgeDraft,
+      primaryCtaDraft,
+      secondaryCtaDraft,
+      primaryCtaHrefDraft,
+      secondaryCtaHrefDraft,
+      textStyles,
+      ctaStyle,
+      overlayDensity,
+      overlayStyleMode,
+      overlayTint,
+      labHeadlineTone,
+      backgroundEmphasis,
+      ctaRegulation,
+      blueprint,
+      pieceZones,
+      operationalPieceZones,
+      pieceStructure,
+      layoutDensity,
+      layoutBalance,
+      layoutContentWidth,
+      layoutMediaDominance,
+      layoutSafeArea,
+      mobileLogoScale,
+      navTriggerSize,
+      navTriggerTone,
+      navTriggerSurface,
+      navTriggerAura,
+      navOpenBehavior,
+      navLinksVisible,
+      navPlacement,
+      logoOpacity,
+      logoShadow,
+      logoFrameStyle,
+      themeToggleDefault,
+      themeToggleStyle,
+      themeTogglePosition,
+      footerAddress,
+      footerPhone,
+      footerWhatsapp,
+      footerEmail,
+      contactDensity,
+      contactContrast,
+      footerIconsVisible,
+      footerPlacement,
+      footerSignatureSeparation,
+      signatureSize,
+      signatureOpacity,
+      signatureAnimation,
+    };
+  }
+
+  function applySnapshot(snapshot: VariantSnapshot) {
+    setPieceVisibility(cloneSnapshot(snapshot.pieceVisibility));
+    setHeadlineDraft(snapshot.headlineDraft);
+    setSubheadlineDraft(snapshot.subheadlineDraft);
+    setBadgeDraft(snapshot.badgeDraft);
+    setPrimaryCtaDraft(snapshot.primaryCtaDraft);
+    setSecondaryCtaDraft(snapshot.secondaryCtaDraft);
+    setPrimaryCtaHrefDraft(snapshot.primaryCtaHrefDraft);
+    setSecondaryCtaHrefDraft(snapshot.secondaryCtaHrefDraft);
+    setTextStyles(cloneSnapshot(snapshot.textStyles));
+    setCtaStyle(snapshot.ctaStyle);
+    setOverlayDensity(snapshot.overlayDensity);
+    setOverlayStyleMode(snapshot.overlayStyleMode);
+    setOverlayTint(snapshot.overlayTint);
+    setLabHeadlineTone(snapshot.labHeadlineTone);
+    setBackgroundEmphasis(snapshot.backgroundEmphasis);
+    setCtaRegulation(snapshot.ctaRegulation);
+    setBlueprint(snapshot.blueprint);
+    setPieceZones(cloneSnapshot(snapshot.pieceZones));
+    const fallbackOperationalZones: Record<OperationalPlacementPiece, LayoutZone> = {
+      "nav-burger": `${zoneToRow(DEFAULT_OPERATIONAL_PIECE_ZONES["nav-burger"])}-${
+        snapshot.navPlacement === "auto" ? "right" : snapshot.navPlacement
+      }` as LayoutZone,
+      "theme-toggle": `${zoneToRow(DEFAULT_OPERATIONAL_PIECE_ZONES["theme-toggle"])}-${
+        snapshot.themeTogglePosition === "left" ? "left" : "right"
+      }` as LayoutZone,
+      "footer-hero": `${zoneToRow(DEFAULT_OPERATIONAL_PIECE_ZONES["footer-hero"])}-${
+        snapshot.footerPlacement === "auto" ? "center" : snapshot.footerPlacement
+      }` as LayoutZone,
+      "contact-strip": DEFAULT_OPERATIONAL_PIECE_ZONES["contact-strip"],
+      "animated-signature": DEFAULT_OPERATIONAL_PIECE_ZONES["animated-signature"],
+    };
+    setOperationalPieceZones(
+      cloneSnapshot(snapshot.operationalPieceZones ?? fallbackOperationalZones)
+    );
+    setPieceStructure(cloneSnapshot(snapshot.pieceStructure));
+    setLayoutDensity(snapshot.layoutDensity);
+    setLayoutBalance(snapshot.layoutBalance);
+    setLayoutContentWidth(snapshot.layoutContentWidth);
+    setLayoutMediaDominance(snapshot.layoutMediaDominance);
+    setLayoutSafeArea(snapshot.layoutSafeArea);
+    setMobileLogoScale(snapshot.mobileLogoScale);
+    setNavTriggerSize(snapshot.navTriggerSize);
+    setNavTriggerTone(snapshot.navTriggerTone);
+    setNavTriggerSurface(snapshot.navTriggerSurface);
+    setNavTriggerAura(snapshot.navTriggerAura);
+    setNavOpenBehavior(snapshot.navOpenBehavior);
+    setNavLinksVisible(snapshot.navLinksVisible);
+    setNavPlacement(snapshot.navPlacement);
+    setLogoOpacity(snapshot.logoOpacity);
+    setLogoShadow(snapshot.logoShadow);
+    setLogoFrameStyle(snapshot.logoFrameStyle);
+    setThemeToggleDefault(snapshot.themeToggleDefault);
+    setThemeToggleStyle(snapshot.themeToggleStyle);
+    setThemeTogglePosition(snapshot.themeTogglePosition);
+    setFooterAddress(snapshot.footerAddress);
+    setFooterPhone(snapshot.footerPhone);
+    setFooterWhatsapp(snapshot.footerWhatsapp);
+    setFooterEmail(snapshot.footerEmail);
+    setContactDensity(snapshot.contactDensity);
+    setContactContrast(snapshot.contactContrast);
+    setFooterIconsVisible(snapshot.footerIconsVisible);
+    setFooterPlacement(snapshot.footerPlacement);
+    setFooterSignatureSeparation(snapshot.footerSignatureSeparation);
+    setSignatureSize(snapshot.signatureSize);
+    setSignatureOpacity(snapshot.signatureOpacity);
+    setSignatureAnimation(snapshot.signatureAnimation);
+  }
+
+  function ensureCurrentVariantSnapshots(): VariantSnapshotSet {
+    initializeVariantStorageIfNeeded();
+    const fallback = cloneSnapshot(captureSnapshot());
+    const existing = variantSnapshotsRef.current[variantName];
+    if (existing) return existing;
+
+    const mobileSnapshot =
+      breakpointSnapshotsRef.current?.mobile ??
+      breakpointSnapshotsRef.current?.[viewport] ??
+      fallback;
+    const next: VariantSnapshotSet = {
+      mobile: cloneSnapshot(mobileSnapshot),
+      tablet: cloneSnapshot(mobileSnapshot),
+      desktop: cloneSnapshot(mobileSnapshot),
+      wide: cloneSnapshot(mobileSnapshot),
+    };
+    variantSnapshotsRef.current[variantName] = next;
+    return next;
+  }
+
+  function ensureCurrentVariantOverrides(): Record<PreviewViewport, boolean> {
+    const existing = variantOverridesRef.current[variantName];
+    if (existing) return existing;
+    const next: Record<PreviewViewport, boolean> = {
+      mobile: true,
+      tablet: false,
+      desktop: false,
+      wide: false,
+    };
+    variantOverridesRef.current[variantName] = next;
+    return next;
+  }
+
+  function ensureCurrentVariantContentOverrides(): VariantContentOverrides {
+    const existing = variantContentOverridesRef.current[variantName];
+    if (existing) return existing;
+
+    const variantSet = ensureCurrentVariantSnapshots();
+    const next = createDefaultContentOverrides();
+    const orderedViewports = VIEWPORT_INHERITANCE_ORDER.filter((item) => item !== "mobile");
+
+    orderedViewports.forEach((targetViewport) => {
+      CONTENT_PROPERTIES.forEach((property) => {
+        const inheritedSource = resolveContentInheritanceSource(targetViewport, property, next);
+        const inheritedValue = readContentProperty(
+          variantSet[inheritedSource] ?? variantSet.mobile,
+          property
+        );
+        const candidateValue = readContentProperty(variantSet[targetViewport], property);
+        next[targetViewport][property] = candidateValue !== inheritedValue;
+      });
+    });
+
+    variantContentOverridesRef.current[variantName] = next;
+    return next;
+  }
+
+  function getResolvedValue(device: PreviewViewport, property: ContentProperty): string {
+    const variantSet = ensureCurrentVariantSnapshots();
+    const contentOverrides = ensureCurrentVariantContentOverrides();
+    const sourceViewport = resolveContentInheritanceSource(device, property, contentOverrides);
+    return readContentProperty(variantSet[sourceViewport] ?? variantSet.mobile, property);
+  }
+
+  function setResolvedContentState(device: PreviewViewport) {
+    setHeadlineDraft(getResolvedValue(device, "headlineDraft"));
+    setSubheadlineDraft(getResolvedValue(device, "subheadlineDraft"));
+    setPrimaryCtaDraft(getResolvedValue(device, "primaryCtaDraft"));
+    setSecondaryCtaDraft(getResolvedValue(device, "secondaryCtaDraft"));
+    setPrimaryCtaHrefDraft(getResolvedValue(device, "primaryCtaHrefDraft"));
+    setSecondaryCtaHrefDraft(getResolvedValue(device, "secondaryCtaHrefDraft"));
+  }
+
+  function propagateContentPropertyToDescendants(
+    sourceViewport: PreviewViewport,
+    property: ContentProperty,
+    value: string
+  ) {
+    const sourceIndex = VIEWPORT_INHERITANCE_ORDER.indexOf(sourceViewport);
+    if (sourceIndex < 0) return;
+
+    const variantSet = ensureCurrentVariantSnapshots();
+    const contentOverrides = ensureCurrentVariantContentOverrides();
+    for (let index = sourceIndex + 1; index < VIEWPORT_INHERITANCE_ORDER.length; index += 1) {
+      const targetViewport = VIEWPORT_INHERITANCE_ORDER[index];
+      const inheritedSource = resolveContentInheritanceSource(targetViewport, property, contentOverrides);
+      if (inheritedSource !== sourceViewport) continue;
+      writeContentProperty(variantSet[targetViewport], property, value);
+      if (breakpointSnapshotsRef.current) {
+        writeContentProperty(breakpointSnapshotsRef.current[targetViewport], property, value);
+      }
+    }
+  }
+
+  function setContentProperty(
+    property: ContentProperty,
+    value: string,
+    targetViewport: PreviewViewport = viewport
+  ) {
+    const variantSet = ensureCurrentVariantSnapshots();
+    const contentOverrides = ensureCurrentVariantContentOverrides();
+
+    writeContentProperty(variantSet[targetViewport], property, value);
+    if (breakpointSnapshotsRef.current) {
+      writeContentProperty(breakpointSnapshotsRef.current[targetViewport], property, value);
+    }
+
+    if (targetViewport !== "mobile") {
+      contentOverrides[targetViewport][property] = true;
+    }
+
+    if (targetViewport === "mobile" || contentOverrides[targetViewport][property]) {
+      propagateContentPropertyToDescendants(targetViewport, property, value);
+    }
+
+    if (property === "headlineDraft") {
+      setHeadlineProposal("");
+      setHeadlineProposalMode(null);
+    }
+
+    if (targetViewport === viewport) {
+      setResolvedContentState(viewport);
+    }
+  }
+
+  function saveViewportSnapshot(targetViewport: PreviewViewport, snapshot: VariantSnapshot) {
+    const nextSnapshot = cloneSnapshot(snapshot);
+    const variantSet = ensureCurrentVariantSnapshots();
+    const variantOverrides = ensureCurrentVariantOverrides();
+    const contentOverrides = ensureCurrentVariantContentOverrides();
+    const targetIndex = VIEWPORT_INHERITANCE_ORDER.indexOf(targetViewport);
+    const preservedDescendantContent = new Map<
+      PreviewViewport,
+      Partial<Record<ContentProperty, string>>
+    >();
+    if (targetIndex >= 0) {
+      for (let index = targetIndex + 1; index < VIEWPORT_INHERITANCE_ORDER.length; index += 1) {
+        const descendant = VIEWPORT_INHERITANCE_ORDER[index];
+        const preserved: Partial<Record<ContentProperty, string>> = {};
+        CONTENT_PROPERTIES.forEach((property) => {
+          if (!contentOverrides[descendant][property]) return;
+          preserved[property] = readContentProperty(variantSet[descendant], property);
+        });
+        preservedDescendantContent.set(descendant, preserved);
+      }
+    }
+
+    const inheritedSourceBefore = resolveViewportInheritanceSource(targetViewport, variantOverrides);
+    const inheritedSnapshotBefore = cloneSnapshot(
+      variantSet[inheritedSourceBefore] ?? variantSet.mobile ?? nextSnapshot
+    );
+    const hadOverride = targetViewport === "mobile" ? true : variantOverrides[targetViewport];
+    const shouldKeepOverride =
+      targetViewport === "mobile" ||
+      hadOverride ||
+      !snapshotsAreEqual(nextSnapshot, inheritedSnapshotBefore);
+
+    variantSet[targetViewport] = cloneSnapshot(nextSnapshot);
+    if (targetViewport !== "mobile") {
+      variantOverrides[targetViewport] = shouldKeepOverride;
+    }
+
+    if (targetViewport === "mobile" || variantOverrides[targetViewport]) {
+      propagateViewportSnapshotToDescendants(
+        variantSet,
+        variantOverrides,
+        targetViewport,
+        nextSnapshot
+      );
+    }
+
+    preservedDescendantContent.forEach((preserved, descendant) => {
+      CONTENT_PROPERTIES.forEach((property) => {
+        const preservedValue = preserved[property];
+        if (typeof preservedValue !== "string") return;
+        writeContentProperty(variantSet[descendant], property, preservedValue);
+        if (breakpointSnapshotsRef.current) {
+          writeContentProperty(breakpointSnapshotsRef.current[descendant], property, preservedValue);
+        }
+      });
+    });
+  }
+
+  function persistCurrentViewportSnapshot() {
+    initializeVariantStorageIfNeeded();
+    const current = cloneSnapshot(captureSnapshot());
+    if (!breakpointSnapshotsRef.current) {
+      breakpointSnapshotsRef.current = {
+        mobile: cloneSnapshot(current),
+        tablet: cloneSnapshot(current),
+        desktop: cloneSnapshot(current),
+        wide: cloneSnapshot(current),
+      };
+    }
+
+    breakpointSnapshotsRef.current[viewport] = cloneSnapshot(current);
+    saveViewportSnapshot(viewport, current);
+  }
+
+  function copyCurrentSnapshotToOtherDevices() {
+    initializeVariantStorageIfNeeded();
+    const current = cloneSnapshot(captureSnapshot());
+    const variantSet = ensureCurrentVariantSnapshots();
+    const variantOverrides = ensureCurrentVariantOverrides();
+    const contentOverrides = ensureCurrentVariantContentOverrides();
+    (Object.keys(VIEWPORTS) as PreviewViewport[]).forEach((targetViewport) => {
+      if (targetViewport === viewport) return;
+      variantSet[targetViewport] = cloneSnapshot(current);
+      variantOverrides[targetViewport] = true;
+      CONTENT_PROPERTIES.forEach((property) => {
+        contentOverrides[targetViewport][property] = true;
+      });
+      if (breakpointSnapshotsRef.current) {
+        breakpointSnapshotsRef.current[targetViewport] = cloneSnapshot(current);
+      }
+    });
+    setActionNotice(`Ajustes de ${VIEWPORTS[viewport].label} copiados al resto de dispositivos.`);
+  }
+
+  function initializeVariantStorageIfNeeded() {
+    if (breakpointSnapshotsRef.current) return;
+    const baseSnapshot = cloneSnapshot(captureSnapshot());
+    breakpointSnapshotsRef.current = {
+      mobile: cloneSnapshot(baseSnapshot),
+      tablet: cloneSnapshot(baseSnapshot),
+      desktop: cloneSnapshot(baseSnapshot),
+      wide: cloneSnapshot(baseSnapshot),
+    };
+    variantSnapshotsRef.current.base = {
+      mobile: cloneSnapshot(baseSnapshot),
+      tablet: cloneSnapshot(baseSnapshot),
+      desktop: cloneSnapshot(baseSnapshot),
+      wide: cloneSnapshot(baseSnapshot),
+    };
+    variantOverridesRef.current.base = {
+      mobile: true,
+      tablet: false,
+      desktop: false,
+      wide: false,
+    };
+    variantContentOverridesRef.current.base = createDefaultContentOverrides();
+    viewportRef.current = viewport;
+  }
+
+  function handleViewportChange(nextViewport: PreviewViewport) {
+    if (nextViewport === viewport) return;
+    initializeVariantStorageIfNeeded();
+    if (!breakpointSnapshotsRef.current) {
+      setViewport(nextViewport);
+      setDeviceEditingNotice(`Este ajuste afecta solo a ${VIEWPORTS[nextViewport].label}.`);
+      return;
+    }
+
+    const outgoingSnapshot = cloneSnapshot(captureSnapshot());
+    const previousViewport = viewportRef.current;
+    breakpointSnapshotsRef.current[previousViewport] = cloneSnapshot(outgoingSnapshot);
+    saveViewportSnapshot(previousViewport, outgoingSnapshot);
+
+    const activeVariant = ensureCurrentVariantSnapshots();
+    const activeOverrides = ensureCurrentVariantOverrides();
+    const incomingSnapshot =
+      resolveViewportSnapshotWithInheritance(activeVariant, activeOverrides, nextViewport) ??
+      breakpointSnapshotsRef.current[nextViewport] ??
+      breakpointSnapshotsRef.current.mobile ??
+      outgoingSnapshot;
+    applySnapshot(cloneSnapshot(incomingSnapshot));
+    setResolvedContentState(nextViewport);
+    setHeadlineProposal("");
+    setHeadlineProposalMode(null);
+
+    viewportRef.current = nextViewport;
+    setViewport(nextViewport);
+    setDeviceEditingNotice(`Este ajuste afecta solo a ${VIEWPORTS[nextViewport].label}.`);
+  }
 
   useEffect(() => {
     let active = true;
@@ -710,35 +1628,55 @@ export default function PublishedHeroLabPage({
     let active = true;
 
     (async () => {
+      setAssetState("loading");
+      setAssetError("");
+
       try {
-        const [heroScoped, legacyHeroScoped] = await Promise.all([
+        const [heroAssets, logoAssets] = await Promise.all([
           fetchSystemMediaClientByQuery({
-            allowedIn: HERO_SOURCE_ALLOWED_CONTEXT,
-            pipelineStatus: "ready",
+            scope: "system",
             status: "active",
+            pipelineStatus: "ready",
+            allowedComponent: "hero",
           }),
           fetchSystemMediaClientByQuery({
-            allowedIn: HERO_SOURCE_ALLOWED_CONTEXT_LEGACY,
-            pipelineStatus: "ready",
+            scope: "system",
             status: "active",
+            pipelineStatus: "ready",
+            assetRole: "logo",
           }),
         ]);
 
         if (!active) return;
-        const semantizedSources = toHeroSafeMediaSources([...heroScoped, ...legacyHeroScoped]);
-        setHeroSafeMediaSources(semantizedSources);
-        setHeroSafeMediaSourceId((previous) => {
-          if (previous && semantizedSources.some((item) => item.id === previous)) return previous;
-          return semantizedSources[0]?.id || "";
+
+        const merged = [...heroAssets, ...logoAssets];
+        const byId = new Map<string, AssetItem>();
+        merged.forEach((item) => byId.set(item._id, item));
+        const next = Array.from(byId.values()).sort(sortByRecent);
+        setAllAssets(next);
+        setAssetState("ready");
+
+        setSelectedHeroAssetId((previous) => {
+          if (previous && next.some((item) => item._id === previous)) return previous;
+          return next.find((item) => item.allowedComponents.includes("hero"))?._id || "";
         });
-        setHeroSafeMediaState("ready");
-      } catch (error) {
+
+        setSelectedLogoAssetId((previous) => {
+          if (previous && next.some((item) => item._id === previous)) return previous;
+          return (
+            next.find(
+              (item) =>
+                item.assetRole === "logo" ||
+                item.assetRole === "icon" ||
+                item.preferredUsage === "hero-logo"
+            )?._id || ""
+          );
+        });
+      } catch (error: unknown) {
         if (!active) return;
-        setHeroSafeMediaSources([]);
-        setHeroSafeMediaState("error");
-        setHeroSafeMediaError(
-          error instanceof Error ? error.message : "No se pudieron cargar los sources hero-safe."
-        );
+        setAssetState("error");
+        setAssetError(error instanceof Error ? error.message : "No se pudo cargar media.");
+        setAllAssets([]);
       }
     })();
 
@@ -753,9 +1691,7 @@ export default function PublishedHeroLabPage({
 
     let frameId = 0;
     const measureWorkspaceHeight = () => {
-      if (frameId) {
-        cancelAnimationFrame(frameId);
-      }
+      if (frameId) cancelAnimationFrame(frameId);
       frameId = requestAnimationFrame(() => {
         const rect = workspace.getBoundingClientRect();
         const availableHeight = Math.max(
@@ -773,9 +1709,7 @@ export default function PublishedHeroLabPage({
 
     return () => {
       window.removeEventListener("resize", measureWorkspaceHeight);
-      if (frameId) {
-        cancelAnimationFrame(frameId);
-      }
+      if (frameId) cancelAnimationFrame(frameId);
     };
   }, []);
 
@@ -802,35 +1736,10 @@ export default function PublishedHeroLabPage({
     });
 
     observer.observe(stage);
+
     return () => observer.disconnect();
   }, []);
 
-  const canvasScale = useMemo(() => {
-    const availableWidth = Math.max(
-      previewStageSize.width - PREVIEW_STAGE_HORIZONTAL_PADDING,
-      0
-    );
-    const availableHeight = Math.max(
-      previewStageSize.height - PREVIEW_STAGE_VERTICAL_PADDING,
-      0
-    );
-    if (!availableWidth || !availableHeight) return 1;
-
-    const scaleX = availableWidth / canvasWidth;
-    const scaleY = availableHeight / canvasHeight;
-    const nextScale = Math.min(scaleX, scaleY);
-
-    if (!Number.isFinite(nextScale) || nextScale <= 0) return 1;
-    return nextScale;
-  }, [canvasHeight, canvasWidth, previewStageSize.height, previewStageSize.width]);
-
-  const scaledCanvasWidth = canvasWidth * canvasScale;
-  const scaledCanvasHeight = canvasHeight * canvasScale;
-  const heroCopyWidth = copyWidth === "compact" ? "narrow" : copyWidth === "expanded" ? "wide" : "normal";
-  const selectedHeroSafeMediaSource = useMemo(
-    () => heroSafeMediaSources.find((item) => item.id === heroSafeMediaSourceId) || null,
-    [heroSafeMediaSourceId, heroSafeMediaSources]
-  );
   const labVisualCssVars = useMemo(
     () =>
       ({
@@ -839,2137 +1748,3500 @@ export default function PublishedHeroLabPage({
       }) as CSSProperties,
     []
   );
-  const freeLayoutDraft = useMemo<FreeLayoutDraft>(() => createDefaultFreeLayout(), []);
-  const activeFreeLayoutViewport = useMemo(
-    () => freeLayoutDraft.viewports.find((item) => item.viewport === viewport),
-    [freeLayoutDraft, viewport]
+
+  const heroImageAssets = useMemo(
+    () =>
+      allAssets
+        .filter((item) => item.kind !== "video" && item.formatKind !== "pdf")
+        .filter(
+          (item) =>
+            item.allowedComponents.includes("hero") ||
+            includesHeroAllowedContext(item.allowedIn) ||
+            item.preferredUsage === "hero-background"
+        )
+        .sort(sortByRecent),
+    [allAssets]
   );
-  const overlaySlots = activeFreeLayoutViewport?.slots ?? [];
-  const sceneOverlayTintClass =
-    overlayStyleMode === "solid"
-      ? SCENE_OVERLAY_SOLID_TINT_CLASS[overlayColor]
-      : SCENE_OVERLAY_GRADIENT_TINT_CLASS[overlayColor];
-  const sceneOverlayOpacityClass = SCENE_OVERLAY_OPACITY_CLASS[overlayMode][backgroundEmphasis];
-  const heroLayoutClass = HERO_LAYOUT_CLASS[heroLayoutType];
-  const navPosition =
-    navPositionOverride === "auto" ? heroLayoutClass.navPosition : navPositionOverride;
-  const headlinePosition = heroLayoutClass.headlinePosition;
-  const copyBlockPosition =
-    copyBlockPositionOverride === "auto"
-      ? heroLayoutClass.copyBlockPosition
-      : copyBlockPositionOverride;
-  const ctaPosition = heroLayoutClass.ctaPosition;
-  const footerPosition =
-    footerPositionOverride === "auto" ? heroLayoutClass.footerPosition : footerPositionOverride;
-  const visualPosition =
-    visualPositionOverride === "auto" ? heroLayoutClass.visualPosition : visualPositionOverride;
-  const logoPosition =
-    logoPositionOverride === "auto" ? heroLayoutClass.logoPosition : logoPositionOverride;
-  const labSceneOverlayClassName =
-    overlayStyleMode === "none"
-      ? "opacity-0 [background:transparent]"
-      : `mix-blend-normal transition-opacity duration-200 ${sceneOverlayTintClass} ${sceneOverlayOpacityClass}`;
-  const updateBrief = <K extends keyof HeroBrief>(key: K, value: HeroBrief[K]) => {
-    setBrief((previous) => ({ ...previous, [key]: value }));
-  };
-  const resetCreativeContent = () => {
-    setHeadlineDraft("");
-    setSubheadlineDraft("");
-    setPrimaryCtaDraft("");
-    setSecondaryCtaDraft("");
-  };
-  const creativeGuidance = useMemo(() => {
-    const objectiveHeadlineBase =
-      brief.objective === "bookings"
-        ? "Convierte visitas en reservas confirmadas"
-        : brief.objective === "services"
-          ? "Presenta servicios con claridad en un solo vistazo"
-          : "Activa tu campana con una portada que genera accion";
-    const toneAccent =
-      brief.tone === "premium"
-        ? "con una presencia premium"
-        : brief.tone === "close"
-          ? "con un tono cercano y humano"
-          : "con un empuje directo y urgente";
-    const audienceFrame =
-      brief.audience === "new-clients"
-        ? "para primera visita"
-        : brief.audience === "returning-clients"
-          ? "para clientes que ya te conocen"
-          : "para audiencias mixtas";
-    const headlineOptions = [
-      `${objectiveHeadlineBase} ${toneAccent}`,
-      `Haz que tu hero trabaje ${audienceFrame}`,
-      `De la portada a la accion en segundos`,
-    ];
 
-    const subheadlineOptions = [
-      brief.objective === "bookings"
-        ? "Reserva, confirma y llena agenda sin friccion: una propuesta clara con llamadas a la accion directas."
-        : brief.objective === "services"
-          ? "Muestra valor y diferencia cada servicio con mensajes concretos y una navegacion que no dispersa."
-          : "Comunica urgencia y contexto de campana para empujar una decision inmediata desde el primer scroll.",
-      brief.audience === "new-clients"
-        ? "Pensado para quien aun no te conoce: menos ruido, promesa concreta y siguiente paso visible."
-        : brief.audience === "returning-clients"
-          ? "Construido para clientes recurrentes: reconocimiento rapido, accion corta y continuidad de marca."
-          : "Balanceado para captar nuevos clientes sin perder claridad para quienes ya confian en tu negocio.",
-      brief.priority === "clarity"
-        ? "Direccion visual limpia, copy compacto y CTA entendible para decidir rapido."
-        : brief.priority === "conversion"
-          ? "Jerarquia orientada a conversion: propuesta fuerte, friccion baja y CTA dominante."
-          : "Escena y narrativa alineadas para reforzar marca sin romper rendimiento comercial.",
-    ];
+  const logoAssets = useMemo(
+    () =>
+      allAssets
+        .filter((item) => item.kind !== "video" && item.formatKind !== "pdf")
+        .filter(
+          (item) =>
+            item.assetRole === "logo" ||
+            item.assetRole === "icon" ||
+            item.preferredUsage === "hero-logo" ||
+            item.preferredUsage === "navbar-logo" ||
+            item.preferredUsage === "footer-mark"
+        )
+        .sort(sortByRecent),
+    [allAssets]
+  );
 
-    const ctaOptions: CtaSuggestion[] =
-      brief.ctaIntent === "direct-booking"
-        ? [
-            { primary: "Reservar ahora", secondary: "Ver horarios" },
-            { primary: "Quiero mi cita", secondary: "Ver servicios" },
-            { primary: "Agenda en 1 minuto", secondary: "Hablar por WhatsApp" },
-          ]
-        : brief.ctaIntent === "service-discovery"
-          ? [
-              { primary: "Explorar servicios", secondary: "Ver precios" },
-              { primary: "Descubrir tratamientos", secondary: "Solicitar recomendacion" },
-              { primary: "Ver carta completa", secondary: "Reservar despues" },
-            ]
-          : [
-              { primary: "Hablar con asesor", secondary: "Enviar WhatsApp" },
-              { primary: "Resolver dudas", secondary: "Ver servicios" },
-              { primary: "Recibir propuesta", secondary: "Contactar ahora" },
-            ];
+  const heroSafeMediaSources = useMemo(() => toHeroSafeMediaSources(heroImageAssets), [heroImageAssets]);
 
-    const atmosphereSuggestions = [
-      `Direccion base: densidad ${overlayMode}, estilo ${overlayStyleMode}, tinte ${overlayColor}, fondo ${backgroundEmphasis}.`,
-      brief.tone === "premium"
-        ? "Para tono premium: prioriza composicion estable, contraste medio-alto y copy corto."
-        : brief.tone === "close"
-          ? "Para tono cercano: usa enfasis medio, CTA balanced y lectura relajada."
-          : "Para tono urgente: sube contraste y jerarquia de CTA con enfoque primary-focus.",
-      brief.priority === "brand"
-        ? "Prioridad marca: cuida consistencia visual y evita saltos bruscos de atmosfera."
-        : brief.priority === "clarity"
-          ? "Prioridad claridad: controla ruido de fondo y evita copy demasiado ancha."
-          : "Prioridad conversion: refuerza CTA principal y mantiene navegacion secundaria ligera.",
-    ];
+  const selectedHeroAsset = useMemo(
+    () => heroImageAssets.find((item) => item._id === selectedHeroAssetId) || null,
+    [heroImageAssets, selectedHeroAssetId]
+  );
 
-    return {
-      headlines: headlineOptions,
-      subheadlines: subheadlineOptions,
-      ctas: ctaOptions,
-      atmosphere: atmosphereSuggestions,
-    };
-  }, [backgroundEmphasis, brief, overlayColor, overlayMode, overlayStyleMode]);
+  const selectedLogoAsset = useMemo(
+    () => logoAssets.find((item) => item._id === selectedLogoAssetId) || null,
+    [logoAssets, selectedLogoAssetId]
+  );
 
-  const snapshotForPreview = useMemo<PublishedPieceSnapshot>(() => {
-    const base = HERO_CANDIDATES[candidateId];
+  const contextualAssets = useMemo(() => {
+    const base =
+      visualSourceKind === "hero-image"
+        ? heroImageAssets
+        : visualSourceKind === "logo"
+          ? logoAssets
+          : [];
 
-    const primaryCta =
-      ctaMode === "primary-focus"
-        ? { label: "Reservar ahora", href: "#reservar-ahora" }
-        : base.payload.primaryCta;
-    const secondaryCta =
-      ctaMode === "primary-focus"
-        ? { label: "Detalles", href: "#detalles" }
-        : base.payload.secondaryCta;
-
-    return {
-      ...base,
-      payload: {
-        ...base.payload,
-        primaryCta,
-        secondaryCta,
-      },
-    };
-  }, [candidateId, ctaMode]);
-
-  const mappedHero = useMemo(() => {
-    const hero = mapPublishedSnapshotToContentPayload(snapshotForPreview);
-    const resolvedHeadline = headlineDraft.trim();
-    const resolvedSubheadline = subheadlineDraft.trim();
-    const resolvedPrimaryCta = primaryCtaDraft.trim();
-    const resolvedSecondaryCta = secondaryCtaDraft.trim();
-
-    return {
-      ...hero,
-      badge: badgeVisible ? hero.badge : "",
-      title: resolvedHeadline || hero.title,
-      description: resolvedSubheadline || hero.description,
-      primaryCtaLabel: resolvedPrimaryCta || hero.primaryCtaLabel,
-      secondaryCtaLabel: resolvedSecondaryCta || hero.secondaryCtaLabel,
-      heroAppearanceVariant: overlayMode,
-      backgroundImageUrl:
-        sourceMode === "hero-safe-media"
-          ? selectedHeroSafeMediaSource?.url ||
-            snapshotForPreview.payload.media?.url ||
-            hero.backgroundImageUrl
-          : snapshotForPreview.payload.media?.url || hero.backgroundImageUrl,
-    };
+    return base
+      .filter((item) => {
+        if (variantFilter !== "all" && item.variantKey !== variantFilter) return false;
+        if (orientationFilter !== "all" && item.orientation !== orientationFilter) return false;
+        if (reviewFilter !== "all" && item.reviewStatus !== reviewFilter) return false;
+        if (assetComponentFilter === "hero" && !item.allowedComponents.includes("hero")) return false;
+        if (assetComponentFilter === "logo" && item.assetRole !== "logo") return false;
+        if (assetComponentFilter === "icon" && item.assetRole !== "icon") return false;
+        if (
+          assetContextFilter === "hero" &&
+          !(
+            item.preferredUsage === "hero-background" ||
+            item.preferredUsage === "hero-logo" ||
+            includesHeroAllowedContext(item.allowedIn)
+          )
+        ) {
+          return false;
+        }
+        if (assetContextFilter === "navbar" && item.preferredUsage !== "navbar-logo") return false;
+        if (assetContextFilter === "footer" && item.preferredUsage !== "footer-mark") return false;
+        return true;
+      })
+      .sort((left, right) => {
+        const score = scoreAssetForVisualSource(right, visualSourceKind) - scoreAssetForVisualSource(left, visualSourceKind);
+        if (score !== 0) return score;
+        return sortByRecent(left, right);
+      });
   }, [
-    badgeVisible,
-    headlineDraft,
-    overlayMode,
-    primaryCtaDraft,
-    secondaryCtaDraft,
-    selectedHeroSafeMediaSource,
-    sourceMode,
-    snapshotForPreview,
-    subheadlineDraft,
+    assetComponentFilter,
+    assetContextFilter,
+    heroImageAssets,
+    logoAssets,
+    orientationFilter,
+    reviewFilter,
+    variantFilter,
+    visualSourceKind,
   ]);
 
-  const evaluation = useMemo(() => {
-    let focus = 58;
-    const focusReasons: string[] = [];
-    if (viewportConfig.navigationMode === "mobile" && effectiveMenuOpen && menuStyle === "opaque") {
-      focus += 28;
-      focusReasons.push("menu opaque abierto en mobile: foco alto en navegacion");
-    }
-    if (viewportConfig.navigationMode === "mobile" && effectiveMenuOpen && menuStyle === "integrated") {
-      focus += 14;
-      focusReasons.push("menu integrated abierto: foco moderado en navegacion");
-    }
-    if (copyBlockPosition === "center" && copyWidth === "expanded") {
-      focus -= 10;
-      focusReasons.push("copy centrado y ancho: atencion mas dispersa");
-    }
-    if (navPosition === "center" && viewportConfig.navigationMode === "desktop") {
-      focus += 4;
-      focusReasons.push("nav centrada en desktop mejora lectura jerarquica");
-    }
-    if (ctaMode === "primary-focus") {
-      focus += 6;
-      focusReasons.push("cta primary-focus ayuda a dirigir la atencion");
-    }
-    if (brief.priority === "conversion" && ctaMode !== "primary-focus") {
-      focus -= 6;
-      focusReasons.push("brief de conversion sugiere mayor dominancia del cta primario");
-    }
-    if (brief.priority === "clarity" && copyWidth === "expanded") {
-      focus -= 4;
-      focusReasons.push("brief de claridad penaliza copy demasiado amplia");
-    }
-    if (focusReasons.length === 0) focusReasons.push("configuracion equilibrada sin sesgo fuerte");
+  const selectedContextAsset =
+    visualSourceKind === "hero-image"
+      ? selectedHeroAsset
+      : visualSourceKind === "logo"
+        ? selectedLogoAsset
+        : null;
 
-    let legibility = 60;
-    const legibilityReasons: string[] = [];
-    if (overlayMode === "solid") {
-      legibility += 18;
-      legibilityReasons.push("overlay solid mejora contraste del texto");
-    }
-    if (overlayMode === "soft") {
-      legibility += 8;
-      legibilityReasons.push("overlay soft aporta contraste moderado");
-    }
-    if (overlayMode === "transparent") {
-      legibility -= 16;
-      legibilityReasons.push("overlay transparente reduce contraste del texto");
-    }
-    if (overlayColor === "smoke") {
-      legibility += 8;
-      legibilityReasons.push("tinte smoke estabiliza lectura");
-    }
-    if (overlayColor === "amber" || overlayColor === "purple") {
-      legibility -= 4;
-      legibilityReasons.push("tinte expresivo exige mayor cuidado de contraste");
-    }
-    if (backgroundEmphasis === "high") {
-      legibility -= 14;
-      legibilityReasons.push("fondo alto compite con titular y subtitulo");
-    }
-    if (copyWidth === "expanded") {
-      legibility -= 8;
-      legibilityReasons.push("copy expanded aumenta fatiga de lectura");
-    }
-    if (copyWidth === "compact") {
-      legibility += 6;
-      legibilityReasons.push("copy compact concentra la lectura");
-    }
-    if (brief.priority === "clarity" && copyWidth !== "compact") {
-      legibility -= 4;
-      legibilityReasons.push("brief de claridad recomienda copy mas compacta");
+  const currentHeadline = headlineDraft.trim() || candidateHero.title;
+  const currentSubheadline = subheadlineDraft.trim() || candidateHero.description;
+  const currentBadge = badgeDraft.trim() || candidateHero.badge;
+  const currentPrimaryCta = primaryCtaDraft.trim() || candidateHero.primaryCtaLabel;
+  const currentSecondaryCta = secondaryCtaDraft.trim() || candidateHero.secondaryCtaLabel;
+
+  const heroBackgroundUrl = selectedHeroAsset?.url || candidateHero.backgroundImageUrl;
+
+  const heroLogoUrl = selectedLogoAsset?.url || candidateHero.logoUrl;
+
+  const structuralWarnings = useMemo(() => {
+    const warnings: string[] = [];
+
+    if (!pieceVisibility.headline) warnings.push("Falta jerarquia: headline desactivado.");
+    if (pieceZones["cta-group"].startsWith("bottom")) {
+      warnings.push("CTA demasiado baja para decisiones rapidas.");
     }
 
-    let backgroundControl = 55;
-    const backgroundReasons: string[] = [];
-    if (backgroundEmphasis === "low") {
-      backgroundControl += 24;
-      backgroundReasons.push("background low reduce protagonismo de imagen");
-    }
-    if (backgroundEmphasis === "medium") {
-      backgroundControl += 10;
-      backgroundReasons.push("background medium mantiene equilibrio base");
-    }
-    if (backgroundEmphasis === "high") {
-      backgroundControl -= 20;
-      backgroundReasons.push("background high deja el fondo demasiado dominante");
-    }
-    if (overlayMode === "solid") {
-      backgroundControl += 10;
-      backgroundReasons.push("overlay solid ayuda a gobernar el fondo");
-    }
-    if (overlayMode === "transparent") {
-      backgroundControl -= 10;
-      backgroundReasons.push("overlay transparente cede demasiado al fondo");
-    }
-    if (overlayColor === "smoke" || overlayColor === "blue") {
-      backgroundControl += 6;
-      backgroundReasons.push("tinte frio refuerza el control de superficie");
-    }
-    if (brief.priority === "brand" && overlayMode === "transparent") {
-      backgroundControl -= 6;
-      backgroundReasons.push("brief de marca pide una atmosfera menos plana");
-    }
+    const textDensity = currentHeadline.length + currentSubheadline.length;
+    if (textDensity > 240) warnings.push("Texto muy denso para primer pantallazo.");
 
-    let noise = 48;
-    const noiseReasons: string[] = [];
-    if (backgroundEmphasis === "high") {
-      noise += 18;
-      noiseReasons.push("background high aumenta ruido visual");
-    }
-    if (overlayMode === "transparent") {
-      noise += 14;
-      noiseReasons.push("overlay transparente eleva interferencias del fondo");
-    }
-    if (menuStyle === "integrated" && effectiveMenuOpen) {
-      noise += 8;
-      noiseReasons.push("menu integrated abierto suma capas visuales");
-    }
-    if (copyBlockPosition === "center" && copyWidth === "expanded") {
-      noise += 8;
-      noiseReasons.push("copy centrado + ancho incrementa densidad visual");
-    }
-    if (menuStyle === "opaque" && effectiveMenuOpen) {
-      noise -= 14;
-      noiseReasons.push("menu opaque abierto limpia el fondo en mobile");
-    }
-    if (backgroundEmphasis === "low") {
-      noise -= 10;
-      noiseReasons.push("background low reduce elementos compitiendo");
-    }
+    const collisionZones = new Set<string>();
+    LAYOUT_PIECES.forEach((piece) => {
+      const zone = pieceZones[piece];
+      if (collisionZones.has(zone)) {
+        warnings.push("Posible colision visual entre piezas en la misma zona.");
+      }
+      collisionZones.add(zone);
+    });
 
-    let ctaClarity = 58;
-    const ctaReasons: string[] = [];
-    if (ctaMode === "primary-focus") {
-      ctaClarity += 22;
-      ctaReasons.push("cta primary-focus define jerarquia clara");
-    } else {
-      ctaClarity += 6;
-      ctaReasons.push("modo balanced mantiene dos acciones en paralelo");
-    }
-    if (overlayMode === "transparent" && backgroundEmphasis === "high") {
-      ctaClarity -= 14;
-      ctaReasons.push("fondo dominante reduce claridad de ctas");
-    }
-    if (copyWidth === "expanded") {
-      ctaClarity -= 6;
-      ctaReasons.push("copy ancho resta foco a la botonera");
-    }
-    if (ctaPosition === "end") {
-      ctaClarity -= 4;
-      ctaReasons.push("cta desplazada al extremo pierde inmediatez");
-    }
-    if (ctaPosition === "center") {
-      ctaClarity += 4;
-      ctaReasons.push("cta centrada mejora detectabilidad");
-    }
-    if (brief.ctaIntent === "direct-booking" && ctaMode !== "primary-focus") {
-      ctaClarity -= 8;
-      ctaReasons.push("brief de reserva directa necesita cta primaria mas dominante");
-    }
-    if (brief.ctaIntent === "service-discovery" && ctaMode === "balanced") {
-      ctaClarity += 4;
-      ctaReasons.push("brief de exploracion encaja con cta balanced");
-    }
+    return Array.from(new Set(warnings));
+  }, [currentHeadline.length, currentSubheadline.length, pieceVisibility.headline, pieceZones]);
 
-    const focusMetric = evalMetricPositive(focus, focusReasons);
-    const legibilityMetric = evalMetricPositive(legibility, legibilityReasons);
-    const backgroundMetric = evalMetricPositive(backgroundControl, backgroundReasons);
-    const noiseMetric = evalMetricNoise(noise, noiseReasons);
-    const ctaMetric = evalMetricPositive(ctaClarity, ctaReasons);
+  const qualityDimensions = useMemo<QualityDimension[]>(() => {
+    const ctaVisible = pieceVisibility["cta-group"];
+    const contactVisible = pieceVisibility["contact-strip"];
+    const logoVisible = pieceVisibility.logo;
+    const headlineTooLongOnMobile = viewport === "mobile" && currentHeadline.length > 52;
+    const ctaTooLow = pieceZones["cta-group"].startsWith("bottom");
+    const overlayStrong = overlayDensity === "solid";
+    const overlayWeak =
+      overlayDensity === "transparent" || !pieceVisibility["overlay-atmosphere"];
+    const splitLike = blueprint === "split";
+    const centeredLike = blueprint === "centered";
+    const mediaHeavyLike = blueprint === "poster";
 
-    let verdict: Verdict = "weak";
-    if (
-      focusMetric.score >= 72 &&
-      legibilityMetric.score >= 72 &&
-      backgroundMetric.score >= 68 &&
-      ctaMetric.score >= 70 &&
-      noiseMetric.score <= 45
-    ) {
-      verdict = "preset-candidate";
-    } else if (
-      focusMetric.score >= 58 &&
-      legibilityMetric.score >= 56 &&
-      backgroundMetric.score >= 52 &&
-      ctaMetric.score >= 55 &&
-      noiseMetric.score <= 65
-    ) {
-      verdict = "promising";
-    }
-
-    const baseVerdictReason =
-      verdict === "preset-candidate"
-        ? "La configuracion mantiene foco, legibilidad y control visual suficientes para candidato de preset."
-        : verdict === "promising"
-          ? "La direccion visual es valida, pero aun hay ruido o jerarquia mejorables."
-          : "La composicion actual no es estable para decision de preset.";
-    const briefContext = `Brief activo: ${BRIEF_OBJECTIVE_LABEL[brief.objective]}, tono ${BRIEF_TONE_LABEL[brief.tone].toLowerCase()}, audiencia ${BRIEF_AUDIENCE_LABEL[brief.audience].toLowerCase()} y prioridad ${BRIEF_PRIORITY_LABEL[brief.priority].toLowerCase()}.`;
-    const verdictReason = `${baseVerdictReason} ${briefContext}`;
-
-    return {
-      focus: focusMetric,
-      legibility: legibilityMetric,
-      background: backgroundMetric,
-      noise: noiseMetric,
-      cta: ctaMetric,
-      verdict,
-      verdictReason,
-    };
-  }, [
-    backgroundEmphasis,
-    brief,
-    copyBlockPosition,
-    copyWidth,
-    ctaPosition,
-    ctaMode,
-    effectiveMenuOpen,
-    menuStyle,
-    navPosition,
-    overlayColor,
-    overlayMode,
-    viewportConfig.navigationMode,
-  ]);
-
-  const qualityScore = useMemo(() => {
-    const conversion = clamp(evaluation.focus.score * 0.38 + evaluation.cta.score * 0.62);
-    const communication = clamp(
-      evaluation.legibility.score * 0.64 + evaluation.focus.score * 0.36 - (copyWidth === "expanded" ? 6 : 0)
-    );
-    const visualDesign = clamp(
-      evaluation.background.score * 0.52 + (100 - evaluation.noise.score) * 0.48
-    );
-    const uxUi = clamp(
-      evaluation.focus.score * 0.35 +
-        evaluation.legibility.score * 0.4 +
-        evaluation.cta.score * 0.25 -
-        (effectiveMenuOpen && menuStyle === "integrated" ? 4 : 0)
-    );
-    const responsive = clamp(
-      (viewportConfig.navigationMode === "mobile" ? 62 : 70) +
-        (evaluation.legibility.score - 60) * 0.35 +
-        (evaluation.focus.score - 60) * 0.25 -
-        (copyWidth === "expanded" ? 8 : 0)
-    );
-    const seoA11yPerf = clamp(
-      evaluation.legibility.score * 0.5 +
-        (100 - evaluation.noise.score) * 0.3 +
-        evaluation.background.score * 0.2 -
-        (overlayMode === "transparent" && backgroundEmphasis === "high" ? 6 : 0)
-    );
-
-    const items: QualityScoreItem[] = [
-      { key: "conversion", label: "Conversion", score: conversion, note: "foco + claridad CTA" },
+    return [
       {
-        key: "communication",
-        label: "Communication",
-        score: communication,
-        note: "lectura de propuesta y mensaje",
+        key: "conversion",
+        label: "Conversion",
+        score: clamp(82 - (ctaVisible ? 0 : 24) - (ctaTooLow ? 10 : 0)),
+        warning: ctaVisible ? "El flujo CTA existe." : "Falta grupo CTA para decision rapida.",
+        recommendation: ctaVisible
+          ? "Prueba CTA principal en prioridad alta para captar reservas."
+          : "Activa Botones CTA y ubicalos en zona central/inferior inmediata.",
       },
       {
-        key: "visual-design",
-        label: "Visual design",
-        score: visualDesign,
-        note: "control de fondo y ruido",
+        key: "design",
+        label: "Diseno",
+        score: clamp(
+          80 -
+            (splitLike ? 0 : 4) -
+            (mediaHeavyLike ? 6 : 0) -
+            (structuralWarnings.length > 0 ? 8 : 0)
+        ),
+        warning:
+          structuralWarnings.length > 0
+            ? "Hay colisiones o densidad visual mejorables."
+            : "Composicion limpia para iterar.",
+        recommendation:
+          structuralWarnings.length > 0
+            ? "Reubica piezas en layout para evitar colisiones entre titular y CTA."
+            : "Mantener blueprint y ajustar micro-espaciado por pieza.",
       },
-      { key: "ux-ui", label: "UX/UI", score: uxUi, note: "jerarquia y flujo de accion" },
+      {
+        key: "ux",
+        label: "UI/UX",
+        score: clamp(
+          78 -
+            (pieceVisibility["nav-burger"] ? 0 : 10) -
+            (pieceVisibility["theme-toggle"] ? 0 : 6)
+        ),
+        warning:
+          pieceVisibility["nav-burger"] && pieceVisibility["theme-toggle"]
+            ? "Navegacion y control de tema visibles."
+            : "Faltan ayudas de navegacion o tema en cabecera.",
+        recommendation: "Mantener navegacion visible y tema accesible desde primer pliegue.",
+      },
+      {
+        key: "seo",
+        label: "SEO",
+        score: clamp(74 - (currentHeadline.length < 22 ? 10 : 0) - (currentHeadline.length > 70 ? 8 : 0)),
+        warning:
+          currentHeadline.length < 22
+            ? "El titular es corto para intencion local."
+            : currentHeadline.length > 70
+              ? "El titular es largo para lectura inicial."
+              : "Longitud de H1 equilibrada.",
+        recommendation: "Incluye servicio + beneficio + contexto local en el titular.",
+      },
       {
         key: "responsive",
         label: "Responsive",
-        score: responsive,
-        note: "consistencia entre viewports",
+        score: clamp(
+          81 -
+            (headlineTooLongOnMobile ? 14 : 0) -
+            (viewport === "wide" && centeredLike ? 6 : 0) -
+            (pieceVisibility["theme-toggle"] && viewport === "mobile" ? 0 : 3)
+        ),
+        warning: headlineTooLongOnMobile ? "El H1 rompe mas de dos lineas en movil." : "Escalado responsive estable.",
+        recommendation:
+          headlineTooLongOnMobile
+            ? "Reduce una linea del titular para mobile."
+            : "Valida en wide y desktop el ancho de copy.",
       },
       {
-        key: "seo-a11y-perf",
-        label: "SEO/A11y/Perf",
-        score: seoA11yPerf,
-        note: "legibilidad y densidad visual",
+        key: "chromia",
+        label: "Cromia",
+        score: clamp(79 - (overlayWeak ? 12 : 0) - (overlayStrong && backgroundEmphasis === "high" ? 6 : 0)),
+        warning:
+          overlayWeak
+            ? "Contraste de fondo bajo con overlay transparente."
+            : "Atmosfera cromatica consistente.",
+        recommendation:
+          overlayWeak
+            ? "Sube overlay density a soft/solid para mejorar legibilidad."
+            : overlayTint === "smoke"
+              ? "Mantener Smoke para lectura limpia."
+              : "Ajusta tintes por intencion de marca y CTA.",
+      },
+      {
+        key: "accessibility",
+        label: "Accesibilidad",
+        score: clamp(80 - (pieceVisibility.headline ? 0 : 20) - (contactVisible ? 0 : 6)),
+        warning:
+          pieceVisibility.headline
+            ? "Jerarquia principal visible."
+            : "No hay titular visible para jerarquia semantica.",
+        recommendation:
+          contactVisible
+            ? "Manten contacto con contraste medio/alto."
+            : "Activa Contacto hero para cierre informativo.",
+      },
+      {
+        key: "performance",
+        label: "Performance",
+        score: clamp(
+          84 -
+            (sourceMode === "hero-safe-media" && selectedHeroAsset?.variantKey === "optimized" ? 0 : 8) -
+            (pieceVisibility["animated-signature"] && signatureAnimation !== "none" ? 4 : 0)
+        ),
+        warning:
+          sourceMode === "hero-safe-media" && selectedHeroAsset?.variantKey === "optimized"
+            ? "Asset principal optimizado."
+            : "Falta usar variante optimizada como base.",
+        recommendation:
+          sourceMode === "hero-safe-media" && selectedHeroAsset?.variantKey === "optimized"
+            ? "Mantener variante optimized para portada."
+            : "Selecciona variante optimized para reducir carga inicial.",
+      },
+      {
+        key: "branding",
+        label: "Branding",
+        score: clamp(82 - (logoVisible ? 0 : 20) - (overlayTint === "amber" ? 5 : 0)),
+        warning:
+          logoVisible
+            ? "Logo visible y reconocible en composicion."
+            : "Falta presencia de marca en primer pantallazo.",
+        recommendation:
+          logoVisible
+            ? "Ajusta tamano del logo para evitar competir con el titular."
+            : "Activa Logo y usa variante principal con fondo seguro.",
       },
     ];
-
-    const average = clamp(items.reduce((sum, item) => sum + item.score, 0) / items.length);
-    return { average, items };
   }, [
     backgroundEmphasis,
-    copyWidth,
-    effectiveMenuOpen,
-    evaluation.background.score,
-    evaluation.cta.score,
-    evaluation.focus.score,
-    evaluation.legibility.score,
-    evaluation.noise.score,
-    menuStyle,
-    overlayMode,
-    viewportConfig.navigationMode,
+    blueprint,
+    currentHeadline.length,
+    overlayDensity,
+    overlayTint,
+    pieceVisibility,
+    pieceZones,
+    selectedHeroAsset?.variantKey,
+    signatureAnimation,
+    sourceMode,
+    structuralWarnings.length,
+    viewport,
   ]);
 
-  const whyThisScore = useMemo(() => {
-    const reasons: string[] = [];
+  const qualityScore = useMemo(() => {
+    const score = clamp(
+      qualityDimensions.reduce((sum, dimension) => sum + dimension.score, 0) / qualityDimensions.length
+    );
+    return {
+      score,
+      reasons: qualityDimensions.map((dimension) => `${dimension.label}: ${dimension.warning}`),
+    };
+  }, [qualityDimensions]);
 
-    if (heroLayoutType === "split" || heroLayoutType === "media-heavy") {
-      reasons.push(
-        `El layout ${heroLayoutType} mejora jerarquia entre copy y visual para el headline actual.`
+  const assistantContext = useMemo(() => {
+    const lowDimension = [...qualityDimensions].sort((left, right) => left.score - right.score)[0];
+    const fallbackBusiness = candidateId === "barber-pro" ? "barberia premium" : "estudio urbano";
+    const inferredBusiness =
+      selectedHeroAsset?.label?.trim() ||
+      selectedLogoAsset?.label?.trim() ||
+      fallbackBusiness;
+    return {
+      negocio: inferredBusiness,
+      objetivo: pieceVisibility["cta-group"] ? "conversion" : "activacion",
+      blueprint,
+      pieza: selectedPiece ? pieceLabel(selectedPiece) : "titular",
+      ctaIntent: ctaRegulation === "primary-focus" ? "reserva inmediata" : "exploracion guiada",
+      dispositivo: VIEWPORTS[viewport].label,
+      imagen: selectedHeroAsset?.label ?? "sin imagen seleccionada",
+      warning: lowDimension?.warning ?? "Sin alertas criticas",
+    };
+  }, [
+    blueprint,
+    candidateId,
+    ctaRegulation,
+    pieceVisibility,
+    qualityDimensions,
+    selectedHeroAsset?.label,
+    selectedLogoAsset?.label,
+    selectedPiece,
+    viewport,
+  ]);
+
+  const designSuggestions = useMemo(
+    () => [
+      {
+        label: "Sugerir blueprint",
+        action: () => {
+          const nextBlueprint: Blueprint = pieceVisibility.logo ? "split" : "centered";
+          const nextOperationalZones = buildOperationalZonesFromBlueprint(nextBlueprint);
+          setBlueprint(nextBlueprint);
+          setPieceZones(BLUEPRINT_ZONE_PRESETS[nextBlueprint]);
+          setOperationalPieceZones(nextOperationalZones);
+          setNavPlacement(zoneToColumn(nextOperationalZones["nav-burger"]));
+          setThemeTogglePosition(
+            zoneToColumn(nextOperationalZones["theme-toggle"]) === "left" ? "left" : "right"
+          );
+          setFooterPlacement(zoneToColumn(nextOperationalZones["footer-hero"]));
+        },
+      },
+      {
+        label: "Sugerir overlay",
+        action: () => {
+          setOverlayDensity("soft");
+          setOverlayStyleMode("gradient");
+          setOverlayTint("smoke");
+        },
+      },
+      {
+        label: "Sugerir colocacion CTA",
+        action: () =>
+          setPieceZones((previous) => ({
+            ...previous,
+            "cta-group": viewport === "mobile" ? "center" : "bottom-center",
+          })),
+      },
+      {
+        label: "Sugerir asset de libreria",
+        action: () => {
+          const candidate = contextualAssets[0];
+          if (!candidate) return;
+          if (visualSourceKind === "logo") {
+            setSelectedLogoAssetId(candidate._id);
+            return;
+          }
+          setSelectedHeroAssetId(candidate._id);
+        },
+      },
+    ],
+    [contextualAssets, pieceVisibility.logo, viewport, visualSourceKind]
+  );
+
+  const selectedPieceStyle = isTextEditablePiece(selectedPiece)
+    ? textStyles[selectedPiece]
+    : null;
+  const selectedLayoutPiece =
+    selectedPiece && LAYOUT_PIECES.includes(selectedPiece as LayoutPiece)
+      ? (selectedPiece as LayoutPiece)
+      : null;
+  const selectedOperationalPiece =
+    selectedPiece && OPERATIONAL_PLACEMENT_PIECE_SET.has(selectedPiece)
+      ? (selectedPiece as OperationalPlacementPiece)
+      : null;
+  const activePlacementPiece = selectedLayoutPiece ?? selectedOperationalPiece;
+  const canUsePlacementShortcuts = Boolean(activePlacementPiece);
+
+  const headlineClassName = [
+    textStyleToClass("headline", textStyles.headline),
+    structuralAlignToTextClass(pieceStructure.headline.align),
+    structuralEmphasisToClass(pieceStructure.headline.emphasis),
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const subheadlineClassName = [
+    textStyleToClass("subheadline", textStyles.subheadline),
+    structuralAlignToTextClass(pieceStructure.subheadline.align),
+    structuralAlignToContainerClass(pieceStructure.subheadline.align),
+    structuralWidthToPieceClass("subheadline", pieceStructure.subheadline.width),
+    zoneRowToOffsetClass(zoneToRow(pieceZones.subheadline)),
+    "transition-transform",
+    structuralEmphasisToClass(pieceStructure.subheadline.emphasis),
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const ctaTextClassName = textStyleToClass("cta-group", textStyles["cta-group"]);
+  const ctaGroupClassName = [
+    structuralAlignToContainerClass(pieceStructure["cta-group"].align),
+    structuralWidthToPieceClass("cta-group", pieceStructure["cta-group"].width),
+    zoneRowToOffsetClass(zoneToRow(pieceZones["cta-group"])),
+    "transition-transform",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const ctaButtonStructureClassName = [
+    structuralEmphasisToClass(pieceStructure["cta-group"].emphasis),
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const ctaStyleClassName = ctaStyleClasses(ctaStyle);
+  const ctaRegulationClassName =
+    ctaRegulation === "primary-focus"
+      ? {
+          primary:
+            "!font-bold !shadow-[0_12px_26px_color-mix(in_oklab,var(--foreground)_28%,transparent)]",
+          secondary: "opacity-80",
+        }
+      : { primary: "", secondary: "" };
+  const effectiveOverlayStyleMode: OverlayStyleMode = pieceVisibility["overlay-atmosphere"]
+    ? overlayStyleMode
+    : "none";
+  const effectiveHeroBackgroundUrl = pieceVisibility["background-media"] ? heroBackgroundUrl : "";
+  const logoPieceClassName = [
+    structuralAlignToContainerClass(pieceStructure.logo.align),
+    structuralWidthToPieceClass("logo", pieceStructure.logo.width),
+    zoneRowToOffsetClass(zoneToRow(pieceZones.logo)),
+    "transition-transform",
+    structuralEmphasisToClass(pieceStructure.logo.emphasis),
+    logoOpacity >= 97 ? "opacity-100" : logoOpacity >= 85 ? "opacity-95" : "opacity-80",
+    logoShadow === "medium"
+      ? "drop-shadow-[0_12px_18px_color-mix(in_oklab,var(--foreground)_34%,transparent)]"
+      : logoShadow === "soft"
+        ? "drop-shadow-[0_8px_14px_color-mix(in_oklab,var(--foreground)_22%,transparent)]"
+        : "",
+    logoFrameStyle === "glass"
+      ? "backdrop-blur-[2px]"
+      : logoFrameStyle === "solid"
+        ? "[background:color-mix(in_oklab,var(--surface-3,var(--card))_34%,transparent)] rounded-xl px-2 py-1"
+        : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const signatureClassName = [
+    signatureSize === "sm" ? "text-[10px]" : signatureSize === "lg" ? "text-xs" : "text-[11px]",
+    signatureOpacity >= 90 ? "opacity-100" : signatureOpacity >= 70 ? "opacity-90" : "opacity-70",
+    signatureAnimation === "pulse"
+      ? "motion-safe:animate-pulse"
+      : signatureAnimation === "float"
+        ? "motion-safe:animate-[float_4s_ease-in-out_infinite]"
+        : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const assetKindLabel =
+    visualSourceKind === "hero-image" ? "Imagen" : visualSourceKind === "logo" ? "Logo" : "Video";
+  const isAssetPickerOpen = assetPickerView === "open";
+  const mediaLibraryCount = visualSourceKind === "video" ? 0 : contextualAssets.length;
+  const selectedAssetSummary = selectedContextAsset
+    ? `${selectedContextAsset.label} - ${selectedContextAsset.variantKey} - ${selectedContextAsset.reviewStatus}`
+    : visualSourceKind === "video"
+      ? "Video sin soporte en esta fase"
+      : "Sin asset seleccionado";
+  const sourceSnapshotId = candidateSnapshot.id;
+  const sourcePresetId = candidateSnapshot.meta?.sourcePresetVaultItemId ?? "sin preset";
+
+  const viewportConfig = VIEWPORTS[viewport];
+  const canvasWidth = viewportConfig.width;
+  const canvasHeight = viewportConfig.height;
+
+  const autoScale = useMemo(() => {
+    const stagePadding = PREVIEW_STAGE_PADDING[viewport];
+    const availableWidth = Math.max(previewStageSize.width - stagePadding.x, 0);
+    const availableHeight = Math.max(
+      previewStageSize.height - stagePadding.y,
+      0
+    );
+    if (!availableWidth || !availableHeight) return 1;
+
+    const scaleX = availableWidth / canvasWidth;
+    const scaleY = availableHeight / canvasHeight;
+    const next = Math.min(scaleX, scaleY, 1);
+    if (!Number.isFinite(next) || next <= 0) return 1;
+    return next;
+  }, [canvasHeight, canvasWidth, previewStageSize.height, previewStageSize.width, viewport]);
+
+  const canvasScale = Math.max(PREVIEW_MIN_SCALE[viewport], autoScale);
+  const scaledCanvasWidth = canvasWidth * canvasScale;
+  const scaledCanvasHeight = canvasHeight * canvasScale;
+
+  const selectedHeadlineZone = pieceZones.headline;
+  const selectedCtaZone = pieceZones["cta-group"];
+  const selectedLogoZone = pieceZones.logo;
+  const navPieceZone = operationalPieceZones["nav-burger"];
+  const themeToggleZone = operationalPieceZones["theme-toggle"];
+  const footerHeroZone = operationalPieceZones["footer-hero"];
+  const contactStripZone = operationalPieceZones["contact-strip"];
+  const signatureZone = operationalPieceZones["animated-signature"];
+
+  const blueprintPreset = BLUEPRINT_PRESETS[blueprint];
+  const headlineColumn = zoneToColumn(selectedHeadlineZone);
+  const ctaColumn = zoneToColumn(selectedCtaZone);
+  const logoColumn = zoneToColumn(selectedLogoZone);
+  const navColumn = zoneToColumn(navPieceZone);
+  const themeToggleColumn = zoneToColumn(themeToggleZone);
+  const footerColumn = zoneToColumn(footerHeroZone);
+
+  const headlinePosition = headlineColumn;
+  const copyBlockPosition = zoneToCopyBlock(selectedHeadlineZone);
+  const ctaPosition = columnToCtaPosition(ctaColumn);
+  const logoPosition = pieceVisibility.logo ? logoColumn : blueprintPreset.logoPosition;
+  const resolvedNavPosition = navPlacement === "auto" ? navColumn : navPlacement;
+  const resolvedThemeTogglePosition: "left" | "right" =
+    themeToggleColumn === "left" ? "left" : "right";
+  const resolvedNavigationMode = resolveViewportNavigationMode(viewport);
+  const resolvedNavPanelOrigin = resolveViewportNavPanelOrigin(
+    viewport,
+    resolvedNavPosition,
+    resolvedNavPosition
+  );
+  const resolvedFooterPosition = footerPlacement === "auto" ? footerColumn : footerPlacement;
+
+  const effectiveCopyWidth = structuralWidthToCopyWidth(pieceStructure.headline.width);
+  const gapHeadlineSubheadline = structuralSpacingToGap(pieceStructure.subheadline.spacing);
+  const gapTextCta = structuralSpacingToGap(pieceStructure["cta-group"].spacing);
+  const gapLogoHeadline = structuralSpacingToGap(pieceStructure.logo.spacing);
+
+  const mappedHero = useMemo(
+    () => ({
+      ...candidateHero,
+      badge: currentBadge,
+      title: currentHeadline,
+      description: currentSubheadline,
+      primaryCtaLabel: currentPrimaryCta,
+      primaryCtaHref: primaryCtaHrefDraft.trim() || candidateHero.primaryCtaHref,
+      secondaryCtaLabel: currentSecondaryCta,
+      secondaryCtaHref: secondaryCtaHrefDraft.trim() || candidateHero.secondaryCtaHref,
+      backgroundImageUrl: effectiveHeroBackgroundUrl,
+      logoUrl: heroLogoUrl,
+      heroAppearanceVariant: overlayDensity,
+      footerAddress,
+      footerPhone,
+      footerWhatsapp,
+      footerEmail,
+      footerSignature: "Creado por ELU",
+    }),
+    [
+      candidateHero,
+      currentBadge,
+      currentHeadline,
+      currentPrimaryCta,
+      primaryCtaHrefDraft,
+      currentSecondaryCta,
+      secondaryCtaHrefDraft,
+      currentSubheadline,
+      footerAddress,
+      footerEmail,
+      footerPhone,
+      footerWhatsapp,
+      overlayDensity,
+      effectiveHeroBackgroundUrl,
+      heroLogoUrl,
+    ]
+  );
+
+  const layoutGlobalSummary = `${layoutDensity} densidad - ${layoutBalance} balance - ${layoutContentWidth} ancho - ${layoutMediaDominance} dominancia media - ${layoutSafeArea} area segura`;
+  const contactDensityClassName =
+    contactDensity === "compact"
+      ? "text-[11px] gap-y-1"
+      : contactDensity === "spacious"
+        ? "text-[13px] gap-y-3"
+        : "text-xs gap-y-2";
+  const contactContrastClassName =
+    contactContrast === "soft"
+      ? "opacity-80"
+      : contactContrast === "strong"
+        ? "opacity-100 [color:var(--hero-text-inverse)]"
+        : "opacity-95";
+  const footerHeroClassName = [
+    zoneRowToOffsetClass(zoneToRow(footerHeroZone)),
+    "transition-transform",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const contactStripClassName = [
+    contactDensityClassName,
+    contactContrastClassName,
+    structuralAlignToTextClass(columnToStructuralAlign(zoneToColumn(contactStripZone))),
+    zoneRowToOffsetClass(zoneToRow(contactStripZone)),
+    "transition-transform",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const navBurgerClassName = [
+    zoneRowToOffsetClass(zoneToRow(navPieceZone)),
+    "transition-transform",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const signaturePlacementClassName = [
+    structuralAlignToTextClass(columnToStructuralAlign(zoneToColumn(signatureZone))),
+    zoneRowToOffsetClass(zoneToRow(signatureZone)),
+    "transition-transform",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const themeToggleClassName = [
+    resolvedThemeTogglePosition === "left" ? "order-[-1] mr-auto" : "order-[3]",
+    zoneRowToOffsetClass(zoneToRow(themeToggleZone)),
+    themeToggleStyle === "minimal"
+      ? "border-transparent [background:transparent]"
+      : themeToggleStyle === "glass"
+        ? "[background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_54%,transparent)] backdrop-blur-[2px]"
+        : "[background:var(--hero-chrome-surface-bg)]",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  function togglePieceVisibility(piece: LabHeroPiece) {
+    setPieceVisibility((previous) => ({ ...previous, [piece]: !previous[piece] }));
+  }
+
+  function handlePieceSelect(piece: LabHeroPiece) {
+    setSelectedPiece(piece);
+    if (LAYOUT_ENABLED_PIECES.has(piece)) {
+      setActiveLayoutPiece(piece as LayoutPiece);
+    }
+  }
+
+  function setOperationalPieceColumn(
+    piece: OperationalPlacementPiece,
+    column: "left" | "center" | "right"
+  ) {
+    setOperationalPieceZones((previous) => {
+      const currentRow = zoneToRow(previous[piece]);
+      return {
+        ...previous,
+        [piece]: `${currentRow}-${column}` as LayoutZone,
+      };
+    });
+
+    if (piece === "nav-burger") {
+      setNavPlacement(column);
+      return;
+    }
+
+    if (piece === "theme-toggle") {
+      setThemeTogglePosition(column === "left" ? "left" : "right");
+      return;
+    }
+
+    if (piece === "footer-hero") {
+      setFooterPlacement(column);
+    }
+  }
+
+  function setOperationalPieceRow(
+    piece: OperationalPlacementPiece,
+    row: "top" | "center" | "bottom"
+  ) {
+    setOperationalPieceZones((previous) => {
+      const currentColumn = zoneToColumn(previous[piece]);
+      return {
+        ...previous,
+        [piece]: `${row}-${currentColumn}` as LayoutZone,
+      };
+    });
+  }
+
+  function resetOperationalPiecePlacement(piece: OperationalPlacementPiece) {
+    const resetZone = buildOperationalZonesFromBlueprint(blueprint)[piece];
+    setOperationalPieceZones((previous) => ({ ...previous, [piece]: resetZone }));
+
+    const resetColumn = zoneToColumn(resetZone);
+    if (piece === "nav-burger") {
+      setNavPlacement(resetColumn);
+      return;
+    }
+
+    if (piece === "theme-toggle") {
+      setThemeTogglePosition(resetColumn === "left" ? "left" : "right");
+      return;
+    }
+
+    if (piece === "footer-hero") {
+      setFooterPlacement(resetColumn);
+    }
+  }
+
+  function selectLayoutPiece(piece: LayoutPiece) {
+    setActiveLayoutPiece(piece);
+    setSelectedPiece(piece);
+  }
+
+  function assignActivePieceToZone(zone: LayoutZone) {
+    const layoutPiece = selectedLayoutPiece ?? activeLayoutPiece;
+    setPieceZones((previous) => ({ ...previous, [layoutPiece]: zone }));
+    setPieceStructure((previous) => ({
+      ...previous,
+      [layoutPiece]: {
+        ...previous[layoutPiece],
+        align: columnToStructuralAlign(zoneToColumn(zone)),
+      },
+    }));
+    setSelectedPiece(layoutPiece);
+    setActiveLayoutPiece(layoutPiece);
+  }
+
+  function applyPlacementShortcut(row: "top" | "center" | "bottom" | "reset") {
+    if (!selectedLayoutPiece && !selectedOperationalPiece) return;
+
+    if (!selectedLayoutPiece && selectedOperationalPiece) {
+      if (row === "reset") {
+        resetOperationalPiecePlacement(selectedOperationalPiece);
+        return;
+      }
+
+      setOperationalPieceRow(selectedOperationalPiece, row);
+      return;
+    }
+
+    if (!selectedLayoutPiece) return;
+
+    if (row === "reset") {
+      const resetZone = DEFAULT_PIECE_ZONES[selectedLayoutPiece];
+      setPieceZones((previous) => ({
+        ...previous,
+        [selectedLayoutPiece]: resetZone,
+      }));
+      setPieceStructure((previous) => ({
+        ...previous,
+        [selectedLayoutPiece]: {
+          ...previous[selectedLayoutPiece],
+          align: columnToStructuralAlign(zoneToColumn(resetZone)),
+        },
+      }));
+      return;
+    }
+
+    const currentColumn = zoneToColumn(pieceZones[selectedLayoutPiece]);
+    const nextZone = `${row}-${currentColumn}` as LayoutZone;
+    setPieceZones((previous) => ({ ...previous, [selectedLayoutPiece]: nextZone }));
+    setPieceStructure((previous) => ({
+      ...previous,
+      [selectedLayoutPiece]: {
+        ...previous[selectedLayoutPiece],
+        align: columnToStructuralAlign(currentColumn),
+      },
+    }));
+  }
+
+  function applyColumnShortcut(column: "left" | "center" | "right") {
+    if (!selectedLayoutPiece && !selectedOperationalPiece) return;
+
+    if (!selectedLayoutPiece && selectedOperationalPiece) {
+      setOperationalPieceColumn(selectedOperationalPiece, column);
+      return;
+    }
+
+    if (!selectedLayoutPiece) return;
+
+    const currentRow = zoneToRow(pieceZones[selectedLayoutPiece]);
+    const nextZone = `${currentRow}-${column}` as LayoutZone;
+    setPieceZones((previous) => ({ ...previous, [selectedLayoutPiece]: nextZone }));
+    setPieceStructure((previous) => ({
+      ...previous,
+      [selectedLayoutPiece]: {
+        ...previous[selectedLayoutPiece],
+        align: columnToStructuralAlign(column),
+      },
+    }));
+  }
+
+  function updateSelectedTextStyle<Key extends keyof TextStyle>(key: Key, value: TextStyle[Key]) {
+    if (!isTextEditablePiece(selectedPiece)) return;
+    setTextStyles((previous) => ({
+      ...previous,
+      [selectedPiece]: {
+        ...previous[selectedPiece],
+        [key]: value,
+      },
+    }));
+  }
+
+  function updateSelectedPieceStructure<Key extends keyof PieceStructure>(
+    key: Key,
+    value: PieceStructure[Key]
+  ) {
+    if (!selectedPiece || !LAYOUT_PIECES.includes(selectedPiece as LayoutPiece)) return;
+
+    const piece = selectedPiece as LayoutPiece;
+    setPieceStructure((previous) => ({
+      ...previous,
+      [piece]: {
+        ...previous[piece],
+        [key]: value,
+      },
+    }));
+
+    if (key === "align") {
+      const column = structuralAlignToColumn(value as StructuralAlign);
+      setPieceZones((previous) => {
+        const currentRow = zoneToRow(previous[piece]);
+        return {
+          ...previous,
+          [piece]: `${currentRow}-${column}` as LayoutZone,
+        };
+      });
+    }
+  }
+
+  function handleVisualSourceKindChange(nextKind: VisualSourceKind) {
+    setVisualSourceKind(nextKind);
+
+    if (nextKind === "hero-image") {
+      setVariantFilter("optimized");
+      setOrientationFilter("landscape");
+      setReviewFilter("approved");
+      setAssetComponentFilter("hero");
+      setAssetContextFilter("hero");
+      setSourceMode("hero-safe-media");
+      return;
+    }
+
+    if (nextKind === "logo") {
+      setVariantFilter("vectorized-svg");
+      setOrientationFilter("all");
+      setReviewFilter("approved");
+      setAssetComponentFilter("logo");
+      setAssetContextFilter("all");
+      return;
+    }
+
+    setAssetComponentFilter("all");
+    setAssetContextFilter("all");
+    setAssetPickerView("closed");
+  }
+
+  function handleBlueprintChange(nextBlueprint: Blueprint) {
+    const nextZones = cloneSnapshot(BLUEPRINT_ZONE_PRESETS[nextBlueprint]);
+    const nextOperationalZones = buildOperationalZonesFromBlueprint(nextBlueprint);
+    setBlueprint(nextBlueprint);
+    setPieceZones(nextZones);
+    setOperationalPieceZones(nextOperationalZones);
+    setPieceStructure((previous) => alignPieceStructureToZones(previous, nextZones));
+    setNavPlacement(zoneToColumn(nextOperationalZones["nav-burger"]));
+    setThemeTogglePosition(
+      zoneToColumn(nextOperationalZones["theme-toggle"]) === "left" ? "left" : "right"
+    );
+    setFooterPlacement(zoneToColumn(nextOperationalZones["footer-hero"]));
+    setActiveLayoutPiece("headline");
+
+    if (nextBlueprint === "centered") {
+      setLayoutBalance("balanced");
+      setLayoutContentWidth("medium");
+      setLayoutMediaDominance("low");
+      return;
+    }
+
+    if (nextBlueprint === "split") {
+      setLayoutBalance("copy-first");
+      setLayoutContentWidth("medium");
+      setLayoutMediaDominance("medium");
+      return;
+    }
+
+    if (nextBlueprint === "poster") {
+      setLayoutBalance("copy-first");
+      setLayoutContentWidth("wide");
+      setLayoutMediaDominance("high");
+      return;
+    }
+
+    setLayoutBalance("media-first");
+    setLayoutContentWidth("narrow");
+    setLayoutMediaDominance("medium");
+  }
+
+  function handleAssetPick(item: AssetItem) {
+    if (visualSourceKind === "hero-image") {
+      setSelectedHeroAssetId(item._id);
+      setSourceMode("hero-safe-media");
+      setAssetPickerView("closed");
+      return;
+    }
+
+    if (visualSourceKind === "logo") {
+      setSelectedLogoAssetId(item._id);
+      setAssetPickerView("closed");
+    }
+  }
+
+  function handleSaveDraft() {
+    persistCurrentViewportSnapshot();
+    const variantSet = ensureCurrentVariantSnapshots();
+    variantSnapshotsRef.current[variantName] = cloneSnapshot(variantSet);
+    const stamp = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    setActionNotice(
+      `Borrador de sesion local (${variantName}) guardado a las ${stamp} (no persistido en servidor).`
+    );
+  }
+
+  function handleResetLayoutGlobal() {
+    const nextZones = cloneSnapshot(BLUEPRINT_ZONE_PRESETS[blueprint]);
+    const nextOperationalZones = buildOperationalZonesFromBlueprint(blueprint);
+    setPieceZones(nextZones);
+    setOperationalPieceZones(nextOperationalZones);
+    setPieceStructure(alignPieceStructureToZones(cloneSnapshot(DEFAULT_PIECE_STRUCTURE), nextZones));
+    setNavPlacement(zoneToColumn(nextOperationalZones["nav-burger"]));
+    setThemeTogglePosition(
+      zoneToColumn(nextOperationalZones["theme-toggle"]) === "left" ? "left" : "right"
+    );
+    setFooterPlacement(zoneToColumn(nextOperationalZones["footer-hero"]));
+    setActionNotice(`Layout restablecido al blueprint ${blueprint}.`);
+  }
+
+  function handleSwapMobileNavTheme() {
+    const currentNavSide =
+      resolvedNavPosition === "center"
+        ? "right"
+        : resolvedNavPosition;
+    const nextNavSide = themeTogglePosition === "left" ? "left" : "right";
+    const nextThemeSide = currentNavSide === "left" ? "right" : "left";
+    setOperationalPieceColumn("nav-burger", nextNavSide);
+    setOperationalPieceColumn("theme-toggle", nextThemeSide);
+    setActionNotice("En mobile: nav y theme toggle intercambiados.");
+  }
+
+  function applyNavThemePreset(
+    preset: "burger-left-theme-right" | "theme-left-burger-right" | "both-right"
+  ) {
+    if (preset === "burger-left-theme-right") {
+      setOperationalPieceColumn("nav-burger", "left");
+      setOperationalPieceColumn("theme-toggle", "right");
+      setActionNotice("Preset mobile aplicado: burger izquierda, theme derecha.");
+      return;
+    }
+
+    if (preset === "theme-left-burger-right") {
+      setOperationalPieceColumn("nav-burger", "right");
+      setOperationalPieceColumn("theme-toggle", "left");
+      setActionNotice("Preset mobile aplicado: theme izquierda, burger derecha.");
+      return;
+    }
+
+    setOperationalPieceColumn("nav-burger", "right");
+    setOperationalPieceColumn("theme-toggle", "right");
+    setActionNotice("Preset mobile aplicado: burger y theme a la derecha.");
+  }
+
+  function buildHeadlineProposal(mode: HeadlineTransformMode): string {
+    const source = currentHeadline.trim();
+    if (!source) return "";
+
+    if (mode === "shorten") {
+      const words = source.split(/\s+/u).filter(Boolean);
+      if (words.length <= 8) return source;
+      return `${words.slice(0, 8).join(" ").replace(/[.!?]+$/u, "")}.`;
+    }
+
+    if (mode === "commercial") {
+      const compact = source.replace(/[.!?]+$/u, "").trim();
+      if (ctaRegulation === "primary-focus") {
+        if (/reserva|cita|agenda|turno/iu.test(compact)) return compact;
+        return `Reserva ${compact.charAt(0).toLowerCase()}${compact.slice(1)}`;
+      }
+      if (/descubre|conoce|explora/iu.test(compact)) return compact;
+      return `Descubre ${compact.charAt(0).toLowerCase()}${compact.slice(1)}`;
+    }
+
+    const localSuffix = candidateId === "barber-pro" ? "en tu zona" : "en tu ciudad";
+    if (new RegExp(localSuffix, "iu").test(source)) return source;
+    return `${source.replace(/[.!?]+$/u, "")} ${localSuffix}`;
+  }
+
+  function proposeHeadlineTransformation(mode: HeadlineTransformMode) {
+    const nextProposal = buildHeadlineProposal(mode);
+    setHeadlineProposal(nextProposal);
+    setHeadlineProposalMode(mode);
+  }
+
+  function applyHeadlineProposal() {
+    if (!headlineProposal.trim()) return;
+    setContentProperty("headlineDraft", headlineProposal.trim());
+    setActionNotice("Titular propuesto aplicado.");
+    setHeadlineProposal("");
+    setHeadlineProposalMode(null);
+  }
+
+  function discardHeadlineProposal() {
+    setHeadlineProposal("");
+    setHeadlineProposalMode(null);
+    setActionNotice("Propuesta de titular descartada.");
+  }
+
+  function handleDuplicateVariant() {
+    persistCurrentViewportSnapshot();
+    const currentVariantSet = cloneSnapshot(ensureCurrentVariantSnapshots());
+    const currentVariantOverrides = cloneSnapshot(ensureCurrentVariantOverrides());
+    const currentContentOverrides = cloneSnapshot(ensureCurrentVariantContentOverrides());
+    const nextName = `variant-${variantCounter}`;
+    setVariantCounter((previous) => previous + 1);
+    variantSnapshotsRef.current[nextName] = cloneSnapshot(currentVariantSet);
+    variantOverridesRef.current[nextName] = cloneSnapshot(currentVariantOverrides);
+    variantContentOverridesRef.current[nextName] = cloneSnapshot(currentContentOverrides);
+    setVariantName(nextName);
+    applySnapshot(cloneSnapshot(currentVariantSet[viewport]));
+    setResolvedContentState(viewport);
+    setHeadlineProposal("");
+    setHeadlineProposalMode(null);
+    setActionNotice(`Variante duplicada: ${nextName}. Incluye los 4 breakpoints.`);
+  }
+
+  function applyQualityRecommendation(key: QualityDimensionKey) {
+    if (key === "conversion") {
+      setPieceVisibility((previous) => ({ ...previous, "cta-group": true }));
+      setPieceZones((previous) => ({ ...previous, "cta-group": "center" }));
+      setPieceStructure((previous) => ({
+        ...previous,
+        "cta-group": {
+          ...previous["cta-group"],
+          align: "center",
+        },
+      }));
+      return;
+    }
+
+    if (key === "design") {
+      const nextBlueprint: Blueprint = pieceVisibility.logo ? "split" : "centered";
+      const nextZones = cloneSnapshot(BLUEPRINT_ZONE_PRESETS[nextBlueprint]);
+      const nextOperationalZones = buildOperationalZonesFromBlueprint(nextBlueprint);
+      setBlueprint(nextBlueprint);
+      setPieceZones(nextZones);
+      setOperationalPieceZones(nextOperationalZones);
+      setPieceStructure((previous) => alignPieceStructureToZones(previous, nextZones));
+      setNavPlacement(zoneToColumn(nextOperationalZones["nav-burger"]));
+      setThemeTogglePosition(
+        zoneToColumn(nextOperationalZones["theme-toggle"]) === "left" ? "left" : "right"
       );
-    }
-    if (overlayMode === "transparent" && backgroundEmphasis !== "low") {
-      reasons.push(
-        "Overlay transparente con fondo medio/alto reduce separacion entre texto y capas secundarias."
-      );
-    }
-    if (overlayMode === "solid") {
-      reasons.push("Overlay solid refuerza contraste del copy principal y sube estabilidad de lectura.");
-    }
-    if (copyWidth === "expanded" && viewportConfig.navigationMode === "mobile") {
-      reasons.push("La densidad de copy en mobile penaliza lectura rapida y baja Communication.");
-    }
-    if (ctaMode === "primary-focus") {
-      reasons.push("CTA primary-focus fortalece Conversion al dejar una accion dominante.");
-    } else {
-      reasons.push("Modo CTA balanced reparte atencion y resta empuje en escenarios de reserva directa.");
-    }
-    if (evaluation.noise.score >= 60) {
-      reasons.push("El ruido visual sigue alto en capas internas y resta claridad en secundarios.");
-    } else {
-      reasons.push("El ruido visual esta contenido y permite una escena mas limpia para decidir.");
-    }
-    if (menuStyle === "integrated" && effectiveMenuOpen && viewportConfig.navigationMode === "mobile") {
-      reasons.push("Menu integrated abierto en mobile compite con el bloque principal durante decision inicial.");
+      setFooterPlacement(zoneToColumn(nextOperationalZones["footer-hero"]));
+      return;
     }
 
-    return reasons.slice(0, 5);
-  }, [
-    copyWidth,
-    ctaMode,
-    effectiveMenuOpen,
-    evaluation.noise.score,
-    heroLayoutType,
-    menuStyle,
-    overlayMode,
-    backgroundEmphasis,
-    viewportConfig.navigationMode,
-  ]);
-
-  const recommendedActions = useMemo<RecommendedAction[]>(() => {
-    const actions: RecommendedAction[] = [];
-
-    if (brief.ctaIntent === "direct-booking" && ctaMode !== "primary-focus") {
-      actions.push({
-        priority: "alta",
-        action: "Subir CTA a primary-focus",
-        reason: "El brief busca reserva directa y la accion principal aun comparte demasiada atencion.",
-      });
-    }
-    if (overlayMode === "transparent" && backgroundEmphasis !== "low") {
-      actions.push({
-        priority: "alta",
-        action: "Pasar overlay a soft",
-        reason: "Mejora contraste y separa mejor headline y CTA del fondo real.",
-      });
-    }
-    if (copyWidth === "expanded" && viewportConfig.navigationMode === "mobile") {
-      actions.push({
-        priority: "alta",
-        action: "Reducir copy width a balanced en mobile",
-        reason: "La lectura actual es densa y baja Communication + Responsive en mobile.",
-      });
-    }
-    if (evaluation.noise.score >= 60) {
-      actions.push({
-        priority: "media",
-        action: "Bajar una capa visual secundaria",
-        reason: "Ruido visual alto; conviene simplificar para recuperar foco en CTA y mensaje.",
-      });
-    }
-    if (heroLayoutType === "centered" && brief.priority === "conversion") {
-      actions.push({
-        priority: "media",
-        action: "Probar split para conversion",
-        reason: "Con prioridad de conversion, split suele acelerar escaneo y decision.",
-      });
+    if (key === "ux") {
+      setPieceVisibility((previous) => ({
+        ...previous,
+        "nav-burger": true,
+        "theme-toggle": true,
+      }));
+      return;
     }
 
-    const fallbackActions: RecommendedAction[] = [
-      {
-        priority: "media",
-        action: "Validar en mobile y desktop",
-        reason: "La jerarquia cambia por viewport y conviene cerrar decision en ambos extremos.",
-      },
-      {
-        priority: "baja",
-        action: "Ajustar solo overlay tint",
-        reason: "Permite afinar atmosfera sin abrir cambios estructurales del hero.",
-      },
-      {
-        priority: "baja",
-        action: "Guardar esta variante como baseline",
-        reason: "Ayuda a comparar la siguiente iteracion contra una referencia estable.",
-      },
-    ];
-
-    for (const fallback of fallbackActions) {
-      if (actions.length >= 3) break;
-      actions.push(fallback);
+    if (key === "seo") {
+      if (currentHeadline.length > 68) {
+        setContentProperty("headlineDraft", currentHeadline.slice(0, 66).trim());
+      } else {
+        setContentProperty(
+          "headlineDraft",
+          `${currentHeadline} en ${candidateId === "barber-pro" ? "tu zona" : "tu ciudad"}`
+        );
+      }
+      return;
     }
 
-    return actions.slice(0, 5);
-  }, [
-    backgroundEmphasis,
-    brief.ctaIntent,
-    brief.priority,
-    copyWidth,
-    ctaMode,
-    evaluation.noise.score,
-    heroLayoutType,
-    overlayMode,
-    viewportConfig.navigationMode,
-  ]);
+    if (key === "responsive") {
+      if (viewport === "mobile" && currentHeadline.length > 52) {
+        setContentProperty("headlineDraft", currentHeadline.slice(0, 48).trim());
+      }
+      setPieceZones((previous) => ({ ...previous, headline: "center-left" }));
+      setPieceStructure((previous) => ({
+        ...previous,
+        headline: {
+          ...previous.headline,
+          align: "start",
+        },
+      }));
+      return;
+    }
 
-  const actionPriorityToneClass = (priority: ActionPriority) =>
-    priority === "alta"
-      ? "[border-color:color-mix(in_oklab,var(--danger)_52%,transparent)] [background:color-mix(in_oklab,var(--danger-soft)_74%,var(--panel-surface-3,var(--surface-3,var(--card))))] [color:var(--danger-foreground)] [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,currentColor_12%,transparent),var(--elevation-base,var(--panel-shadow-1))]"
-      : priority === "media"
-        ? "[border-color:color-mix(in_oklab,var(--warning)_52%,transparent)] [background:color-mix(in_oklab,var(--warning-soft)_74%,var(--panel-surface-3,var(--surface-3,var(--card))))] [color:var(--warning-foreground)] [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,currentColor_12%,transparent),var(--elevation-base,var(--panel-shadow-1))]"
-        : "[border-color:color-mix(in_oklab,var(--success)_52%,transparent)] [background:color-mix(in_oklab,var(--success-soft)_74%,var(--panel-surface-3,var(--surface-3,var(--card))))] [color:var(--success-foreground)] [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,currentColor_12%,transparent),var(--elevation-base,var(--panel-shadow-1))]";
-  const verdictToneClass =
-    evaluation.verdict === "preset-candidate"
-      ? "[border-color:color-mix(in_oklab,var(--success)_52%,transparent)] [background:color-mix(in_oklab,var(--success-soft)_72%,var(--panel-surface-3,var(--surface-3,var(--card))))] [color:var(--success-foreground)] [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,currentColor_14%,transparent)]"
-      : evaluation.verdict === "promising"
-        ? "[border-color:color-mix(in_oklab,var(--warning)_52%,transparent)] [background:color-mix(in_oklab,var(--warning-soft)_72%,var(--panel-surface-3,var(--surface-3,var(--card))))] [color:var(--warning-foreground)] [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,currentColor_14%,transparent)]"
-        : "[border-color:color-mix(in_oklab,var(--danger)_52%,transparent)] [background:color-mix(in_oklab,var(--danger-soft)_72%,var(--panel-surface-3,var(--surface-3,var(--card))))] [color:var(--danger-foreground)] [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,currentColor_14%,transparent)]";
-  const labControlSelectClass =
-    "w-full min-w-0 rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))] focus-visible:outline-none focus-visible:ring-2 focus-visible:[ring-color:var(--taller-lab-accent-border,var(--taller-lab-accent,var(--accent,var(--processing))))]";
-  const labControlToggleRowClass =
-    "col-span-2 min-w-0 flex items-center justify-between gap-2 rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1.5 [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]";
-  const labControlCheckboxClass =
-    "h-4 w-4 shrink-0 cursor-pointer rounded-sm [accent-color:var(--taller-lab-accent,var(--accent,var(--processing)))] focus-visible:outline-none focus-visible:ring-2 focus-visible:[ring-color:var(--taller-lab-accent-border,var(--taller-lab-accent,var(--accent,var(--processing))))]";
-  const navSystemSurfaceAClass =
-    "min-w-0 rounded-lg border [border-color:color-mix(in_oklab,var(--taller-lab-chip-border,var(--border))_82%,transparent)] [background:var(--taller-lab-sidebar-card,var(--surface-3,var(--card)))] p-2 [box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]";
-  const navSystemGridClass = "mt-2 grid min-w-0 grid-cols-2 gap-2.5";
-  const navSystemFieldClass = "min-w-0 grid gap-1";
-  const navSystemWideFieldClass = "col-span-2 min-w-0 grid gap-1";
-  const navSystemLabelClass = "min-w-0 truncate text-muted-foreground";
-  const navSystemTargetGroupClass =
-    "mt-2 grid min-w-0 grid-cols-2 gap-1 rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] p-1 sm:grid-cols-3";
-  const navSystemTargetButtonClass =
-    "inline-flex h-8 w-full min-w-0 items-center justify-center rounded-md border px-2 text-[10px] font-semibold uppercase tracking-wide transition";
-  const labSegmentedTextButtonClass =
-    "inline-flex h-8 min-w-0 shrink-0 items-center justify-center rounded-md border px-2.5 text-[11px] font-semibold tracking-wide transition";
-  const labSegmentedIconButtonClass =
-    "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border px-0 transition";
-  const labSegmentedStaticChipClass =
-    "inline-flex h-8 min-w-0 shrink-0 items-center justify-center rounded-md border px-2.5 text-[11px] font-semibold tracking-wide";
-  const labChipActiveClass =
-    "[border-color:var(--taller-lab-accent-border,color-mix(in_oklab,var(--processing)_48%,transparent))] [background:var(--taller-lab-accent-soft,color-mix(in_oklab,var(--processing-soft)_86%,var(--taller-lab-chip-surface,var(--panel-surface-3,var(--surface-3,var(--card))))))] [color:var(--taller-lab-accent-foreground,var(--processing-foreground))] [box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]";
-  const labChipIdleClass =
-    "border-transparent text-muted-foreground hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))] hover:[border-color:color-mix(in_oklab,var(--taller-lab-chip-border,var(--border))_72%,transparent)]";
-  const labUtilityChipClass =
-    "inline-flex h-7 min-w-0 items-center rounded-md border [border-color:var(--taller-lab-chip-border,var(--border))] [background:var(--taller-lab-chip-surface,var(--surface-3,var(--card)))] px-2 text-[11px] font-medium text-muted-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))]";
-  const labStatusBadgeBaseClass =
-    "inline-flex h-6 shrink-0 items-center rounded-full border px-2.5 text-[11px] font-semibold [box-shadow:var(--elevation-base,var(--panel-shadow-1))]";
-  const labAccentActionButtonClass =
-    "mt-2 rounded-md border [border-color:var(--taller-lab-accent-border,color-mix(in_oklab,var(--processing)_42%,transparent))] [background:var(--taller-lab-accent-soft,var(--processing-soft))] px-2 py-1 text-[11px] font-semibold [color:var(--taller-lab-accent-foreground,var(--processing-foreground))] [box-shadow:var(--elevation-base,var(--panel-shadow-1))] transition hover:[box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]";
+    if (key === "chromia") {
+      setOverlayDensity("soft");
+      setOverlayStyleMode("gradient");
+      setOverlayTint("smoke");
+      return;
+    }
+
+    if (key === "accessibility") {
+      setPieceVisibility((previous) => ({
+        ...previous,
+        headline: true,
+        "contact-strip": true,
+      }));
+      setContactContrast("strong");
+      return;
+    }
+
+    if (key === "performance") {
+      const optimized = heroImageAssets.find((item) => item.variantKey === "optimized");
+      if (optimized) {
+        setSelectedHeroAssetId(optimized._id);
+      }
+      setSignatureAnimation("none");
+      setSourceMode("hero-safe-media");
+      return;
+    }
+
+    if (key === "branding") {
+      setPieceVisibility((previous) => ({ ...previous, logo: true }));
+      setMobileLogoScale("balanced");
+      setLogoOpacity(94);
+    }
+  }
+
+  const qualityTone =
+    qualityScore.score >= 78
+      ? "success"
+      : qualityScore.score >= 60
+        ? "warning"
+        : "danger";
 
   return (
     <main
-      className="min-h-svh w-full [background:var(--panel-background,var(--background))] text-foreground"
+      className="h-[100dvh] w-full overflow-hidden [background:var(--panel-background,var(--background))] text-foreground"
       style={labVisualCssVars}
     >
       {disableInternalBrandHydrator ? null : <BrandHydrator scope={brandScope} />}
-      <div className="mx-auto w-full max-w-[1600px] px-3 py-4 sm:px-4 sm:py-6">
-        <div className="grid gap-4 xl:grid-cols-[14.5rem_minmax(0,1fr)_16.5rem] 2xl:grid-cols-[15.5rem_minmax(0,1fr)_17.5rem] 2xl:gap-5">
-          <aside className="space-y-4 xl:sticky xl:top-4 xl:h-[calc(100vh-2.25rem)] xl:overflow-y-auto bcc-scrollbar xl:pr-1">
-            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                1) Brief
-              </h2>
-              <div className="mt-2 space-y-2 text-xs">
-                <label className="block">
-                  <span className="mb-1 block text-muted-foreground">objetivo</span>
-                  <select
-                    value={brief.objective}
-                    onChange={(event) => updateBrief("objective", event.target.value as BriefObjective)}
-                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
+
+      <div className="mx-auto h-full min-h-0 w-full max-w-[1680px] px-2 sm:px-3">
+        <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/85 [background:var(--panel-surface-1,var(--background))] [box-shadow:var(--elevation-task,var(--panel-shadow-2))]">
+          <header className="sticky top-0 z-30 border-b border-border/85 [background:color-mix(in_oklab,var(--panel-topbar,var(--panel-surface-1,var(--background)))_96%,transparent)] px-2 py-1.5 backdrop-blur-sm sm:px-3">
+            <div className="grid items-center gap-1.5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+              <div className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-0.5 bcc-scrollbar">
+                {PIECE_FAMILY_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setPieceFamily(tab.id)}
+                    className={[
+                      "inline-flex h-7 shrink-0 items-center justify-center rounded-md px-2 text-[10px] font-semibold uppercase tracking-wide transition",
+                      pieceFamily === tab.id
+                        ? "border border-border [background:var(--surface-1,var(--background))] text-foreground ring-1 ring-border/90 shadow-[0_2px_8px_color-mix(in_oklab,var(--foreground)_12%,transparent)]"
+                        : "text-muted-foreground hover:[background:var(--surface-2,var(--muted))]",
+                    ].join(" ")}
                   >
-                    <option value="bookings">captar reservas</option>
-                    <option value="services">descubrir servicios</option>
-                    <option value="campaign">campana temporal</option>
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-muted-foreground">tono</span>
-                  <select
-                    value={brief.tone}
-                    onChange={(event) => updateBrief("tone", event.target.value as BriefTone)}
-                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
-                  >
-                    <option value="premium">premium</option>
-                    <option value="close">cercano</option>
-                    <option value="urgent">urgente</option>
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-muted-foreground">audiencia</span>
-                  <select
-                    value={brief.audience}
-                    onChange={(event) => updateBrief("audience", event.target.value as BriefAudience)}
-                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
-                  >
-                    <option value="new-clients">nuevos clientes</option>
-                    <option value="returning-clients">clientes recurrentes</option>
-                    <option value="mixed">mixta</option>
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-muted-foreground">intencion cta</span>
-                  <select
-                    value={brief.ctaIntent}
-                    onChange={(event) => updateBrief("ctaIntent", event.target.value as BriefCtaIntent)}
-                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
-                  >
-                    <option value="direct-booking">reserva directa</option>
-                    <option value="service-discovery">explorar servicios</option>
-                    <option value="conversation">conversacion guiada</option>
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-muted-foreground">prioridad</span>
-                  <select
-                    value={brief.priority}
-                    onChange={(event) => updateBrief("priority", event.target.value as BriefPriority)}
-                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
-                  >
-                    <option value="conversion">conversion</option>
-                    <option value="clarity">claridad</option>
-                    <option value="brand">marca</option>
-                  </select>
-                </label>
+                    {tab.label}
+                  </button>
+                ))}
               </div>
-              <p className="mt-2 rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-[11px] text-muted-foreground">
-                Brief activo: {BRIEF_OBJECTIVE_LABEL[brief.objective]} | {BRIEF_TONE_LABEL[brief.tone]} |{" "}
-                {BRIEF_AUDIENCE_LABEL[brief.audience]} | {BRIEF_CTA_INTENT_LABEL[brief.ctaIntent]} |{" "}
-                {BRIEF_PRIORITY_LABEL[brief.priority]}.
-              </p>
-            </section>
 
-            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                2) Composition Lab
-              </h2>
-              <div className="mt-2 space-y-3 text-sm">
-                <div className="rounded-lg border border-border [background:var(--taller-lab-sidebar-card,var(--surface-3,var(--card)))] p-2">
-                  <span className="mb-1 block text-xs text-muted-foreground">Source flow</span>
-                  <label className="block text-xs">
-                    <span className="mb-1 block text-muted-foreground">source view</span>
-                    <select
-                      value={sourceMode}
-                      onChange={(event) => setSourceMode(event.target.value as SourceMode)}
-                      className="w-full rounded-md border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
-                    >
-                      <option value="preset">preset snapshot</option>
-                      <option value="hero-safe-media">media hero-safe</option>
-                    </select>
-                  </label>
-
-                  {sourceMode === "preset" ? (
-                    <label className="mt-2 block text-xs">
-                      <span className="mb-1 block text-muted-foreground">preset snapshot</span>
-                      <select
-                        value={candidateId}
-                        onChange={(event) => setCandidateId(event.target.value as CandidateId)}
-                        className="w-full rounded-md border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
-                      >
-                        <option value="barber-pro">Lab mock - Barber Pro</option>
-                        <option value="urban-studio">Lab mock - Urban Studio</option>
-                      </select>
-                    </label>
-                  ) : (
-                    <div className="mt-2 space-y-2">
-                      <label className="block text-xs">
-                        <span className="mb-1 block text-muted-foreground">hero-safe source</span>
-                        <select
-                          value={heroSafeMediaSourceId}
-                          onChange={(event) => setHeroSafeMediaSourceId(event.target.value)}
-                          disabled={heroSafeMediaState !== "ready" || heroSafeMediaSources.length === 0}
-                          className="w-full rounded-md border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground disabled:opacity-55"
-                        >
-                          {heroSafeMediaSources.length === 0 ? (
-                            <option value="">sin assets hero-safe disponibles</option>
-                          ) : null}
-                          {heroSafeMediaSources.map((source) => (
-                            <option key={source.id} value={source.id}>
-                              {source.label} · {source.derived} · {source.ratio}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <p className="rounded-md border border-border/80 [background:var(--surface-3,var(--card))] px-2 py-1.5 text-[11px] text-muted-foreground">
-                        {heroSafeMediaState === "loading"
-                          ? "Cargando media hero-safe desde la libreria..."
-                          : heroSafeMediaState === "error"
-                            ? `Error de source hero-safe: ${heroSafeMediaError}`
-                            : `Assets hero-safe: ${heroSafeMediaSources.length}`}
-                      </p>
-                      {selectedHeroSafeMediaSource ? (
-                        <div className="rounded-md border border-border/80 [background:var(--surface-3,var(--card))] p-2 text-[11px] text-muted-foreground">
-                          <p>
-                            thematic:{" "}
-                            <span className="font-semibold text-foreground">
-                              {selectedHeroSafeMediaSource.thematic}
-                            </span>
-                          </p>
-                          <p>
-                            sector:{" "}
-                            <span className="font-semibold text-foreground">
-                              {selectedHeroSafeMediaSource.sector}
-                            </span>
-                          </p>
-                          <p>
-                            component:{" "}
-                            <span className="font-semibold text-foreground">
-                              {selectedHeroSafeMediaSource.component}
-                            </span>
-                          </p>
-                          <p>
-                            derivado/formato/ratio:{" "}
-                            <span className="font-semibold text-foreground">
-                              {selectedHeroSafeMediaSource.derived} · {selectedHeroSafeMediaSource.format} ·{" "}
-                              {selectedHeroSafeMediaSource.ratio}
-                            </span>
-                          </p>
-                          <p>
-                            scope + allowedComponents:{" "}
-                            <span className="font-semibold text-foreground">
-                              {selectedHeroSafeMediaSource.scope} ·{" "}
-                              {selectedHeroSafeMediaSource.allowedComponents}
-                            </span>
-                          </p>
-                          <p>
-                            review state:{" "}
-                            <span className="font-semibold text-foreground">
-                              {selectedHeroSafeMediaSource.reviewState}
-                            </span>
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <span className="mb-1 block text-xs text-muted-foreground">Hero layout type</span>
-                  <div className="grid grid-cols-2 gap-1 rounded-lg border border-border [background:var(--surface-3,var(--card))] p-1">
-                    {HERO_LAYOUT_TYPES.map((layoutType) => (
-                      <button
-                        key={layoutType}
-                        type="button"
-                        onClick={() => setHeroLayoutType(layoutType)}
-                        className={`${labSegmentedTextButtonClass} uppercase ${heroLayoutType === layoutType ? labChipActiveClass : labChipIdleClass}`}
-                      >
-                        {HERO_LAYOUT_LABEL[layoutType]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <p className="rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-[11px] text-muted-foreground">
-                  Active composition:{" "}
-                  <span className="font-semibold text-foreground">
-                    {HERO_LAYOUT_LABEL[heroLayoutType]}
-                  </span>
-                </p>
-
-                <label className="block text-xs">
-                  <span className="mb-1 block text-muted-foreground">narrative width</span>
-                  <select
-                    value={copyWidth}
-                    onChange={(event) => setCopyWidth(event.target.value as CopyWidth)}
-                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
-                  >
-                    <option value="compact">compact</option>
-                    <option value="balanced">balanced</option>
-                    <option value="expanded">expanded</option>
-                  </select>
-                </label>
-
-                <div className="rounded-lg border border-border [background:var(--taller-lab-sidebar-card,var(--surface-3,var(--card)))] p-2">
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      Anchors / Relative Position
-                    </span>
+              <div className="mx-auto inline-flex items-center gap-1 rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-0.5">
+                {(["mobile", "tablet", "desktop", "wide"] as const).map((id) => {
+                  const Icon = VIEWPORT_ICON[id];
+                  return (
                     <button
+                      key={id}
                       type="button"
-                      onClick={() => {
-                        setLogoPositionOverride("auto");
-                        setVisualPositionOverride("auto");
-                        setCopyBlockPositionOverride("auto");
-                      }}
-                      className="rounded-md border border-border/80 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground transition hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))]"
+                      onClick={() => handleViewportChange(id)}
+                      aria-label={VIEWPORTS[id].label}
+                      className={[
+                        "inline-flex h-7 w-7 items-center justify-center rounded-md transition",
+                        viewport === id
+                          ? "border border-border [background:var(--surface-1,var(--background))] text-foreground ring-1 ring-border/90 shadow-[0_2px_8px_color-mix(in_oklab,var(--foreground)_12%,transparent)]"
+                          : "text-muted-foreground hover:[background:var(--surface-2,var(--muted))]",
+                      ].join(" ")}
                     >
-                      reset
+                      <Icon className="h-3.5 w-3.5" />
                     </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <label className="grid gap-1">
-                      <span className="text-muted-foreground">logo anchor</span>
-                      <select
-                        value={logoPositionOverride}
-                        onChange={(event) => setLogoPositionOverride(event.target.value as PositionXOverride)}
-                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
-                      >
-                        <option value="auto">auto</option>
-                        <option value="left">left</option>
-                        <option value="center">center</option>
-                        <option value="right">right</option>
-                      </select>
-                    </label>
-                    <label className="grid gap-1">
-                      <span className="text-muted-foreground">visual anchor</span>
-                      <select
-                        value={visualPositionOverride}
-                        onChange={(event) => setVisualPositionOverride(event.target.value as PositionXOverride)}
-                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
-                      >
-                        <option value="auto">auto</option>
-                        <option value="left">left</option>
-                        <option value="center">center</option>
-                        <option value="right">right</option>
-                      </select>
-                    </label>
-                    <label className="grid gap-1">
-                      <span className="text-muted-foreground">copy anchor</span>
-                      <select
-                        value={copyBlockPositionOverride}
-                        onChange={(event) =>
-                          setCopyBlockPositionOverride(event.target.value as CopyBlockPositionOverride)
-                        }
-                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
-                      >
-                        <option value="auto">auto</option>
-                        <option value="left">left</option>
-                        <option value="center-left">center-left</option>
-                        <option value="center">center</option>
-                        <option value="right">right</option>
-                      </select>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="rounded-lg border border-border [background:var(--taller-lab-sidebar-card,var(--surface-3,var(--card)))] p-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Spacing / Hierarchy
-                  </p>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
-                    <label className="grid gap-1">
-                      <span className="text-muted-foreground">mobile headline scale</span>
-                      <select
-                        value={mobileHeadlineScale}
-                        onChange={(event) =>
-                          setMobileHeadlineScale(event.target.value as HierarchyScale)
-                        }
-                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
-                      >
-                        <option value="compact">compact</option>
-                        <option value="balanced">balanced</option>
-                        <option value="expressive">expressive</option>
-                      </select>
-                    </label>
-                    <label className="grid gap-1">
-                      <span className="text-muted-foreground">mobile logo scale</span>
-                      <select
-                        value={mobileLogoScale}
-                        onChange={(event) => setMobileLogoScale(event.target.value as HierarchyScale)}
-                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
-                      >
-                        <option value="compact">compact</option>
-                        <option value="balanced">balanced</option>
-                        <option value="expressive">expressive</option>
-                      </select>
-                    </label>
-                    <label className="grid gap-1">
-                      <span className="text-muted-foreground">logo to headline</span>
-                      <select
-                        value={gapLogoHeadline}
-                        onChange={(event) => setGapLogoHeadline(event.target.value as SeparationLevel)}
-                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
-                      >
-                        <option value="tight">tight</option>
-                        <option value="normal">normal</option>
-                        <option value="relaxed">relaxed</option>
-                      </select>
-                    </label>
-                    <label className="grid gap-1">
-                      <span className="text-muted-foreground">headline to subheadline</span>
-                      <select
-                        value={gapHeadlineSubheadline}
-                        onChange={(event) =>
-                          setGapHeadlineSubheadline(event.target.value as SeparationLevel)
-                        }
-                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
-                      >
-                        <option value="tight">tight</option>
-                        <option value="normal">normal</option>
-                        <option value="relaxed">relaxed</option>
-                      </select>
-                    </label>
-                    <label className="grid gap-1">
-                      <span className="text-muted-foreground">text to CTA</span>
-                      <select
-                        value={gapTextCta}
-                        onChange={(event) => setGapTextCta(event.target.value as SeparationLevel)}
-                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
-                      >
-                        <option value="tight">tight</option>
-                        <option value="normal">normal</option>
-                        <option value="relaxed">relaxed</option>
-                      </select>
-                    </label>
-                    <label className="grid gap-1">
-                      <span className="text-muted-foreground">CTA to footer</span>
-                      <select
-                        value={gapCtaFooter}
-                        onChange={(event) => setGapCtaFooter(event.target.value as SeparationLevel)}
-                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
-                      >
-                        <option value="tight">tight</option>
-                        <option value="normal">normal</option>
-                        <option value="relaxed">relaxed</option>
-                      </select>
-                    </label>
-                    <label className="grid gap-1">
-                      <span className="text-muted-foreground">footer data to signature</span>
-                      <select
-                        value={gapFooterDataSignature}
-                        onChange={(event) =>
-                          setGapFooterDataSignature(event.target.value as SeparationLevel)
-                        }
-                        className="rounded-md border [border-color:var(--taller-lab-control-border,var(--border))] [background:var(--taller-lab-control-surface,var(--surface-2,var(--card)))] px-2 py-1 text-foreground [box-shadow:var(--taller-lab-control-shadow,var(--elevation-base,var(--panel-shadow-1)))]"
-                      >
-                        <option value="tight">tight</option>
-                        <option value="normal">normal</option>
-                        <option value="relaxed">relaxed</option>
-                      </select>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </section>
-            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                3) Emphasis / Atmosphere
-              </h2>
-              <div className="mt-2 space-y-2 text-xs">
-                <label className="block">
-                  <span className="mb-1 block text-muted-foreground">overlay density</span>
-                  <select
-                    value={overlayMode}
-                    onChange={(event) => setOverlayMode(event.target.value as HeroAppearanceVariant)}
-                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
-                  >
-                    <option value="transparent">transparent</option>
-                    <option value="soft">soft</option>
-                    <option value="solid">solid</option>
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-muted-foreground">overlay style</span>
-                  <select
-                    value={overlayStyleMode}
-                    onChange={(event) => setOverlayStyleMode(event.target.value as OverlayStyleMode)}
-                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
-                  >
-                    <option value="gradient">gradient</option>
-                    <option value="solid">solid</option>
-                    <option value="none">none</option>
-                  </select>
-                </label>
-                <div>
-                  <span className="mb-1 block text-muted-foreground">overlay tint</span>
-                  <div className="grid grid-cols-2 gap-1 rounded-lg border border-border [background:var(--surface-3,var(--card))] p-1">
-                    {(["blue", "green", "amber", "purple", "smoke"] as const).map((tint) => (
-                      <button
-                        key={tint}
-                        type="button"
-                        onClick={() => setOverlayColor(tint)}
-                        disabled={overlayStyleMode === "none"}
-                        className={`${labSegmentedTextButtonClass} gap-2 capitalize disabled:opacity-45 ${overlayColor === tint ? labChipActiveClass : labChipIdleClass}`}
-                      >
-                        <span className={`block h-2.5 w-4 rounded-sm ${OVERLAY_TINT_PREVIEW_CLASS[tint]}`} />
-                        {tint}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <label className="block">
-                  <span className="mb-1 block text-muted-foreground">headline color</span>
-                  <select
-                    value={labHeadlineTone}
-                    onChange={(event) => setLabHeadlineTone(event.target.value as LabHeadlineTone)}
-                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
-                  >
-                    {(
-                      [
-                        "white",
-                        "black",
-                        "inverse",
-                        "muted-light",
-                        "warm-light",
-                        "cool-light",
-                      ] as const
-                    ).map((tone) => (
-                      <option key={tone} value={tone}>
-                        {LAB_HEADLINE_TONE_LABEL[tone]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div>
-                  <span className="mb-1 block text-muted-foreground">background emphasis</span>
-                  <div className="inline-flex w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] p-1">
-                    {(["low", "medium", "high"] as const).map((emphasis) => (
-                      <button
-                        key={emphasis}
-                        type="button"
-                        onClick={() => setBackgroundEmphasis(emphasis)}
-                        className={`flex-1 rounded-md border px-2 py-1.5 text-xs font-semibold capitalize transition ${backgroundEmphasis === emphasis ? labChipActiveClass : labChipIdleClass}`}
-                      >
-                        {emphasis}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <label className="block">
-                  <span className="mb-1 block text-muted-foreground">cta regulation</span>
-                  <select
-                    value={ctaMode}
-                    onChange={(event) => setCtaMode(event.target.value as CtaMode)}
-                    className="w-full rounded-lg border border-border [background:var(--surface-3,var(--card))] px-3 py-2 text-foreground"
-                  >
-                    <option value="balanced">balanced</option>
-                    <option value="primary-focus">primary-focus</option>
-                  </select>
-                </label>
-              </div>
-            </section>
-
-            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-              <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                4) Navigation / Menu System
-              </h2>
-              <div className={`mb-2 text-xs ${navSystemSurfaceAClass}`}>
-                <span className="block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  editing target
-                </span>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  `auto` sigue el viewport activo.
-                </p>
-                <div className={navSystemTargetGroupClass}>
-                  {(
-                    [
-                      { id: "auto", label: "auto", disabled: false },
-                      {
-                        id: "desktop",
-                        label: "desktop nav",
-                        disabled: !canEditDesktopNavigation,
-                      },
-                      {
-                        id: "burger",
-                        label: "burger nav",
-                        disabled: !canEditBurgerNavigation,
-                      },
-                    ] as const
-                  ).map((target) => (
-                    <button
-                      key={target.id}
-                      type="button"
-                      disabled={target.disabled}
-                      onClick={() => setNavigationEditTarget(target.id)}
-                      className={`${navSystemTargetButtonClass} ${governedNavigationEditTarget === target.id ? "[border-color:var(--taller-lab-accent-border,color-mix(in_oklab,var(--processing)_44%,transparent))] [background:var(--taller-lab-accent-soft,var(--processing-soft))] [color:var(--taller-lab-accent-foreground,var(--processing-foreground))]" : "border-transparent text-muted-foreground hover:[background:var(--panel-surface-2,var(--surface-2,var(--card)))]"} ${target.disabled ? "cursor-not-allowed opacity-45 hover:[background:transparent]" : ""}`}
-                    >
-                      {target.label}
-                    </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
 
-              {desktopNavigationControlsVisible ? (
-                <div className="space-y-2 text-xs">
-                  <div className={navSystemSurfaceAClass}>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      Desktop Nav Appearance
-                    </p>
-                    <div className={navSystemGridClass}>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>desktop nav position</span>
-                        <select
-                          value={navPositionOverride}
-                          onChange={(event) =>
-                            setNavPositionOverride(event.target.value as PositionXOverride)
-                          }
-                          className={labControlSelectClass}
-                        >
-                          <option value="auto">auto</option>
-                          <option value="left">left</option>
-                          <option value="center">center</option>
-                          <option value="right">right</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>desktop nav size</span>
-                        <select
-                          value={desktopNavSize}
-                          onChange={(event) => setDesktopNavSize(event.target.value as DesktopNavSize)}
-                          className={labControlSelectClass}
-                        >
-                          <option value="sm">sm</option>
-                          <option value="md">md</option>
-                          <option value="lg">lg</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>desktop nav fg/text color</span>
-                        <select
-                          value={desktopNavTone}
-                          onChange={(event) => setDesktopNavTone(event.target.value as DesktopNavTone)}
-                          className={labControlSelectClass}
-                        >
-                          <option value="inverse">inverse</option>
-                          <option value="primary">primary</option>
-                          <option value="muted">muted</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>desktop nav badge/background style</span>
-                        <select
-                          value={desktopNavSurface}
-                          onChange={(event) =>
-                            setDesktopNavSurface(event.target.value as DesktopNavSurface)
-                          }
-                          className={labControlSelectClass}
-                        >
-                          <option value="minimal">minimal</option>
-                          <option value="solid">solid</option>
-                          <option value="glass">glass</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>desktop nav hover style</span>
-                        <select
-                          value={desktopNavHover}
-                          onChange={(event) => setDesktopNavHover(event.target.value as DesktopNavHover)}
-                          className={labControlSelectClass}
-                        >
-                          <option value="soft">soft</option>
-                          <option value="lift">lift</option>
-                          <option value="glow">glow</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>desktop nav contrast/presence</span>
-                        <select
-                          value={desktopNavPresence}
-                          onChange={(event) =>
-                            setDesktopNavPresence(event.target.value as DesktopNavPresence)
-                          }
-                          className={labControlSelectClass}
-                        >
-                          <option value="low">low</option>
-                          <option value="medium">medium</option>
-                          <option value="high">high</option>
-                        </select>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {burgerNavigationControlsVisible ? (
-                <div className="space-y-2 text-xs">
-                  <div className={navSystemSurfaceAClass}>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      A) Burger trigger appearance
-                    </p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      Solo afecta al trigger hamburguesa.
-                    </p>
-                    <div className={navSystemGridClass}>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>nav size</span>
-                        <select
-                          value={navTriggerSize}
-                          onChange={(event) => setNavTriggerSize(event.target.value as NavTriggerSize)}
-                          className={labControlSelectClass}
-                        >
-                          <option value="sm">sm</option>
-                          <option value="md">md</option>
-                          <option value="lg">lg</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>nav aura</span>
-                        <select
-                          value={navTriggerAura}
-                          onChange={(event) => setNavTriggerAura(event.target.value as NavTriggerAura)}
-                          className={labControlSelectClass}
-                        >
-                          <option value="none">none</option>
-                          <option value="soft">soft</option>
-                          <option value="strong">strong</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>nav surface style</span>
-                        <select
-                          value={navTriggerSurface}
-                          onChange={(event) =>
-                            setNavTriggerSurface(event.target.value as NavTriggerSurface)
-                          }
-                          className={labControlSelectClass}
-                        >
-                          <option value="minimal">minimal</option>
-                          <option value="solid">solid</option>
-                          <option value="glass">glass</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>nav fg/icon color</span>
-                        <select
-                          value={navTriggerTone}
-                          onChange={(event) => setNavTriggerTone(event.target.value as NavTriggerTone)}
-                          className={labControlSelectClass}
-                        >
-                          <option value="inverse">inverse</option>
-                          <option value="primary">primary</option>
-                          <option value="muted">muted</option>
-                        </select>
-                      </label>
-                      <label className={navSystemWideFieldClass}>
-                        <span className={navSystemLabelClass}>nav hover style</span>
-                        <select
-                          value={navTriggerHover}
-                          onChange={(event) => setNavTriggerHover(event.target.value as NavTriggerHover)}
-                          className={labControlSelectClass}
-                        >
-                          <option value="soft">soft</option>
-                          <option value="lift">lift</option>
-                          <option value="glow">glow</option>
-                        </select>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className={navSystemSurfaceAClass}>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      B) Open panel
-                    </p>
-                    <div className={navSystemGridClass}>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>open behavior</span>
-                        <select
-                          value={navOpenBehavior}
-                          onChange={(event) => setNavOpenBehavior(event.target.value as NavOpenBehavior)}
-                          className={labControlSelectClass}
-                        >
-                          <option value="overlay">overlay</option>
-                          <option value="drawer">drawer</option>
-                          <option value="fullscreen">fullscreen</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>panel width</span>
-                        <select
-                          value={navPanelWidth}
-                          onChange={(event) => setNavPanelWidth(event.target.value as NavPanelWidth)}
-                          disabled={navOpenBehavior === "fullscreen"}
-                          className={`${labControlSelectClass} disabled:opacity-55`}
-                        >
-                          <option value="narrow">narrow</option>
-                          <option value="normal">normal</option>
-                          <option value="wide">wide</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>panel alignment/origin</span>
-                        <select
-                          value={navPanelOrigin}
-                          onChange={(event) => setNavPanelOrigin(event.target.value as NavPanelOrigin)}
-                          disabled={navOpenBehavior === "fullscreen"}
-                          className={`${labControlSelectClass} disabled:opacity-55`}
-                        >
-                          <option value="right">right</option>
-                          <option value="left">left</option>
-                          <option value="center">center</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>panel visual style</span>
-                        <select
-                          value={navPanelStyle}
-                          onChange={(event) => setNavPanelStyle(event.target.value as NavPanelStyle)}
-                          className={labControlSelectClass}
-                        >
-                          <option value="solid">solid</option>
-                          <option value="glass">glass</option>
-                          <option value="minimal">minimal</option>
-                        </select>
-                      </label>
-                      <label className={labControlToggleRowClass}>
-                        <span className="min-w-0 truncate text-muted-foreground">include logo</span>
-                        <input
-                          type="checkbox"
-                          checked={navPanelIncludeLogo}
-                          onChange={(event) => setNavPanelIncludeLogo(event.target.checked)}
-                          className={labControlCheckboxClass}
-                        />
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>overlay density</span>
-                        <select
-                          value={navOverlayDensity}
-                          onChange={(event) =>
-                            setNavOverlayDensity(event.target.value as NavOverlayDensity)
-                          }
-                          className={labControlSelectClass}
-                        >
-                          <option value="low">low</option>
-                          <option value="medium">medium</option>
-                          <option value="high">high</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>overlay tint/style</span>
-                        <select
-                          value={navOverlayStyle}
-                          onChange={(event) => setNavOverlayStyle(event.target.value as NavOverlayStyle)}
-                          className={labControlSelectClass}
-                        >
-                          <option value="tinted">tinted</option>
-                          <option value="neutral">neutral</option>
-                          <option value="none">none</option>
-                        </select>
-                      </label>
-                      <label className={navSystemWideFieldClass}>
-                        <span className={navSystemLabelClass}>background readability behind menu</span>
-                        <select
-                          value={navReadabilityBoost}
-                          onChange={(event) =>
-                            setNavReadabilityBoost(event.target.value as NavReadabilityBoost)
-                          }
-                          className={labControlSelectClass}
-                        >
-                          <option value="none">none</option>
-                          <option value="soft">soft</option>
-                          <option value="strong">strong</option>
-                        </select>
-                      </label>
-                      <label className={labControlToggleRowClass}>
-                        <span className="min-w-0 truncate text-muted-foreground">badge visible</span>
-                        <input
-                          type="checkbox"
-                          checked={badgeVisible}
-                          onChange={(event) => setBadgeVisible(event.target.checked)}
-                          className={labControlCheckboxClass}
-                        />
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className={navSystemSurfaceAClass}>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      C) Menu content placement
-                    </p>
-                    <div className={navSystemGridClass}>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>menu block position</span>
-                        <select
-                          value={navMenuBlockPosition}
-                          onChange={(event) =>
-                            setNavMenuBlockPosition(event.target.value as NavMenuBlockPosition)
-                          }
-                          className={labControlSelectClass}
-                        >
-                          <option value="top">top</option>
-                          <option value="center">center</option>
-                          <option value="bottom">bottom</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>menu alignment</span>
-                        <select
-                          value={navMenuAlignment}
-                          onChange={(event) =>
-                            setNavMenuAlignment(event.target.value as NavMenuAlignment)
-                          }
-                          className={labControlSelectClass}
-                        >
-                          <option value="left">left</option>
-                          <option value="center">center</option>
-                          <option value="right">right</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>menu item size</span>
-                        <select
-                          value={navMenuItemSize}
-                          onChange={(event) =>
-                            setNavMenuItemSize(event.target.value as NavMenuItemSize)
-                          }
-                          className={labControlSelectClass}
-                        >
-                          <option value="sm">sm</option>
-                          <option value="md">md</option>
-                          <option value="lg">lg</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>menu text style</span>
-                        <select
-                          value={navMenuTextTone}
-                          onChange={(event) =>
-                            setNavMenuTextTone(event.target.value as NavMenuTextTone)
-                          }
-                          className={labControlSelectClass}
-                        >
-                          <option value="inverse">inverse</option>
-                          <option value="muted">muted</option>
-                          <option value="primary">primary</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>top safe offset</span>
-                        <select
-                          value={navMenuSafeTopOffset}
-                          onChange={(event) =>
-                            setNavMenuSafeTopOffset(event.target.value as NavMenuSafeOffset)
-                          }
-                          className={labControlSelectClass}
-                        >
-                          <option value="tight">tight</option>
-                          <option value="normal">normal</option>
-                          <option value="relaxed">relaxed</option>
-                        </select>
-                      </label>
-                      <label className={navSystemFieldClass}>
-                        <span className={navSystemLabelClass}>side safe offset</span>
-                        <select
-                          value={navMenuSafeSideOffset}
-                          onChange={(event) =>
-                            setNavMenuSafeSideOffset(event.target.value as NavMenuSafeOffset)
-                          }
-                          className={labControlSelectClass}
-                        >
-                          <option value="tight">tight</option>
-                          <option value="normal">normal</option>
-                          <option value="relaxed">relaxed</option>
-                        </select>
-                      </label>
-                      <label className={navSystemWideFieldClass}>
-                        <span className={navSystemLabelClass}>menu vertical spacing</span>
-                        <select
-                          value={navMenuVerticalSpacing}
-                          onChange={(event) =>
-                            setNavMenuVerticalSpacing(event.target.value as NavMenuVerticalSpacing)
-                          }
-                          className={labControlSelectClass}
-                        >
-                          <option value="tight">tight</option>
-                          <option value="normal">normal</option>
-                          <option value="relaxed">relaxed</option>
-                        </select>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-            </section>
-
-            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-              <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                5) Hero Regions
-              </h2>
-              <p className="mb-2 text-[11px] text-muted-foreground">
-                Regiones activas en esta fase: header, body y footer.
-              </p>
-
-              <div className="space-y-2 text-xs">
-                <div className="min-w-0 rounded-lg border border-border [background:var(--taller-lab-sidebar-card,var(--surface-3,var(--card)))] p-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Header region
-                  </p>
-                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <label className="min-w-0 grid gap-1">
-                      <span className="truncate text-muted-foreground">header integration</span>
-                      <select
-                        value={headerIntegration}
-                        onChange={(event) =>
-                          setHeaderIntegration(event.target.value as HeaderIntegration)
-                        }
-                        className={labControlSelectClass}
-                      >
-                        <option value="integrated">integrated</option>
-                        <option value="separated">separated</option>
-                      </select>
-                    </label>
-                    <label className="min-w-0 grid gap-1">
-                      <span className="truncate text-muted-foreground">header visual style</span>
-                      <select
-                        value={headerVisualStyle}
-                        onChange={(event) =>
-                          setHeaderVisualStyle(event.target.value as HeaderVisualStyle)
-                        }
-                        className={labControlSelectClass}
-                      >
-                        <option value="minimal">minimal</option>
-                        <option value="solid">solid</option>
-                        <option value="glass">glass</option>
-                      </select>
-                    </label>
-                    <label className="min-w-0 grid gap-1">
-                      <span className="truncate text-muted-foreground">top safe area / spacing</span>
-                      <select
-                        value={headerTopSpacing}
-                        onChange={(event) =>
-                          setHeaderTopSpacing(event.target.value as HeaderTopSpacing)
-                        }
-                        className={labControlSelectClass}
-                      >
-                        <option value="tight">tight</option>
-                        <option value="normal">normal</option>
-                        <option value="relaxed">relaxed</option>
-                      </select>
-                    </label>
-                    <label className="min-w-0 grid gap-1">
-                      <span className="truncate text-muted-foreground">logo / nav relation</span>
-                      <select
-                        value={headerRelation}
-                        onChange={(event) => setHeaderRelation(event.target.value as HeaderRelation)}
-                        className={labControlSelectClass}
-                      >
-                        <option value="balanced">balanced</option>
-                        <option value="logo-focus">logo-focus</option>
-                        <option value="nav-focus">nav-focus</option>
-                      </select>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="min-w-0 rounded-lg border border-border [background:var(--taller-lab-sidebar-card,var(--surface-3,var(--card)))] p-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Footer region
-                  </p>
-                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <label className="min-w-0 grid gap-1">
-                      <span className="truncate text-muted-foreground">footer integration</span>
-                      <select
-                        value={footerIntegration}
-                        onChange={(event) =>
-                          setFooterIntegration(event.target.value as FooterIntegration)
-                        }
-                        className={labControlSelectClass}
-                      >
-                        <option value="integrated">integrated</option>
-                        <option value="separated">separated</option>
-                      </select>
-                    </label>
-                    <label className="min-w-0 grid gap-1">
-                      <span className="truncate text-muted-foreground">footer visual style</span>
-                      <select
-                        value={footerVisualStyle}
-                        onChange={(event) =>
-                          setFooterVisualStyle(event.target.value as FooterVisualStyle)
-                        }
-                        className={labControlSelectClass}
-                      >
-                        <option value="minimal">minimal</option>
-                        <option value="solid">solid</option>
-                        <option value="glass">glass</option>
-                      </select>
-                    </label>
-                    <label className="min-w-0 grid gap-1">
-                      <span className="truncate text-muted-foreground">footer density</span>
-                      <select
-                        value={footerDensity}
-                        onChange={(event) => setFooterDensity(event.target.value as FooterDensity)}
-                        className={labControlSelectClass}
-                      >
-                        <option value="compact">compact</option>
-                        <option value="balanced">balanced</option>
-                        <option value="spacious">spacious</option>
-                      </select>
-                    </label>
-                    <label className="min-w-0 grid gap-1">
-                      <span className="truncate text-muted-foreground">footer placement/alignment</span>
-                      <select
-                        value={footerPositionOverride}
-                        onChange={(event) =>
-                          setFooterPositionOverride(event.target.value as PositionXOverride)
-                        }
-                        className={labControlSelectClass}
-                      >
-                        <option value="auto">auto</option>
-                        <option value="left">left</option>
-                        <option value="center">center</option>
-                        <option value="right">right</option>
-                      </select>
-                    </label>
-                    <label className="col-span-1 min-w-0 grid gap-1 sm:col-span-2">
-                      <span className="truncate text-muted-foreground">data / signature separation</span>
-                      <select
-                        value={footerSignatureSeparation}
-                        onChange={(event) =>
-                          setFooterSignatureSeparation(
-                            event.target.value as FooterSignatureSeparation
-                          )
-                        }
-                        className={labControlSelectClass}
-                      >
-                        <option value="tight">tight</option>
-                        <option value="normal">normal</option>
-                        <option value="relaxed">relaxed</option>
-                      </select>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-          </aside>
-
-          <section
-            ref={workspaceViewportRef}
-            className="min-w-0 xl:h-[var(--lab-workspace-viewport-height)]"
-            style={
-              workspaceViewportHeight
-                ? ({ "--lab-workspace-viewport-height": `${workspaceViewportHeight}px` } as CSSProperties)
-                : undefined
-            }
-          >
-            <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/80 [background:var(--taller-lab-canvas-backdrop,var(--panel-surface-1,var(--background)))] [box-shadow:var(--elevation-task,var(--panel-shadow-2))]">
-              <div className="grid grid-cols-1 items-center gap-2 border-b border-border/90 px-3 py-2 [background:var(--taller-lab-workspace-top-strip,var(--panel-topbar,var(--panel-surface-1,var(--background))))] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-                <div className="flex min-w-0 max-w-full flex-wrap items-center justify-self-start gap-1 rounded-lg border [border-color:var(--taller-lab-chip-border,var(--border))] [background:var(--taller-lab-chip-surface,var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card)))))] p-1 pr-1 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                  {COMPONENT_TYPES.map((type) => (
-                    <button
-                      key={type.id}
-                      type="button"
-                      onClick={() => setComponentType(type.id)}
-                      className={`${labSegmentedTextButtonClass} min-w-0 max-w-[8.2rem] truncate uppercase ${componentType === type.id ? labChipActiveClass : labChipIdleClass}`}
-                    >
-                      {COMPONENT_TYPE_LABEL[type.id]}
-                    </button>
-                  ))}
-                  <span className={`${labSegmentedStaticChipClass} min-w-0 max-w-[8.8rem] truncate uppercase [border-color:var(--taller-lab-chip-border,var(--border))] [background:var(--panel-surface-2,var(--surface-2,var(--card)))] text-muted-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))]`}>
-                    More +{FUTURE_COMPONENT_TYPES_COUNT}
-                  </span>
-                </div>
-
-                <div className="flex min-w-0 max-w-full flex-wrap justify-self-start rounded-lg border [border-color:var(--taller-lab-chip-border,var(--border))] [background:var(--taller-lab-chip-surface,var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card)))))] p-1 [box-shadow:var(--elevation-base,var(--panel-shadow-1))] lg:justify-self-center">
-                  {(["mobile", "tablet", "desktop", "wide"] as const).map((id) => {
-                    const Icon = VIEWPORT_BUTTON_LABEL[id].Icon;
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        title={VIEWPORT_BUTTON_LABEL[id].label}
-                        aria-label={VIEWPORT_BUTTON_LABEL[id].label}
-                        aria-pressed={viewport === id}
-                        onClick={() => setViewport(id)}
-                        className={`${labSegmentedIconButtonClass} ${viewport === id ? labChipActiveClass : labChipIdleClass}`}
-                      >
-                        <Icon className={viewportIconClassName} />
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex min-w-0 max-w-full flex-wrap justify-self-start rounded-lg border [border-color:var(--taller-lab-chip-border,var(--border))] [background:var(--taller-lab-chip-surface,var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card)))))] p-1 [box-shadow:var(--elevation-base,var(--panel-shadow-1))] lg:justify-self-end">
+              <div className="flex min-w-0 flex-wrap items-center justify-start gap-1 lg:justify-end">
+                <div className="inline-flex rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-0.5">
                   {(["preview", "layout"] as const).map((mode) => (
                     <button
                       key={mode}
                       type="button"
                       onClick={() => setCanvasMode(mode)}
-                      className={`${labSegmentedTextButtonClass} uppercase ${canvasMode === mode ? labChipActiveClass : labChipIdleClass}`}
+                      className={[
+                        "inline-flex h-7 items-center rounded-md px-2.5 text-[10px] font-semibold uppercase tracking-wide transition",
+                        canvasMode === mode
+                          ? "border border-border [background:var(--surface-1,var(--background))] text-foreground ring-1 ring-border/90 shadow-[0_2px_8px_color-mix(in_oklab,var(--foreground)_12%,transparent)]"
+                          : "text-muted-foreground hover:[background:var(--surface-2,var(--muted))]",
+                      ].join(" ")}
                     >
-                      {mode}
+                      {mode === "preview" ? "Vista" : "Layout"}
                     </button>
                   ))}
                 </div>
-              </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/90 px-3 py-2 text-[11px] text-foreground/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-2,var(--surface-2,var(--card))))]">
-                <div className="min-w-0 flex flex-wrap items-center gap-2.5">
-                  <span className="min-w-0 max-w-full truncate text-muted-foreground sm:max-w-[25rem]">
-                    Hero Lab v1 - source:{" "}
-                    <span className="font-semibold text-foreground">{brandScope}</span> / role{" "}
-                    {sessionRole ?? "anon"}
-                  </span>
+                <PanelButton
+                  type="button"
+                  variant="secondary"
+                  className="h-7 px-2.5 text-[10px] uppercase"
+                  onClick={copyCurrentSnapshotToOtherDevices}
+                  disabled={pieceFamily !== "hero"}
+                >
+                  Copiar
+                </PanelButton>
+                <PanelButton
+                  type="button"
+                  variant="secondary"
+                  className="h-7 px-2.5 text-[10px] uppercase"
+                  onClick={handleDuplicateVariant}
+                  disabled={pieceFamily !== "hero"}
+                >
+                  Duplicar
+                </PanelButton>
+                <PanelButton
+                  type="button"
+                  variant="primary"
+                  className="h-7 px-3 text-[10px] uppercase"
+                  onClick={handleSaveDraft}
+                  disabled={pieceFamily !== "hero"}
+                >
+                  Guardar borrador de sesión
+                </PanelButton>
+                <div
+                  className="hidden min-w-0 items-center rounded-md border border-border/70 [background:var(--surface-2,var(--card))] px-2 py-1 text-[10px] text-muted-foreground xl:flex"
+                  title={actionNotice || deviceEditingNotice}
+                >
                   <span className="truncate">
-                    Canvas: <strong className="text-foreground">{viewport}</strong> ({canvasWidth}x{canvasHeight})
-                  </span>
-                  <span className="shrink-0">Scale: {(canvasScale * 100).toFixed(0)}%</span>
-                </div>
-                <div className="flex max-w-full flex-wrap items-center justify-end gap-2">
-                  <span className={`${labUtilityChipClass} shrink-0 font-semibold`}>
-                    Navigation module
-                  </span>
-                  <span className={`${labUtilityChipClass} min-w-0 max-w-full truncate`}>
-                    {burgerNavigationControlsVisible
-                      ? burgerControlsLiveOnViewport
-                        ? `burger ${effectiveMenuOpen ? "open" : "closed"}`
-                        : "burger controls (switch viewport)"
-                      : "desktop nav preview"}
+                    {VIEWPORTS[viewport].label} · {variantName}
                   </span>
                 </div>
+                <span className="hidden max-w-[18rem] truncate text-[10px] text-muted-foreground 2xl:inline">
+                  {actionNotice || deviceEditingNotice}
+                </span>
               </div>
+            </div>
+          </header>
 
-              <div
-                ref={previewStageRef}
-                className="relative min-h-0 flex-1 overflow-hidden border-t border-border/70 [background:var(--taller-lab-canvas-stage,var(--panel-surface-2,var(--surface-2,var(--card))))] [background-image:var(--taller-lab-canvas-texture,none)] [background-size:var(--taller-lab-canvas-texture-size,auto)] [background-position:center] [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,var(--border)_56%,transparent),inset_0_22px_36px_color-mix(in_oklab,var(--foreground)_8%,transparent)]"
-              >
-                <div className="absolute inset-0 flex items-center justify-center px-3 py-5">
-                  <div
-                    className="relative overflow-hidden rounded-[24px] ring-1 [ring-color:color-mix(in_oklab,var(--taller-lab-chip-border,var(--border))_84%,transparent)] [box-shadow:var(--elevation-overlay,var(--panel-shadow-3)),0_0_0_1px_color-mix(in_oklab,var(--foreground)_8%,transparent)]"
-                    style={{
-                      width: `${scaledCanvasWidth}px`,
-                      height: `${scaledCanvasHeight}px`,
-                    }}
-                  >
-                    <div
-                      className="relative origin-top-left"
-                      style={{
-                        width: `${canvasWidth}px`,
-                        height: `${canvasHeight}px`,
-                        transform: `scale(${canvasScale})`,
-                      }}
-                    >
-                      <PublicHero
-                        data={mappedHero}
-                        business={{
-                          slug: "lab",
-                          name: "BCC Lab",
-                          activeHeroVariantKey: `validation-${candidateId}`,
-                          logoUrl: "/brand/logo-mark.svg",
-                        }}
-                        mobileMenuStyle={menuStyle}
-                        forceMobileMenuOpen={effectiveMenuOpen}
-                        onLabMenuOpenChange={(open) => setMenuOpen(open)}
-                        navTriggerSize={navTriggerSize}
-                        navTriggerAura={navTriggerAura}
-                        navTriggerSurface={navTriggerSurface}
-                        navTriggerTone={navTriggerTone}
-                        navTriggerHover={navTriggerHover}
-                        desktopNavSize={desktopNavSize}
-                        desktopNavTone={desktopNavTone}
-                        desktopNavSurface={desktopNavSurface}
-                        desktopNavHover={desktopNavHover}
-                        desktopNavPresence={desktopNavPresence}
-                        navOpenBehavior={navOpenBehavior}
-                        navPanelWidth={navPanelWidth}
-                        navPanelOrigin={navPanelOrigin}
-                        navPanelIncludeLogo={navPanelIncludeLogo}
-                        navPanelStyle={navPanelStyle}
-                        navOverlayDensity={navOverlayDensity}
-                        navOverlayStyle={navOverlayStyle}
-                        navReadabilityBoost={navReadabilityBoost}
-                        navMenuBlockPosition={navMenuBlockPosition}
-                        navMenuAlignment={navMenuAlignment}
-                        navMenuItemSize={navMenuItemSize}
-                        navMenuSafeTopOffset={navMenuSafeTopOffset}
-                        navMenuSafeSideOffset={navMenuSafeSideOffset}
-                        navMenuVerticalSpacing={navMenuVerticalSpacing}
-                        navMenuTextTone={navMenuTextTone}
-                        headerIntegration={headerIntegration}
-                        headerVisualStyle={headerVisualStyle}
-                        headerTopSpacing={headerTopSpacing}
-                        headerRelation={headerRelation}
-                        footerIntegration={footerIntegration}
-                        footerVisualStyle={footerVisualStyle}
-                        footerDensity={footerDensity}
-                        footerSignatureSeparation={footerSignatureSeparation}
-                        copyWidth={heroCopyWidth}
-                        navigationMode={previewNavigationMode}
-                        navPosition={navPosition}
-                        headlinePosition={headlinePosition}
-                        copyBlockPosition={copyBlockPosition}
-                        ctaPosition={ctaPosition}
-                        footerPosition={footerPosition}
-                        visualPosition={visualPosition}
-                        logoPosition={logoPosition}
-                        overlayColor={overlayColor}
-                        overlayStyleMode={overlayStyleMode}
-                        backgroundEmphasis={backgroundEmphasis}
-                        labHeadlineTone={labHeadlineTone}
-                        mobileHeadlineScale={mobileHeadlineScale}
-                        mobileLogoScale={mobileLogoScale}
-                        gapLogoHeadline={gapLogoHeadline}
-                        gapHeadlineSubheadline={gapHeadlineSubheadline}
-                        gapTextCta={gapTextCta}
-                        gapCtaFooter={gapCtaFooter}
-                        gapFooterDataSignature={gapFooterDataSignature}
-                        labSceneOverlayClassName={labSceneOverlayClassName}
-                        isLabMode={true}
-                      />
-                      {SHOW_LAYOUT_GUIDES ? (
-                        <div className="pointer-events-none absolute inset-0 z-40">
-                          {overlaySlots.map((slot: FreeLayoutSlot) => (
-                            <div
-                              key={slot.id}
-                              className="absolute rounded border border-sky-100/25"
-                              style={{
-                                left: formatRectPercent(slot.rect.x),
-                                top: formatRectPercent(slot.rect.y),
-                                width: formatRectPercent(slot.rect.width),
-                                height: formatRectPercent(slot.rect.height),
-                              }}
+          <div className="grid min-h-0 flex-1 gap-2 p-2 xl:grid-cols-[17.5rem_minmax(0,1fr)_17.5rem] xl:p-2.5">
+            <aside className="min-h-0 space-y-3 overflow-y-auto rounded-xl border border-border/70 [background:var(--surface-2,var(--card))] p-1.5 bcc-scrollbar">
+              {canvasMode === "preview" ? (
+                <>
+                  <PanelCard variant="task" className="p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+                        Libreria Media
+                      </h2>
+                      <PanelBadge tone={visualSourceKind === "video" ? "warning" : "processing"}>
+                        {assetKindLabel}
+                      </PanelBadge>
+                    </div>
+
+                    <div className="mt-2 grid gap-2">
+                      <div className="inline-flex rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-1">
+                        {([
+                          { id: "hero-image", label: "Imagen" },
+                          { id: "logo", label: "Logo" },
+                          { id: "video", label: "Video" },
+                        ] as const).map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => handleVisualSourceKindChange(option.id)}
+                            className={[
+                              "flex-1 rounded-md px-2 py-1.5 text-[10px] font-semibold uppercase transition",
+                              visualSourceKind === option.id
+                                ? "border border-border [background:var(--surface-3,var(--card))]"
+                                : "text-muted-foreground hover:[background:var(--surface-2,var(--muted))]",
+                            ].join(" ")}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowAssetFilters((previous) => !previous)}
+                          className="rounded-md border border-border/75 [background:var(--surface-2,var(--card))] px-2 py-1 text-[10px] font-semibold uppercase text-foreground transition hover:[background:var(--surface-3,var(--card))]"
+                        >
+                          Filtros
+                        </button>
+                        <p className="text-[10px] text-muted-foreground">
+                          {mediaLibraryCount} resultados - variante {variantName}
+                        </p>
+                      </div>
+
+                      {showAssetFilters ? (
+                        <div className="grid gap-1.5 rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                          <label className="grid gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Variante
+                            <select
+                              value={variantFilter}
+                              onChange={(event) =>
+                                setVariantFilter(event.target.value as AssetVariantKey | "all")
+                              }
+                              className="h-8 rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-ring"
                             >
-                              <div className="ml-1 mt-1 inline-flex max-w-[94%] items-center gap-1 rounded px-1 py-0.5 text-[10px] font-medium text-sky-100/75">
-                                <span>{slot.id}</span>
-                                <span className="text-muted-foreground">
-                                  {`x:${Math.round(slot.rect.x * 100)} y:${Math.round(slot.rect.y * 100)} w:${Math.round(slot.rect.width * 100)} h:${Math.round(slot.rect.height * 100)}`}
-                                </span>
-                                {slot.locked ? (
-                                  <span className="text-amber-200/75">lock</span>
-                                ) : null}
-                              </div>
-                            </div>
-                          ))}
+                              {VARIANT_FILTERS.map((filter) => (
+                                <option key={filter} value={filter}>
+                                  {filter}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="grid gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Orientacion
+                            <select
+                              value={orientationFilter}
+                              onChange={(event) =>
+                                setOrientationFilter(event.target.value as MediaOrientation | "all")
+                              }
+                              className="h-8 rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-ring"
+                            >
+                              {ORIENTATION_FILTERS.map((filter) => (
+                                <option key={filter} value={filter}>
+                                  {filter}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="grid gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Estado
+                            <select
+                              value={reviewFilter}
+                              onChange={(event) =>
+                                setReviewFilter(event.target.value as MediaReviewStatus | "all")
+                              }
+                              className="h-8 rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-ring"
+                            >
+                              {REVIEW_FILTERS.map((filter) => (
+                                <option key={filter} value={filter}>
+                                  {filter}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="grid gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Componente
+                            <select
+                              value={assetComponentFilter}
+                              onChange={(event) =>
+                                setAssetComponentFilter(event.target.value as AssetComponentFilter)
+                              }
+                              className="h-8 rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-ring"
+                            >
+                              <option value="all">all</option>
+                              <option value="hero">hero</option>
+                              <option value="logo">logo</option>
+                              <option value="icon">icon</option>
+                            </select>
+                          </label>
+                          <label className="grid gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Sector / contexto
+                            <select
+                              value={assetContextFilter}
+                              onChange={(event) =>
+                                setAssetContextFilter(event.target.value as AssetContextFilter)
+                              }
+                              className="h-8 rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-ring"
+                            >
+                              <option value="all">all</option>
+                              <option value="hero">hero</option>
+                              <option value="navbar">navbar</option>
+                              <option value="footer">footer</option>
+                            </select>
+                          </label>
                         </div>
                       ) : null}
+
+                      <div className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-1.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAssetPickerView((previous) => (previous === "open" ? "closed" : "open"))
+                        }
+                        disabled={visualSourceKind === "video"}
+                        className={[
+                          "grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-border/75 [background:var(--surface-1,var(--background))] p-1.5 text-left transition",
+                          visualSourceKind === "video"
+                            ? "cursor-not-allowed opacity-60"
+                            : "hover:[background:var(--surface-3,var(--card))]",
+                        ].join(" ")}
+                      >
+                        <span className="h-9 w-12 overflow-hidden rounded border border-border/70 [background:var(--surface-1,var(--background))]">
+                          {selectedContextAsset ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={selectedContextAsset.url}
+                              alt={selectedContextAsset.label}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="grid h-full place-items-center text-[10px] text-muted-foreground">
+                              --
+                            </span>
+                          )}
+                        </span>
+                        <span className="min-w-0">
+                          <p className="truncate text-xs font-semibold text-foreground">
+                            {selectedContextAsset?.label ?? "Sin asset"}
+                          </p>
+                          <p className="truncate text-[10px] text-muted-foreground">
+                            {selectedAssetSummary}
+                          </p>
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          <svg
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            className={`h-4 w-4 transition-transform ${isAssetPickerOpen ? "rotate-180" : ""}`}
+                            aria-hidden="true"
+                          >
+                            <path d="M5 7.5L10 12.5L15 7.5" />
+                          </svg>
+                        </span>
+                      </button>
+
+                      {isAssetPickerOpen ? (
+                        <div className="mt-1.5 max-h-56 overflow-y-auto rounded-md border border-border/75 [background:var(--surface-1,var(--background))] p-1.5 bcc-scrollbar">
+                          {visualSourceKind === "video" ? (
+                            <p className="px-2 py-3 text-center text-xs text-muted-foreground">
+                              Video sin soporte en esta fase.
+                            </p>
+                          ) : assetState === "loading" ? (
+                            <p className="px-2 py-3 text-center text-xs text-muted-foreground">
+                              Cargando assets...
+                            </p>
+                          ) : assetState === "error" ? (
+                            <p className="px-2 py-3 text-center text-xs text-danger">{assetError}</p>
+                          ) : contextualAssets.length === 0 ? (
+                            <p className="px-2 py-3 text-center text-xs text-muted-foreground">
+                              Sin resultados con filtros actuales.
+                            </p>
+                          ) : (
+                            <div className="space-y-1">
+                              {contextualAssets.map((item) => {
+                                const isSelected = selectedContextAsset?._id === item._id;
+                                return (
+                                  <button
+                                    key={item._id}
+                                    type="button"
+                                    onClick={() => handleAssetPick(item)}
+                                    className={[
+                                      "grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border p-1.5 text-left transition",
+                                      isSelected
+                                        ? "border-border [background:var(--surface-3,var(--card))] ring-1 ring-border/60"
+                                        : "border-border/70 [background:var(--surface-2,var(--card))] hover:[background:var(--surface-3,var(--card))]",
+                                    ].join(" ")}
+                                  >
+                                    <span className="h-7 w-10 overflow-hidden rounded border border-border/70 [background:var(--surface-1,var(--background))]">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={item.url}
+                                        alt={item.label}
+                                        className="h-full w-full object-cover"
+                                      />
+                                    </span>
+                                    <span className="min-w-0">
+                                      <p className="truncate text-[11px] font-semibold text-foreground">
+                                        {item.label}
+                                      </p>
+                                      <p className="truncate text-[10px] text-muted-foreground">
+                                        {item.variantKey} - {item.orientation}
+                                      </p>
+                                    </span>
+                                    <PanelBadge tone={getAssetPreviewTone(item)}>{item.reviewStatus}</PanelBadge>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                      </div>
+
+                      <div className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Origen actual
+                        </p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          Activo ({assetKindLabel}):{" "}
+                          <span className="font-semibold text-foreground">{selectedAssetSummary}</span>
+                        </p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          Snapshot: <span className="font-semibold text-foreground">{sourceSnapshotId}</span>
+                        </p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          Preset: <span className="font-semibold text-foreground">{sourcePresetId}</span>
+                        </p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          Hero-safe disponibles: {heroSafeMediaSources.length}
+                        </p>
+                      </div>
+                    </div>
+                  </PanelCard>
+
+                  <PanelCard variant="task" className="p-3">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+                      Biblioteca de piezas
+                    </h2>
+
+                    <div className="mt-2 space-y-1.5">
+                      {PIECE_LIBRARY.map((piece) => {
+                        const active = pieceVisibility[piece.id];
+                        return (
+                          <div
+                            key={piece.id}
+                            className={[
+                              "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border px-2 py-1.5",
+                              selectedPiece === piece.id
+                                ? "border-border [background:var(--surface-3,var(--card))] ring-1 ring-border/60"
+                                : "border-border/70 [background:var(--surface-2,var(--card))]",
+                            ].join(" ")}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handlePieceSelect(piece.id)}
+                              className="truncate text-xs font-semibold text-foreground"
+                            >
+                              {piece.label}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => togglePieceVisibility(piece.id)}
+                              className={[
+                                "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase",
+                                active
+                                  ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
+                                  : "border-border text-muted-foreground",
+                              ].join(" ")}
+                            >
+                              {active ? "ON" : "OFF"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </PanelCard>
+
+                  <PanelCard variant="task" className="p-3">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+                      Emphasis / Atmosphere
+                    </h2>
+
+                    <div className="mt-2 space-y-2 text-xs">
+                      <label className="block">
+                        <span className="mb-1 block text-muted-foreground">overlay density</span>
+                        <select
+                          value={overlayDensity}
+                          onChange={(event) => setOverlayDensity(event.target.value as HeroAppearanceVariant)}
+                          className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <option value="transparent">transparent</option>
+                          <option value="soft">soft</option>
+                          <option value="solid">solid</option>
+                        </select>
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1 block text-muted-foreground">overlay style</span>
+                        <select
+                          value={overlayStyleMode}
+                          onChange={(event) => setOverlayStyleMode(event.target.value as OverlayStyleMode)}
+                          className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <option value="gradient">gradient</option>
+                          <option value="solid">solid</option>
+                          <option value="none">none</option>
+                        </select>
+                      </label>
+
+                      <div className="rounded-md border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                        <span className="mb-1 block text-muted-foreground">overlay tint</span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {(["blue", "green", "amber", "purple", "smoke"] as const).map((tone) => (
+                            <button
+                              key={tone}
+                              type="button"
+                              disabled={effectiveOverlayStyleMode === "none"}
+                              onClick={() => setOverlayTint(tone)}
+                              className={[
+                                "flex items-center justify-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold capitalize transition",
+                                overlayTint === tone
+                                  ? "border-border [background:var(--surface-3,var(--card))]"
+                                  : "border-border/70 text-muted-foreground",
+                                effectiveOverlayStyleMode === "none" ? "cursor-not-allowed opacity-45" : "",
+                              ].join(" ")}
+                            >
+                              <span
+                                className={`h-2.5 w-4 rounded-full ${OVERLAY_TINT_PREVIEW_CLASS[tone]}`}
+                                aria-hidden="true"
+                              />
+                              {tone}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <label className="block">
+                        <span className="mb-1 block text-muted-foreground">headline tone (modo auto)</span>
+                        <select
+                          value={labHeadlineTone}
+                          onChange={(event) => setLabHeadlineTone(event.target.value as LabHeadlineTone)}
+                          className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <option value="white">white</option>
+                          <option value="black">black</option>
+                          <option value="inverse">inverse</option>
+                          <option value="muted-light">muted-light</option>
+                          <option value="warm-light">warm-light</option>
+                          <option value="cool-light">cool-light</option>
+                        </select>
+                      </label>
+
+                      <div>
+                        <span className="mb-1 block text-muted-foreground">background emphasis</span>
+                        <div className="flex gap-1">
+                          {(["low", "medium", "high"] as const).map((emphasis) => (
+                            <button
+                              key={emphasis}
+                              type="button"
+                              onClick={() => setBackgroundEmphasis(emphasis)}
+                              className={[
+                                "flex-1 rounded-md border px-2 py-1.5 text-xs font-semibold capitalize transition",
+                                backgroundEmphasis === emphasis
+                                  ? "border-border [background:var(--surface-3,var(--card))]"
+                                  : "border-border/70 text-muted-foreground",
+                              ].join(" ")}
+                            >
+                              {emphasis}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <label className="block">
+                        <span className="mb-1 block text-muted-foreground">cta regulation</span>
+                        <select
+                          value={ctaRegulation}
+                          onChange={(event) => setCtaRegulation(event.target.value as CtaRegulation)}
+                          className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <option value="balanced">balanced</option>
+                          <option value="primary-focus">primary-focus</option>
+                        </select>
+                      </label>
+                    </div>
+                  </PanelCard>
+
+                  <PanelCard variant="task" className="p-3">
+                    <div className="flex items-center justify-between gap-2 border-b border-border/70 pb-2">
+                      <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+                        Asistente de contenido
+                      </h2>
+                      <PanelBadge tone="processing">{assistantContext.negocio}</PanelBadge>
+                    </div>
+
+                    <div className="mt-2 space-y-2">
+                      <div className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                        <p className="text-[10px] text-muted-foreground">
+                          Contexto activo: {assistantContext.blueprint} - {assistantContext.dispositivo} - pieza{" "}
+                          <span className="font-semibold text-foreground">{assistantContext.pieza}</span>
+                        </p>
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          Enfoque CTA: <span className="font-semibold text-foreground">{assistantContext.ctaIntent}</span>
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Generar titular (transformar H1 actual)
+                        </p>
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          <button
+                            type="button"
+                            onClick={() => proposeHeadlineTransformation("shorten")}
+                            className="rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 py-1 text-[10px] font-semibold uppercase transition hover:[background:var(--surface-3,var(--card))]"
+                          >
+                            Acortar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => proposeHeadlineTransformation("commercial")}
+                            className="rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 py-1 text-[10px] font-semibold uppercase transition hover:[background:var(--surface-3,var(--card))]"
+                          >
+                            Mas comercial
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => proposeHeadlineTransformation("seo-local")}
+                            className="rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 py-1 text-[10px] font-semibold uppercase transition hover:[background:var(--surface-3,var(--card))]"
+                          >
+                            SEO local
+                          </button>
+                        </div>
+                        <div className="mt-2 grid gap-1.5">
+                          <div className="rounded-md border border-border/75 [background:var(--surface-1,var(--background))] p-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Actual</p>
+                            <p className="mt-1 text-[11px] text-foreground">{currentHeadline}</p>
+                          </div>
+                          <div className="rounded-md border border-border/75 [background:var(--surface-1,var(--background))] p-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              Propuesta {headlineProposalMode ? `(${headlineProposalMode})` : ""}
+                            </p>
+                            <p className="mt-1 text-[11px] text-foreground">
+                              {headlineProposal || "Selecciona una transformacion para ver propuesta."}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <PanelButton
+                            type="button"
+                            variant="primary"
+                            className="h-7 px-2.5 text-[10px] uppercase"
+                            onClick={applyHeadlineProposal}
+                            disabled={!headlineProposal.trim()}
+                          >
+                            Aplicar
+                          </PanelButton>
+                          <PanelButton
+                            type="button"
+                            variant="secondary"
+                            className="h-7 px-2.5 text-[10px] uppercase"
+                            onClick={discardHeadlineProposal}
+                            disabled={!headlineProposal.trim()}
+                          >
+                            Descartar
+                          </PanelButton>
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Sugerencias de diseno
+                        </p>
+                        <div className="mt-1.5 grid gap-1">
+                          {designSuggestions.map((suggestion) => (
+                            <button
+                              key={suggestion.label}
+                              type="button"
+                              onClick={suggestion.action}
+                              className="w-full rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-left text-[11px] font-semibold text-foreground transition hover:[background:var(--surface-3,var(--card))]"
+                            >
+                              {suggestion.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </PanelCard>
+                </>
+              ) : (
+                <>
+                  <PanelCard variant="task" className="p-3">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+                      Selector de blueprint
+                    </h2>
+
+                    <div className="mt-2 grid grid-cols-2 gap-1 rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-1">
+                      {([
+                        { id: "centered", label: "Centrado" },
+                        { id: "split", label: "Split" },
+                        { id: "poster", label: "Poster" },
+                        { id: "logo-first", label: "Logo first" },
+                      ] as const).map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => handleBlueprintChange(item.id)}
+                          className={[
+                            "rounded-md px-2 py-1.5 text-[11px] font-semibold uppercase transition",
+                            blueprint === item.id
+                              ? "border border-border [background:var(--surface-3,var(--card))]"
+                              : "text-muted-foreground hover:[background:var(--surface-2,var(--muted))]",
+                          ].join(" ")}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </PanelCard>
+
+                  <PanelCard variant="task" className="p-3">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+                      Biblioteca de piezas
+                    </h2>
+
+                    <div className="mt-2 space-y-1.5">
+                      {PIECE_LIBRARY.map((piece) => {
+                        const placed = LAYOUT_PIECES.includes(piece.id as LayoutPiece)
+                          ? pieceZones[piece.id as LayoutPiece]
+                          : OPERATIONAL_PLACEMENT_PIECE_SET.has(piece.id)
+                            ? operationalPieceZones[piece.id as OperationalPlacementPiece]
+                            : null;
+                        const isActiveLayoutPiece = selectedLayoutPiece === piece.id;
+                        const hasOperationalInspectorControl = OPERATIONAL_INSPECTOR_PIECES.has(piece.id);
+                        return (
+                          <div
+                            key={piece.id}
+                            className={[
+                              "rounded-md border p-1.5 transition",
+                              selectedPiece === piece.id
+                                ? "border-border [background:var(--surface-3,var(--card))] shadow-[0_2px_10px_color-mix(in_oklab,var(--foreground)_10%,transparent)] ring-1 ring-border/80"
+                                : "border-border/70 [background:var(--surface-2,var(--card))] hover:border-border/90 hover:[background:var(--surface-3,var(--card))]",
+                            ].join(" ")}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              {piece.layoutEnabled ? (
+                                <button
+                                  type="button"
+                                  onClick={() => selectLayoutPiece(piece.id as LayoutPiece)}
+                                  className={[
+                                    "rounded-md px-2 py-1 text-xs font-semibold uppercase",
+                                    isActiveLayoutPiece
+                                      ? "border border-border [background:var(--surface-1,var(--background))] text-foreground shadow-[0_1px_6px_color-mix(in_oklab,var(--foreground)_12%,transparent)]"
+                                      : "text-muted-foreground hover:text-foreground",
+                                  ].join(" ")}
+                                >
+                                  {piece.label}
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handlePieceSelect(piece.id)}
+                                  className={[
+                                    "rounded-md border px-2 py-1 text-xs font-semibold uppercase transition",
+                                    selectedPiece === piece.id
+                                      ? "border-border [background:var(--surface-1,var(--background))] text-foreground shadow-[0_1px_6px_color-mix(in_oklab,var(--foreground)_12%,transparent)]"
+                                      : "border-transparent text-muted-foreground hover:border-border/70 hover:text-foreground",
+                                  ].join(" ")}
+                                >
+                                  {piece.label}
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => togglePieceVisibility(piece.id)}
+                                className={[
+                                  "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase",
+                                  pieceVisibility[piece.id]
+                                    ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
+                                    : "border-border text-muted-foreground",
+                                ].join(" ")}
+                              >
+                                {pieceVisibility[piece.id] ? "visible" : "hidden"}
+                              </button>
+                            </div>
+
+                            <p className="mt-1 text-[10px] text-muted-foreground">
+                              {piece.layoutEnabled
+                                ? placed
+                                  ? `colocada en ${zoneLabel(placed)}`
+                                  : "no colocada en grid 3x3"
+                                : hasOperationalInspectorControl
+                                  ? placed
+                                    ? `colocacion operativa en ${zoneLabel(placed)}`
+                                    : "Control de posicion operativo en inspector"
+                                  : "Control de visibilidad en inspector"}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </PanelCard>
+
+                  <PanelCard variant="task" className="p-3">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+                      Atajos de colocacion
+                    </h2>
+
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Pieza activa:{" "}
+                      <span className="font-semibold text-foreground">
+                        {activePlacementPiece ? pieceLabel(activePlacementPiece) : "Ninguna"}
+                      </span>
+                    </p>
+
+                    {!canUsePlacementShortcuts ? (
+                      <p className="mt-1 text-[11px] text-warning">
+                        Selecciona una pieza con colocacion operativa.
+                      </p>
+                    ) : null}
+
+                    <div className="mt-2 grid grid-cols-3 gap-1">
+                      {([
+                        { id: "top", label: "Arriba" },
+                        { id: "center", label: "Centro" },
+                        { id: "bottom", label: "Abajo" },
+                      ] as const).map((shortcut) => (
+                        <button
+                          key={shortcut.id}
+                          type="button"
+                          onClick={() => applyPlacementShortcut(shortcut.id)}
+                          disabled={!canUsePlacementShortcuts}
+                          className="rounded-md border border-border/75 [background:var(--surface-2,var(--card))] px-2 py-1.5 text-[11px] font-semibold uppercase disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {shortcut.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="mt-1 grid grid-cols-3 gap-1">
+                      {([
+                        { id: "left", label: "Izquierda" },
+                        { id: "center", label: "Centro H" },
+                        { id: "right", label: "Derecha" },
+                      ] as const).map((shortcut) => (
+                        <button
+                          key={shortcut.id}
+                          type="button"
+                          onClick={() => applyColumnShortcut(shortcut.id)}
+                          disabled={!canUsePlacementShortcuts}
+                          className="rounded-md border border-border/75 [background:var(--surface-2,var(--card))] px-2 py-1.5 text-[11px] font-semibold uppercase disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {shortcut.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => applyPlacementShortcut("reset")}
+                      disabled={!canUsePlacementShortcuts}
+                      className="mt-2 w-full rounded-md border border-border/75 [background:var(--surface-2,var(--card))] px-2 py-1.5 text-[11px] font-semibold uppercase text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Reset pieza
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetLayoutGlobal}
+                      className="mt-1 w-full rounded-md border border-border/75 [background:var(--surface-2,var(--card))] px-2 py-1.5 text-[11px] font-semibold uppercase text-muted-foreground transition hover:[background:var(--surface-3,var(--card))]"
+                    >
+                      Reset layout
+                    </button>
+                  </PanelCard>
+                </>
+              )}
+            </aside>
+
+            <section
+              ref={workspaceViewportRef}
+              className="min-h-0 h-full min-w-0 xl:h-[var(--lab-workspace-viewport-height)]"
+              style={
+                workspaceViewportHeight
+                  ? ({ "--lab-workspace-viewport-height": `${workspaceViewportHeight}px` } as CSSProperties)
+                  : undefined
+              }
+            >
+              <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/85 [background:var(--panel-surface-1,var(--background))] [box-shadow:var(--elevation-task,var(--panel-shadow-2))]">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/85 px-2.5 py-1.5 [background:var(--surface-2,var(--card))]">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>Modo: <strong className="text-foreground uppercase">{canvasMode}</strong></span>
+                    <span>Blueprint: <strong className="text-foreground">{blueprint}</strong></span>
+                    <span>Rol: <strong className="text-foreground">{sessionRole ?? "anon"}</strong></span>
+                  </div>
+                  <div className="flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>Tablero {canvasWidth}x{canvasHeight}</span>
+                    <PanelBadge tone={qualityTone}>score {qualityScore.score}</PanelBadge>
+                  </div>
+                </div>
+
+                <div
+                  ref={previewStageRef}
+                  className="relative min-h-0 flex-1 overflow-hidden [background:color-mix(in_oklab,var(--surface-2,var(--card))_88%,var(--panel-background,var(--background))_12%)] [background-image:linear-gradient(to_bottom,color-mix(in_oklab,var(--surface-1,var(--background))_48%,transparent),transparent),radial-gradient(circle_at_1px_1px,color-mix(in_oklab,var(--border)_28%,transparent)_1px,transparent_0)] [background-size:100%_100%,18px_18px]"
+                >
+                  <div className="absolute inset-0 flex items-center justify-center px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6">
+                    <div
+                      className="relative overflow-hidden rounded-xl border border-border/80 [background:var(--panel-surface-1,var(--background))] [box-shadow:0_6px_18px_color-mix(in_oklab,var(--foreground)_12%,transparent)]"
+                      style={{
+                        width: `${scaledCanvasWidth}px`,
+                        height: `${scaledCanvasHeight}px`,
+                      }}
+                    >
+                      <div
+                        className="relative origin-top-left"
+                        style={{
+                          width: `${canvasWidth}px`,
+                          height: `${canvasHeight}px`,
+                          transform: `scale(${canvasScale})`,
+                        }}
+                      >
+                        <PublicHero
+                          data={mappedHero}
+                          business={{
+                            slug: "lab",
+                            name: "BCC Lab",
+                            activeHeroVariantKey: `validation-${variantName}`,
+                            logoUrl: heroLogoUrl || "/brand/logo-mark.svg",
+                          }}
+                          copyWidth={
+                            pieceStructure.headline.width === "narrow"
+                              ? "narrow"
+                              : pieceStructure.headline.width === "wide"
+                                ? "wide"
+                                : effectiveCopyWidth
+                          }
+                          mobileLogoScale={mobileLogoScale}
+                          navigationMode={resolvedNavigationMode}
+                          navPosition={resolvedNavPosition}
+                          navPanelOrigin={resolvedNavPanelOrigin}
+                          navTriggerSize={navTriggerSize}
+                          navTriggerTone={navTriggerTone}
+                          navTriggerSurface={navTriggerSurface}
+                          navTriggerAura={navTriggerAura}
+                          navOpenBehavior={navOpenBehavior}
+                          showNavLinks={navLinksVisible}
+                          forceMobileMenuOpen={menuOpen}
+                          onLabMenuOpenChange={setMenuOpen}
+                          headlinePosition={headlinePosition}
+                          copyBlockPosition={copyBlockPosition}
+                          ctaPosition={ctaPosition}
+                          footerPosition={resolvedFooterPosition}
+                          visualPosition={
+                            layoutMediaDominance === "high"
+                              ? "center"
+                              : blueprintPreset.visualPosition
+                          }
+                          logoPosition={logoPosition}
+                          overlayColor={overlayTint}
+                          overlayStyleMode={effectiveOverlayStyleMode}
+                          backgroundEmphasis={backgroundEmphasis}
+                          labHeadlineTone={labHeadlineTone}
+                          themeToggleDefault={themeToggleDefault}
+                          themeToggleStyle={themeToggleStyle}
+                          themeTogglePosition={resolvedThemeTogglePosition}
+                          ctaRegulation={ctaRegulation}
+                          gapLogoHeadline={gapLogoHeadline}
+                          gapHeadlineSubheadline={gapHeadlineSubheadline}
+                          gapTextCta={gapTextCta}
+                          gapCtaFooter={
+                            layoutDensity === "compact"
+                              ? "tight"
+                              : layoutDensity === "airy"
+                                ? "relaxed"
+                                : "normal"
+                          }
+                          gapFooterDataSignature={
+                            layoutSafeArea === "tight"
+                              ? "tight"
+                              : layoutSafeArea === "relaxed"
+                                ? "relaxed"
+                                : "normal"
+                          }
+                          headerTopSpacing={
+                            layoutSafeArea === "tight"
+                              ? "tight"
+                              : layoutSafeArea === "relaxed"
+                                ? "relaxed"
+                                : "normal"
+                          }
+                          footerDensity={
+                            contactDensity === "compact"
+                              ? "compact"
+                              : contactDensity === "spacious"
+                                ? "spacious"
+                                : "balanced"
+                          }
+                          footerSignatureSeparation={footerSignatureSeparation}
+                          isLabMode={true}
+                          selectedLabPiece={selectedPiece}
+                          onLabPieceSelect={handlePieceSelect}
+                          showLabLogo={pieceVisibility.logo}
+                          showLabHeadline={pieceVisibility.headline}
+                          showLabSubheadline={pieceVisibility.subheadline}
+                          showLabCtaGroup={pieceVisibility["cta-group"]}
+                          showLabBadge={pieceVisibility.badge}
+                          showLabNavBurger={pieceVisibility["nav-burger"]}
+                          showLabThemeToggle={pieceVisibility["theme-toggle"]}
+                          showLabFooterHero={pieceVisibility["footer-hero"]}
+                          showLabContactStrip={pieceVisibility["contact-strip"]}
+                          showLabAnimatedSignature={pieceVisibility["animated-signature"]}
+                          showLabBackgroundMedia={pieceVisibility["background-media"]}
+                          showLabOverlayAtmosphere={pieceVisibility["overlay-atmosphere"]}
+                          showFooterIcons={footerIconsVisible}
+                          labLogoClassName={logoPieceClassName}
+                          labNavBurgerClassName={navBurgerClassName}
+                          labThemeToggleClassName={themeToggleClassName}
+                          labFooterHeroClassName={footerHeroClassName}
+                          labContactStripClassName={contactStripClassName}
+                          labAnimatedSignatureClassName={`${signatureClassName} ${signaturePlacementClassName}`}
+                          labHeadlineClassName={headlineClassName}
+                          labSubheadlineClassName={subheadlineClassName}
+                          labCtaGroupClassName={ctaGroupClassName}
+                          labPrimaryCtaClassName={`${ctaTextClassName} ${ctaButtonStructureClassName} ${ctaStyleClassName.primary} ${ctaRegulationClassName.primary}`}
+                          labSecondaryCtaClassName={`${ctaTextClassName} ${ctaButtonStructureClassName} ${ctaStyleClassName.secondary} ${ctaRegulationClassName.secondary}`}
+                        />
+
+                        {canvasMode === "layout" ? (
+                          <div className="absolute inset-0 z-40 grid grid-cols-3 grid-rows-3 gap-1 p-4">
+                            {LAYOUT_ZONES.map((zone) => {
+                              const assignedPieces = LAYOUT_PIECES.filter((piece) => pieceZones[piece] === zone);
+                              const targetLayoutPiece = selectedLayoutPiece ?? activeLayoutPiece;
+                              const isActiveZone = pieceZones[targetLayoutPiece] === zone;
+
+                              return (
+                                <button
+                                  key={zone}
+                                  type="button"
+                                  onClick={() => assignActivePieceToZone(zone)}
+                                  className={[
+                                    "group rounded-md border border-sky-100/30 [background:color-mix(in_oklab,var(--foreground)_12%,transparent)] p-1 text-left transition",
+                                    isActiveZone
+                                      ? "ring-2 ring-sky-200/65"
+                                      : "hover:[background:color-mix(in_oklab,var(--foreground)_18%,transparent)]",
+                                  ].join(" ")}
+                                >
+                                  <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-100/90">
+                                    {zoneLabel(zone)}
+                                  </p>
+                                  <div className="mt-1 flex flex-wrap gap-1">
+                                    {assignedPieces.length === 0 ? (
+                                      <span className="rounded-full border border-sky-100/35 px-1.5 py-0.5 text-[9px] text-sky-100/80">
+                                        vacia
+                                      </span>
+                                    ) : (
+                                      assignedPieces.map((piece) => (
+                                        <span
+                                          key={`${zone}-${piece}`}
+                                          className="rounded-full border border-sky-100/35 px-1.5 py-0.5 text-[9px] text-sky-100"
+                                        >
+                                          {pieceLabel(piece)}
+                                        </span>
+                                      ))
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </section>
-          </section>
-
-          <aside className="space-y-4 xl:sticky xl:top-4 xl:h-[calc(100vh-2.25rem)] xl:overflow-y-auto bcc-scrollbar xl:pl-1">
-            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))] xl:sticky xl:top-0 xl:z-10">
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                Candidate Status
-              </h2>
-              <div className="mt-2 flex items-center justify-between rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                <span className="text-xs text-muted-foreground">verdict</span>
-                <span className={`${labStatusBadgeBaseClass} ${verdictToneClass}`}>
-                  {evaluation.verdict}
-                </span>
-              </div>
-              <div className="mt-2 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                <p className="text-[11px] text-muted-foreground">
-                  Component type: <span className="font-semibold text-foreground">{COMPONENT_TYPE_LABEL[componentType]}</span>
-                </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  {componentType === "hero" ? "Flujo totalmente activo." : "Tipo visible para roadmap; renderer hero activo en esta iteracion."}
-                </p>
-              </div>
-              <div className="mt-2 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                <p className="text-[11px] text-muted-foreground">
-                  Final score:{" "}
-                  <span className="font-semibold text-foreground">{qualityScore.average}</span> / 100
-                </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Action read:{" "}
-                  <span className="font-semibold text-foreground">
-                    {recommendedActions[0]?.action ?? "Sin accion prioritaria"}
-                  </span>
-                </p>
-              </div>
+              </section>
             </section>
 
-            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                  4) Evaluation
-                </h2>
-                <span className={`${labStatusBadgeBaseClass} ${verdictToneClass}`}>
-                  {evaluation.verdict}
-                </span>
-              </div>
+            <aside className="min-h-0 space-y-3 overflow-y-auto rounded-xl border border-border/70 [background:var(--surface-2,var(--card))] p-1.5 bcc-scrollbar">
+              {canvasMode === "preview" ? (
+                <>
+                  <PanelCard variant="task" className="p-3">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+                      Inspector contextual
+                    </h2>
 
-              <div className="mt-2 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-3 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                <p className="text-[11px] uppercase tracking-wide text-foreground/75">Quality score</p>
-                <div className="mt-1 flex items-end justify-between gap-2">
-                  <p className="text-xl font-semibold [color:var(--taller-lab-accent-strong,var(--processing))]">{qualityScore.average}</p>
-                  <p className="text-[11px] text-muted-foreground">sobre 100</p>
-                </div>
-                <div className="mt-2 space-y-2">
-                  {qualityScore.items.map((item) => (
-                    <div key={item.key} className="rounded-md border [border-color:color-mix(in_oklab,var(--taller-lab-accent-border,var(--border))_38%,transparent)] [background:var(--panel-topbar,var(--surface-2,var(--card)))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-[11px] font-semibold text-foreground">{item.label}</p>
-                        <p className="text-[11px] [color:var(--taller-lab-accent-strong,var(--processing))]">{item.score}</p>
+                    {selectedPiece ? (
+                      <div className="mt-2 space-y-3">
+                        <PanelBadge tone="processing">{pieceLabel(selectedPiece)}</PanelBadge>
+
+                        <section className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Contenido</p>
+
+                          {selectedPiece === "headline" ? (
+                            <textarea
+                              value={headlineDraft}
+                              onChange={(event) => setContentProperty("headlineDraft", event.target.value)}
+                              rows={3}
+                              className="mt-2 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+                            />
+                          ) : null}
+
+                          {selectedPiece === "subheadline" ? (
+                            <textarea
+                              value={subheadlineDraft}
+                              onChange={(event) =>
+                                setContentProperty("subheadlineDraft", event.target.value)
+                              }
+                              rows={4}
+                              className="mt-2 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+                            />
+                          ) : null}
+
+                          {selectedPiece === "cta-group" ? (
+                            <div className="mt-2 grid gap-1.5">
+                              <input
+                                value={primaryCtaDraft}
+                                onChange={(event) =>
+                                  setContentProperty("primaryCtaDraft", event.target.value)
+                                }
+                                placeholder="CTA primaria"
+                                className="h-8 rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                              />
+                              <input
+                                value={secondaryCtaDraft}
+                                onChange={(event) =>
+                                  setContentProperty("secondaryCtaDraft", event.target.value)
+                                }
+                                placeholder="CTA secundaria"
+                                className="h-8 rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                              />
+                              <input
+                                value={primaryCtaHrefDraft}
+                                onChange={(event) =>
+                                  setContentProperty("primaryCtaHrefDraft", event.target.value)
+                                }
+                                placeholder="Destino CTA primaria (#reservar)"
+                                className="h-8 rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                              />
+                              <input
+                                value={secondaryCtaHrefDraft}
+                                onChange={(event) =>
+                                  setContentProperty("secondaryCtaHrefDraft", event.target.value)
+                                }
+                                placeholder="Destino CTA secundaria (#contacto)"
+                                className="h-8 rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                              />
+                            </div>
+                          ) : null}
+
+                          {selectedPiece === "badge" ? (
+                            <input
+                              value={badgeDraft}
+                              onChange={(event) => setBadgeDraft(event.target.value)}
+                              placeholder="Texto badge"
+                              className="mt-2 h-8 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                            />
+                          ) : null}
+
+                          {selectedPiece === "logo" ? (
+                            <div className="mt-2 space-y-2">
+                              <p className="text-xs text-muted-foreground">
+                                Logo actual:{" "}
+                                <span className="font-semibold text-foreground">
+                                  {selectedLogoAsset?.label ?? "sin logo seleccionado"}
+                                </span>
+                              </p>
+                              <div className="space-y-1">
+                                {logoAssets.slice(0, 3).map((item) => (
+                                  <button
+                                    key={item._id}
+                                    type="button"
+                                    onClick={() => {
+                                      handleVisualSourceKindChange("logo");
+                                      setSelectedLogoAssetId(item._id);
+                                    }}
+                                    className={[
+                                      "w-full rounded-md border px-2 py-1 text-left text-[11px] transition",
+                                      selectedLogoAssetId === item._id
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 [background:var(--surface-1,var(--background))]",
+                                    ].join(" ")}
+                                  >
+                                    {item.label} - {item.variantKey}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {(["compact", "balanced", "expressive"] as const).map((size) => (
+                                  <button
+                                    key={size}
+                                    type="button"
+                                    onClick={() => setMobileLogoScale(size)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      mobileLogoScale === size
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {size}
+                                  </button>
+                                ))}
+                              </div>
+                              <input
+                                type="range"
+                                min={55}
+                                max={100}
+                                step={1}
+                                value={logoOpacity}
+                                onChange={(event) => setLogoOpacity(Number(event.target.value))}
+                                className="w-full"
+                              />
+                              <div className="flex flex-wrap gap-1">
+                                {(["none", "soft", "medium"] as const).map((shadow) => (
+                                  <button
+                                    key={shadow}
+                                    type="button"
+                                    onClick={() => setLogoShadow(shadow)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      logoShadow === shadow
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {shadow}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {(["minimal", "solid", "glass"] as const).map((surface) => (
+                                  <button
+                                    key={surface}
+                                    type="button"
+                                    onClick={() => setLogoFrameStyle(surface)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      logoFrameStyle === surface
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {surface}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {selectedPiece === "nav-burger" ? (
+                            <div className="mt-2 space-y-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setPieceVisibility((previous) => ({
+                                    ...previous,
+                                    "nav-burger": !previous["nav-burger"],
+                                  }))
+                                }
+                                className={[
+                                  "w-full rounded-md border px-2 py-1.5 text-xs font-semibold uppercase",
+                                  pieceVisibility["nav-burger"]
+                                    ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
+                                    : "border-border/75 [background:var(--surface-1,var(--background))] text-muted-foreground",
+                                ].join(" ")}
+                              >
+                                Visible: {pieceVisibility["nav-burger"] ? "ON" : "OFF"}
+                              </button>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                Posicion mobile
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                {(["left", "right"] as const).map((position) => (
+                                  <button
+                                    key={position}
+                                    type="button"
+                                    onClick={() => setOperationalPieceColumn("nav-burger", position)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      navPlacement === position ||
+                                      (navPlacement === "auto" && resolvedNavPosition === position)
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {position}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="grid grid-cols-1 gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => applyNavThemePreset("burger-left-theme-right")}
+                                  className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-[11px] font-semibold"
+                                >
+                                  Preset: burger izq + theme der
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => applyNavThemePreset("theme-left-burger-right")}
+                                  className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-[11px] font-semibold"
+                                >
+                                  Preset: theme izq + burger der
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => applyNavThemePreset("both-right")}
+                                  className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-[11px] font-semibold"
+                                >
+                                  Preset: ambos derecha
+                                </button>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {(["sm", "md", "lg"] as const).map((size) => (
+                                  <button
+                                    key={size}
+                                    type="button"
+                                    onClick={() => setNavTriggerSize(size)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      navTriggerSize === size
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {size}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {(["inverse", "primary", "muted"] as const).map((tone) => (
+                                  <button
+                                    key={tone}
+                                    type="button"
+                                    onClick={() => setNavTriggerTone(tone)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      navTriggerTone === tone
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {tone}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {(["minimal", "solid", "glass"] as const).map((surface) => (
+                                  <button
+                                    key={surface}
+                                    type="button"
+                                    onClick={() => setNavTriggerSurface(surface)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      navTriggerSurface === surface
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {surface}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {(["none", "soft", "strong"] as const).map((aura) => (
+                                  <button
+                                    key={aura}
+                                    type="button"
+                                    onClick={() => setNavTriggerAura(aura)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      navTriggerAura === aura
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {aura}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {(["overlay", "drawer", "fullscreen"] as const).map((behavior) => (
+                                  <button
+                                    key={behavior}
+                                    type="button"
+                                    onClick={() => setNavOpenBehavior(behavior)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      navOpenBehavior === behavior
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {behavior}
+                                  </button>
+                                ))}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleSwapMobileNavTheme}
+                                className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs font-semibold"
+                              >
+                                Intercambiar con theme toggle (mobile)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setNavLinksVisible((previous) => !previous)}
+                                className={[
+                                  "w-full rounded-md border px-2 py-1.5 text-xs font-semibold",
+                                  navLinksVisible
+                                    ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
+                                    : "border-border/75 [background:var(--surface-1,var(--background))] text-muted-foreground",
+                                ].join(" ")}
+                              >
+                                Links visibles: {navLinksVisible ? "ON" : "OFF"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setMenuOpen((previous) => !previous)}
+                                className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs font-semibold"
+                              >
+                                {menuOpen ? "Cerrar menu" : "Abrir menu"}
+                              </button>
+                            </div>
+                          ) : null}
+
+                          {selectedPiece === "theme-toggle" ? (
+                            <div className="mt-2 space-y-1.5">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setPieceVisibility((previous) => ({
+                                    ...previous,
+                                    "theme-toggle": !previous["theme-toggle"],
+                                  }))
+                                }
+                                className={[
+                                  "w-full rounded-md border px-2 py-1.5 text-xs font-semibold uppercase",
+                                  pieceVisibility["theme-toggle"]
+                                    ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
+                                    : "border-border/75 [background:var(--surface-1,var(--background))] text-muted-foreground",
+                                ].join(" ")}
+                              >
+                                Visible: {pieceVisibility["theme-toggle"] ? "ON" : "OFF"}
+                              </button>
+                              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                Posicion mobile
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                {(["left", "right"] as const).map((value) => (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setOperationalPieceColumn("theme-toggle", value)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      themeTogglePosition === value
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="grid grid-cols-1 gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => applyNavThemePreset("burger-left-theme-right")}
+                                  className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-[11px] font-semibold"
+                                >
+                                  Preset: burger izq + theme der
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => applyNavThemePreset("theme-left-burger-right")}
+                                  className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-[11px] font-semibold"
+                                >
+                                  Preset: theme izq + burger der
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => applyNavThemePreset("both-right")}
+                                  className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-[11px] font-semibold"
+                                >
+                                  Preset: ambos derecha
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleSwapMobileNavTheme}
+                                className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs font-semibold"
+                              >
+                                Intercambiar con nav burger (mobile)
+                              </button>
+                              <div className="flex flex-wrap gap-1">
+                                {(["minimal", "solid", "glass"] as const).map((value) => (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setThemeToggleStyle(value)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      themeToggleStyle === value
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {(["light", "dark", "auto"] as const).map((value) => (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setThemeToggleDefault(value)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      themeToggleDefault === value
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {selectedPiece === "footer-hero" ? (
+                            <div className="mt-2 space-y-1.5">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setPieceVisibility((previous) => ({
+                                    ...previous,
+                                    "footer-hero": !previous["footer-hero"],
+                                  }))
+                                }
+                                className={[
+                                  "w-full rounded-md border px-2 py-1.5 text-xs font-semibold uppercase",
+                                  pieceVisibility["footer-hero"]
+                                    ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
+                                    : "border-border/75 [background:var(--surface-1,var(--background))] text-muted-foreground",
+                                ].join(" ")}
+                              >
+                                Footer visible: {pieceVisibility["footer-hero"] ? "ON" : "OFF"}
+                              </button>
+                              <div className="flex flex-wrap gap-1">
+                                {(["auto", "left", "center", "right"] as const).map((value) => (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => {
+                                      if (value === "auto") {
+                                        setFooterPlacement("auto");
+                                        setOperationalPieceColumn(
+                                          "footer-hero",
+                                          BLUEPRINT_PRESETS[blueprint].footerPosition
+                                        );
+                                        return;
+                                      }
+                                      setOperationalPieceColumn("footer-hero", value);
+                                    }}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      footerPlacement === value
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {(["tight", "normal", "relaxed"] as const).map((value) => (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setFooterSignatureSeparation(value)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      footerSignatureSeparation === value
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    Firma {value}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setFooterIconsVisible((previous) => !previous)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    footerIconsVisible
+                                      ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  Iconos {footerIconsVisible ? "ON" : "OFF"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPieceVisibility((previous) => ({
+                                      ...previous,
+                                      "contact-strip": !previous["contact-strip"],
+                                    }))
+                                  }
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    pieceVisibility["contact-strip"]
+                                      ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  Contacto {pieceVisibility["contact-strip"] ? "ON" : "OFF"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPieceVisibility((previous) => ({
+                                      ...previous,
+                                      "animated-signature": !previous["animated-signature"],
+                                    }))
+                                  }
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    pieceVisibility["animated-signature"]
+                                      ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  Firma {pieceVisibility["animated-signature"] ? "ON" : "OFF"}
+                                </button>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground">
+                                La visibilidad del footer se guarda por dispositivo y por variante.
+                              </p>
+                            </div>
+                          ) : null}
+
+                          {selectedPiece === "contact-strip" ? (
+                            <div className="mt-2 space-y-1.5">
+                              <input
+                                value={footerAddress}
+                                onChange={(event) => setFooterAddress(event.target.value)}
+                                placeholder="Direccion"
+                                className="h-8 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                              />
+                              <input
+                                value={footerPhone}
+                                onChange={(event) => setFooterPhone(event.target.value)}
+                                placeholder="Telefono"
+                                className="h-8 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                              />
+                              <input
+                                value={footerWhatsapp}
+                                onChange={(event) => setFooterWhatsapp(event.target.value)}
+                                placeholder="WhatsApp"
+                                className="h-8 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                              />
+                              <input
+                                value={footerEmail}
+                                onChange={(event) => setFooterEmail(event.target.value)}
+                                placeholder="email@cliente.com"
+                                className="h-8 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                              />
+                              <div className="flex flex-wrap gap-1">
+                                {(["compact", "balanced", "spacious"] as const).map((value) => (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setContactDensity(value)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      contactDensity === value
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {(["soft", "medium", "strong"] as const).map((value) => (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setContactContrast(value)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      contactContrast === value
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {selectedPiece === "animated-signature" ? (
+                            <div className="mt-2 space-y-1.5">
+                              <div className="flex flex-wrap gap-1">
+                                {(["sm", "md", "lg"] as const).map((value) => (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setSignatureSize(value)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      signatureSize === value
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                              <input
+                                type="range"
+                                min={20}
+                                max={100}
+                                step={1}
+                                value={signatureOpacity}
+                                onChange={(event) => setSignatureOpacity(Number(event.target.value))}
+                                className="w-full"
+                              />
+                              <div className="flex flex-wrap gap-1">
+                                {(["pulse", "float", "none"] as const).map((value) => (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setSignatureAnimation(value)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      signatureAnimation === value
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {selectedPiece === "background-media" ? (
+                            <div className="mt-2 space-y-1.5">
+                              <p className="text-xs text-muted-foreground">
+                                Fondo activo:{" "}
+                                <span className="font-semibold text-foreground">
+                                  {selectedHeroAsset?.label ?? "sin fondo seleccionado"}
+                                </span>
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleVisualSourceKindChange("hero-image");
+                                  setAssetPickerView("open");
+                                }}
+                                className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs font-semibold"
+                              >
+                                Abrir libreria de fondos
+                              </button>
+                            </div>
+                          ) : null}
+
+                          {selectedPiece === "overlay-atmosphere" ? (
+                            <div className="mt-2 space-y-1.5">
+                              <select
+                                value={overlayDensity}
+                                onChange={(event) => setOverlayDensity(event.target.value as HeroAppearanceVariant)}
+                                className="h-8 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                              >
+                                <option value="transparent">transparent</option>
+                                <option value="soft">soft</option>
+                                <option value="solid">solid</option>
+                              </select>
+                              <select
+                                value={overlayStyleMode}
+                                onChange={(event) => setOverlayStyleMode(event.target.value as OverlayStyleMode)}
+                                className="h-8 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                              >
+                                <option value="gradient">gradient</option>
+                                <option value="solid">solid</option>
+                                <option value="none">none</option>
+                              </select>
+                              <div className="flex flex-wrap gap-1">
+                                {(["blue", "green", "amber", "purple", "smoke"] as const).map((tone) => (
+                                  <button
+                                    key={tone}
+                                    type="button"
+                                    onClick={() => setOverlayTint(tone)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      overlayTint === tone
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {tone}
+                                  </button>
+                                ))}
+                              </div>
+                              <select
+                                value={labHeadlineTone}
+                                onChange={(event) => setLabHeadlineTone(event.target.value as LabHeadlineTone)}
+                                className="h-8 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                              >
+                                <option value="white">white</option>
+                                <option value="black">black</option>
+                                <option value="inverse">inverse</option>
+                                <option value="muted-light">muted-light</option>
+                                <option value="warm-light">warm-light</option>
+                                <option value="cool-light">cool-light</option>
+                              </select>
+                              <div className="grid grid-cols-3 gap-1">
+                                {(["low", "medium", "high"] as const).map((value) => (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setBackgroundEmphasis(value)}
+                                    className={[
+                                      "rounded-md border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      backgroundEmphasis === value
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {(["balanced", "primary-focus"] as const).map((value) => (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setCtaRegulation(value)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      ctaRegulation === value
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+                        </section>
+
+                        {selectedPieceStyle ? (
+                          <section className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              Tipografia
+                            </p>
+
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {(["S", "M", "L", "XL", "Display"] as const).map((scale) => (
+                                <button
+                                  key={scale}
+                                  type="button"
+                                  onClick={() => updateSelectedTextStyle("scale", scale)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold",
+                                    selectedPieceStyle.scale === scale
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {scale}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {(["regular", "medium", "semibold", "bold"] as const).map((weight) => (
+                                <button
+                                  key={weight}
+                                  type="button"
+                                  onClick={() => updateSelectedTextStyle("weight", weight)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold",
+                                    selectedPieceStyle.weight === weight
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {weight}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {(["sans", "display"] as const).map((font) => (
+                                <button
+                                  key={font}
+                                  type="button"
+                                  onClick={() => updateSelectedTextStyle("font", font)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    selectedPieceStyle.font === font
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {font}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {(["tight", "normal", "relaxed"] as const).map((lineHeight) => (
+                                <button
+                                  key={lineHeight}
+                                  type="button"
+                                  onClick={() => updateSelectedTextStyle("lineHeight", lineHeight)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    selectedPieceStyle.lineHeight === lineHeight
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  lh-{lineHeight}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {(["tight", "normal", "wide"] as const).map((tracking) => (
+                                <button
+                                  key={tracking}
+                                  type="button"
+                                  onClick={() => updateSelectedTextStyle("tracking", tracking)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    selectedPieceStyle.tracking === tracking
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  tr-{tracking}
+                                </button>
+                              ))}
+                            </div>
+
+                            {selectedPiece && LAYOUT_PIECES.includes(selectedPiece as LayoutPiece) ? (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {(["start", "center", "end"] as const).map((value) => (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => updateSelectedPieceStructure("align", value)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      pieceStructure[selectedPiece as LayoutPiece].align === value
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {value}
+                                  </button>
+                                ))}
+                              </div>
+                            ) : null}
+                          </section>
+                        ) : null}
+
+                        {selectedPieceStyle ? (
+                          <section className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Color</p>
+                            {selectedPiece === "headline" ? (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {([
+                                  { id: "auto", label: "auto" },
+                                  { id: "default", label: "default" },
+                                  { id: "white", label: "white" },
+                                  { id: "dark", label: "dark" },
+                                  { id: "accent", label: "accent" },
+                                  { id: "inverse", label: "inverse" },
+                                ] as const).map((tone) => (
+                                  <button
+                                    key={tone.id}
+                                    type="button"
+                                    onClick={() => updateSelectedTextStyle("color", tone.id)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      selectedPieceStyle.color === tone.id
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {tone.label}
+                                  </button>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {([
+                                  "default",
+                                  "accent",
+                                  "subtle",
+                                  "inverse",
+                                  "highlight",
+                                ] as const).map((tone) => (
+                                  <button
+                                    key={tone}
+                                    type="button"
+                                    onClick={() => updateSelectedTextStyle("color", tone)}
+                                    className={[
+                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      selectedPieceStyle.color === tone
+                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        : "border-border/70 text-muted-foreground",
+                                    ].join(" ")}
+                                  >
+                                    {tone}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </section>
+                        ) : null}
+
+                        {selectedPieceStyle ? (
+                          <section className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              Efectos
+                            </p>
+
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {(["off", "soft", "medium"] as const).map((shadow) => (
+                                <button
+                                  key={shadow}
+                                  type="button"
+                                  onClick={() => updateSelectedTextStyle("shadow", shadow)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    selectedPieceStyle.shadow === shadow
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {shadow}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {(["soft", "balanced", "dominant"] as const).map((emphasis) => (
+                                <button
+                                  key={emphasis}
+                                  type="button"
+                                  onClick={() => updateSelectedTextStyle("emphasis", emphasis)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    selectedPieceStyle.emphasis === emphasis
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {emphasis}
+                                </button>
+                              ))}
+                            </div>
+                          </section>
+                        ) : null}
+
+                        {selectedPiece === "cta-group" ? (
+                          <section className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              Estilo CTA
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {(["filled", "outline", "soft"] as const).map((style) => (
+                                <button
+                                  key={style}
+                                  type="button"
+                                  onClick={() => setCtaStyle(style)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    ctaStyle === style
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {style}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {(["balanced", "primary-focus"] as const).map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => setCtaRegulation(value)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    ctaRegulation === value
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {value}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {(["left", "center", "right"] as const).map((column) => (
+                                <button
+                                  key={column}
+                                  type="button"
+                                  onClick={() => {
+                                    const currentRow = zoneToRow(pieceZones["cta-group"]);
+                                    setPieceZones((previous) => ({
+                                      ...previous,
+                                      "cta-group": `${currentRow}-${column}` as LayoutZone,
+                                    }));
+                                  }}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    zoneToColumn(pieceZones["cta-group"]) === column
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {column}
+                                </button>
+                              ))}
+                            </div>
+                          </section>
+                        ) : null}
                       </div>
-                      <progress
-                        className="mt-1 h-1.5 w-full overflow-hidden rounded-full border [border-color:color-mix(in_oklab,var(--taller-lab-chip-border,var(--border))_68%,transparent)] [&::-moz-progress-bar]:[background:var(--taller-lab-accent-strong,color-mix(in_oklab,var(--processing)_68%,transparent))] [&::-webkit-progress-bar]:[background:color-mix(in_oklab,var(--taller-lab-chip-surface,var(--surface-2,var(--card)))_88%,transparent)] [&::-webkit-progress-value]:[background:var(--taller-lab-accent-strong,color-mix(in_oklab,var(--processing)_68%,transparent))]"
-                        value={item.score}
-                        max={100}
-                        aria-label={`${item.label} score`}
-                      >
-                        {item.score}
-                      </progress>
-                      <p className="mt-1 text-[10px] text-muted-foreground">{item.note}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-3 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-3 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                <p className="text-xs font-semibold text-foreground/75">Why this score</p>
-                <ul className="mt-2 space-y-1.5 text-[11px] text-foreground/90">
-                  {whyThisScore.map((reason) => (
-                    <li key={reason}>- {reason}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mt-3 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-3 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                <p className="text-xs font-semibold text-foreground/75">Recommended changes</p>
-                <div className="mt-2 space-y-2">
-                  {recommendedActions.map((item) => (
-                    <div key={`${item.priority}-${item.action}`} className={`rounded-md border p-2 ${actionPriorityToneClass(item.priority)}`}>
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold">{item.action}</p>
-                        <span className="rounded-full border border-current/40 [background:color-mix(in_oklab,currentColor_10%,transparent)] px-2 py-0.5 text-[10px] font-semibold uppercase [box-shadow:inset_0_0_0_1px_color-mix(in_oklab,currentColor_12%,transparent)]">
-                          {item.priority}
-                        </span>
+                    ) : (
+                      <div className="mt-2 space-y-2 rounded-lg border border-dashed border-border/70 [background:var(--surface-2,var(--card))] p-3">
+                        <p className="text-xs text-muted-foreground">Selecciona una pieza para editar.</p>
+                        <div className="space-y-1">
+                          {PIECE_LIBRARY.filter((piece) => pieceVisibility[piece.id]).map((piece) => (
+                            <button
+                              key={piece.id}
+                              type="button"
+                              onClick={() => handlePieceSelect(piece.id)}
+                              className="w-full rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-left text-[11px] font-semibold text-foreground transition hover:[background:var(--surface-3,var(--card))]"
+                            >
+                              {piece.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <p className="mt-1 text-[11px] opacity-95">{item.reason}</p>
+                    )}
+                  </PanelCard>
+
+                  <PanelCard variant="task" className="p-3">
+                    <div className="flex items-center justify-between gap-2 border-b border-border/70 pb-2">
+                      <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+                        Evaluador
+                      </h2>
+                      <PanelBadge tone={qualityTone}>{qualityScore.score} / 100</PanelBadge>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                3) Creative Guidance
-              </h2>
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                Sugerencias locales guiadas por el brief. Puedes aplicar propuestas directamente al preview.
-              </p>
-
-              <details className="mt-3 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]" open>
-                <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Headline proposals
-                </summary>
-                <div className="mt-2 space-y-2">
-                  {creativeGuidance.headlines.map((headline) => (
-                    <div key={headline} className="rounded-md border border-border/80 [background:var(--panel-topbar,var(--surface-2,var(--card)))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                      <p className="text-xs text-foreground">{headline}</p>
-                      <button
-                        type="button"
-                        onClick={() => setHeadlineDraft(headline)}
-                        className={labAccentActionButtonClass}
-                      >
-                        Aplicar headline
-                      </button>
+                    <div className="mt-2 space-y-2">
+                      {qualityDimensions.map((dimension) => (
+                        <div
+                          key={dimension.key}
+                          className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs font-semibold text-foreground">{dimension.label}</p>
+                            <PanelBadge
+                              tone={dimension.score >= 78 ? "success" : dimension.score >= 60 ? "warning" : "danger"}
+                            >
+                              {dimension.score}
+                            </PanelBadge>
+                          </div>
+                          <p className="mt-1 text-[11px] text-muted-foreground">{dimension.warning}</p>
+                          <p className="mt-1 text-[11px] text-foreground/85">{dimension.recommendation}</p>
+                          <button
+                            type="button"
+                            onClick={() => applyQualityRecommendation(dimension.key)}
+                            className="mt-1.5 rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 py-1 text-[10px] font-semibold uppercase text-foreground transition hover:[background:var(--surface-3,var(--card))]"
+                          >
+                            Aplicar ajuste
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </details>
+                  </PanelCard>
+                </>
+              ) : (
+                <>
+                  <PanelCard variant="task" className="p-3">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+                      Inspector estructural
+                    </h2>
 
-              <details className="mt-3 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Subheadline proposals
-                </summary>
-                <div className="mt-2 space-y-2">
-                  {creativeGuidance.subheadlines.map((subheadline) => (
-                    <div key={subheadline} className="rounded-md border border-border/80 [background:var(--panel-topbar,var(--surface-2,var(--card)))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                      <p className="text-xs text-foreground">{subheadline}</p>
-                      <button
-                        type="button"
-                        onClick={() => setSubheadlineDraft(subheadline)}
-                        className={labAccentActionButtonClass}
-                      >
-                        Aplicar subheadline
-                      </button>
+                    {selectedPiece && LAYOUT_PIECES.includes(selectedPiece as LayoutPiece) ? (
+                      <div className="mt-2 space-y-2">
+                        <PanelBadge tone="processing">{pieceLabel(selectedPiece)}</PanelBadge>
+
+                        <div className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                          <p className="text-[11px] text-muted-foreground">
+                            Zona actual: <span className="font-semibold text-foreground">{zoneLabel(pieceZones[selectedPiece as LayoutPiece])}</span>
+                          </p>
+
+                          <div className="mt-2 grid gap-1.5">
+                            <div className="flex flex-wrap gap-1">
+                              {(["start", "center", "end"] as const).map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => updateSelectedPieceStructure("align", value)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    pieceStructure[selectedPiece as LayoutPiece].align === value
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {value}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="flex flex-wrap gap-1">
+                              {(["narrow", "medium", "wide"] as const).map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => updateSelectedPieceStructure("width", value)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    pieceStructure[selectedPiece as LayoutPiece].width === value
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {value}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="flex flex-wrap gap-1">
+                              {(["soft", "balanced", "dominant"] as const).map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => updateSelectedPieceStructure("emphasis", value)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    pieceStructure[selectedPiece as LayoutPiece].emphasis === value
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {value}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="flex flex-wrap gap-1">
+                              {(["compact", "normal", "relaxed"] as const).map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => updateSelectedPieceStructure("spacing", value)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    pieceStructure[selectedPiece as LayoutPiece].spacing === value
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {value}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-2 space-y-2">
+                        <div className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Globales de blueprint
+                          </p>
+
+                          <div className="mt-2 grid gap-1.5">
+                            <div className="flex flex-wrap gap-1">
+                              {(["compact", "balanced", "airy"] as const).map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => setLayoutDensity(value)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    layoutDensity === value
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {value}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="flex flex-wrap gap-1">
+                              {(["copy-first", "balanced", "media-first"] as const).map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => setLayoutBalance(value)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    layoutBalance === value
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {value}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="flex flex-wrap gap-1">
+                              {(["narrow", "medium", "wide"] as const).map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => setLayoutContentWidth(value)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    layoutContentWidth === value
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {value}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="flex flex-wrap gap-1">
+                              {(["low", "medium", "high"] as const).map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => setLayoutMediaDominance(value)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    layoutMediaDominance === value
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {value}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="flex flex-wrap gap-1">
+                              {(["tight", "normal", "relaxed"] as const).map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => setLayoutSafeArea(value)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    layoutSafeArea === value
+                                      ? "border-border [background:var(--surface-3,var(--card))]"
+                                      : "border-border/70 text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  {value}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <p className="mt-2 text-[11px] text-muted-foreground">{layoutGlobalSummary}</p>
+                        </div>
+                      </div>
+                    )}
+                  </PanelCard>
+
+                  <PanelCard variant="task" className="p-3">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+                      Alertas
+                    </h2>
+
+                    <div className="mt-2 rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                      {structuralWarnings.length === 0 ? (
+                        <p className="text-xs text-success">Sin alertas estructurales.</p>
+                      ) : (
+                        <ul className="space-y-1 text-[11px] text-muted-foreground">
+                          {structuralWarnings.map((warning) => (
+                            <li key={warning}>- {warning}</li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </details>
-
-              <details className="mt-3 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  CTA proposals
-                </summary>
-                <div className="mt-2 space-y-2">
-                  {creativeGuidance.ctas.map((cta, index) => (
-                    <div key={`${cta.primary}-${index}`} className="rounded-md border border-border/80 [background:var(--panel-topbar,var(--surface-2,var(--card)))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                      <p className="text-xs text-foreground">Primaria: {cta.primary}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Secundaria: {cta.secondary}</p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPrimaryCtaDraft(cta.primary);
-                          setSecondaryCtaDraft(cta.secondary);
-                        }}
-                        className={labAccentActionButtonClass}
-                      >
-                        Aplicar CTA
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </details>
-
-              <div className="mt-3 rounded-lg border border-border/80 [background:var(--taller-lab-sidebar-card,var(--panel-surface-3,var(--surface-3,var(--card))))] p-2 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Atmosfera recomendada
-                </p>
-                <ul className="mt-2 space-y-1 text-xs text-foreground">
-                  {creativeGuidance.atmosphere.map((item) => (
-                    <li key={item}>- {item}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={resetCreativeContent}
-                  className="rounded-md border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] px-2 py-1.5 text-[11px] font-semibold text-foreground [box-shadow:var(--elevation-base,var(--panel-shadow-1))] transition hover:[box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]"
-                >
-                  Reset propuestas
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHeadlineDraft(creativeGuidance.headlines[0] ?? "");
-                    setSubheadlineDraft(creativeGuidance.subheadlines[0] ?? "");
-                    const firstCta = creativeGuidance.ctas[0];
-                    setPrimaryCtaDraft(firstCta?.primary ?? "");
-                    setSecondaryCtaDraft(firstCta?.secondary ?? "");
-                  }}
-                  className="rounded-md border [border-color:color-mix(in_oklab,var(--success)_42%,transparent)] [background:var(--success-soft)] px-2 py-1.5 text-[11px] font-semibold [color:var(--success-foreground)] [box-shadow:var(--elevation-base,var(--panel-shadow-1))] transition hover:[box-shadow:var(--elevation-interactive,var(--panel-shadow-2))]"
-                >
-                  Aplicar pack base
-                </button>
-              </div>
-            </section>
-
-            <section className="rounded-2xl border border-border/80 [background:var(--taller-lab-sidebar-frame,var(--panel-sidebar,var(--surface-2,var(--card))))] p-2.5 [box-shadow:var(--elevation-base,var(--panel-shadow-1))]">
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                Coming next
-              </h2>
-              <ul className="mt-2 space-y-1 text-[11px] text-muted-foreground">
-                <li>- Palette direction</li>
-                <li>- Typography system</li>
-                <li>- Motion guidance</li>
-                <li>- Responsive guidance by breakpoint</li>
-              </ul>
-            </section>
-          </aside>
-        </div>
+                  </PanelCard>
+                </>
+              )}
+            </aside>
+          </div>
+        </section>
       </div>
     </main>
   );
 }
-
-
 
