@@ -84,6 +84,8 @@ type LayoutSafeArea = "tight" | "normal" | "relaxed";
 type OverlayColor = "blue" | "green" | "amber" | "purple" | "smoke";
 type OverlayStyleMode = "gradient" | "solid" | "none";
 type BackgroundEmphasis = "low" | "medium" | "high";
+type BackgroundFit = "cover" | "contain" | "fill";
+type BackgroundFocus = "center" | "top" | "bottom" | "left" | "right";
 type LabHeadlineTone =
   | "white"
   | "black"
@@ -1133,6 +1135,8 @@ export default function PublishedHeroLabPage({
   const [overlayTint, setOverlayTint] = useState<OverlayColor>("blue");
   const [labHeadlineTone, setLabHeadlineTone] = useState<LabHeadlineTone>("white");
   const [backgroundEmphasis, setBackgroundEmphasis] = useState<BackgroundEmphasis>("medium");
+  const [backgroundFit, setBackgroundFit] = useState<BackgroundFit>("cover");
+  const [backgroundFocus, setBackgroundFocus] = useState<BackgroundFocus>("center");
   const [ctaRegulation, setCtaRegulation] = useState<CtaRegulation>("balanced");
 
   const [blueprint, setBlueprint] = useState<Blueprint>("split");
@@ -3338,8 +3342,8 @@ export default function PublishedHeroLabPage({
                               className={[
                                 "flex items-center justify-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold capitalize transition",
                                 overlayTint === tone
-                                  ? "border-border [background:var(--surface-3,var(--card))]"
-                                  : "border-border/70 text-muted-foreground",
+                                  ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                  : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                 effectiveOverlayStyleMode === "none" ? "cursor-not-allowed opacity-45" : "",
                               ].join(" ")}
                             >
@@ -3371,20 +3375,60 @@ export default function PublishedHeroLabPage({
 
                       <div>
                         <span className="mb-1 block text-muted-foreground">background emphasis</span>
-                        <div className="flex gap-1">
+                        <div className="grid grid-cols-3 gap-1.5">
                           {(["low", "medium", "high"] as const).map((emphasis) => (
                             <button
                               key={emphasis}
                               type="button"
                               onClick={() => setBackgroundEmphasis(emphasis)}
                               className={[
-                                "flex-1 rounded-md border px-2 py-1.5 text-xs font-semibold capitalize transition",
+                                "flex items-center justify-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold capitalize transition",
                                 backgroundEmphasis === emphasis
-                                  ? "border-border [background:var(--surface-3,var(--card))]"
-                                  : "border-border/70 text-muted-foreground",
+                                  ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                  : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                               ].join(" ")}
                             >
                               {emphasis}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="mb-1 block text-muted-foreground">background fit</span>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {(["cover", "contain", "fill"] as const).map((fit) => (
+                            <button
+                              key={fit}
+                              type="button"
+                              onClick={() => setBackgroundFit(fit)}
+                              className={[
+                                "flex items-center justify-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold capitalize transition",
+                                backgroundFit === fit
+                                  ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                  : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                              ].join(" ")}
+                            >
+                              {fit}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="mb-1 block text-muted-foreground">background focus</span>
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {(["center", "top", "bottom", "left", "right"] as const).map((focus) => (
+                            <button
+                              key={focus}
+                              type="button"
+                              onClick={() => setBackgroundFocus(focus)}
+                              className={[
+                                "flex items-center justify-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold capitalize transition",
+                                backgroundFocus === focus
+                                  ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                  : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                              ].join(" ")}
+                            >
+                              {focus}
                             </button>
                           ))}
                         </div>
@@ -3778,6 +3822,8 @@ export default function PublishedHeroLabPage({
                           overlayColor={overlayTint}
                           overlayStyleMode={effectiveOverlayStyleMode}
                           backgroundEmphasis={backgroundEmphasis}
+                          backgroundFit={backgroundFit}
+                          backgroundFocus={backgroundFocus}
                           labHeadlineTone={labHeadlineTone}
                           themeToggleDefault={themeToggleDefault}
                           themeToggleStyle={themeToggleStyle}
@@ -3995,7 +4041,7 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "w-full rounded-md border px-2 py-1 text-left text-[11px] transition",
                                       selectedLogoAssetId === item._id
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
                                         : "border-border/70 [background:var(--surface-1,var(--background))]",
                                     ].join(" ")}
                                   >
@@ -4012,8 +4058,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       mobileLogoScale === size
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {size}
@@ -4038,8 +4084,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       logoShadow === shadow
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {shadow}
@@ -4055,8 +4101,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       logoFrameStyle === surface
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {surface}
@@ -4098,8 +4144,8 @@ export default function PublishedHeroLabPage({
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       navPlacement === position ||
                                       (navPlacement === "auto" && resolvedNavPosition === position)
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {position}
@@ -4138,8 +4184,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       navTriggerSize === size
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {size}
@@ -4155,8 +4201,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       navTriggerTone === tone
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {tone}
@@ -4172,8 +4218,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       navTriggerSurface === surface
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {surface}
@@ -4189,8 +4235,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       navTriggerAura === aura
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {aura}
@@ -4206,8 +4252,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       navOpenBehavior === behavior
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {behavior}
@@ -4274,8 +4320,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       themeTogglePosition === value
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {value}
@@ -4321,8 +4367,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       themeToggleStyle === value
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {value}
@@ -4338,8 +4384,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       themeToggleDefault === value
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {value}
@@ -4387,8 +4433,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       footerPlacement === value
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {value}
@@ -4404,8 +4450,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       footerSignatureSeparation === value
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     Firma {value}
@@ -4420,7 +4466,7 @@ export default function PublishedHeroLabPage({
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     footerIconsVisible
                                       ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
-                                      : "border-border/70 text-muted-foreground",
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   Iconos {footerIconsVisible ? "ON" : "OFF"}
@@ -4437,7 +4483,7 @@ export default function PublishedHeroLabPage({
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     pieceVisibility["contact-strip"]
                                       ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
-                                      : "border-border/70 text-muted-foreground",
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   Contacto {pieceVisibility["contact-strip"] ? "ON" : "OFF"}
@@ -4454,7 +4500,7 @@ export default function PublishedHeroLabPage({
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     pieceVisibility["animated-signature"]
                                       ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
-                                      : "border-border/70 text-muted-foreground",
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   Firma {pieceVisibility["animated-signature"] ? "ON" : "OFF"}
@@ -4501,8 +4547,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       contactDensity === value
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {value}
@@ -4518,8 +4564,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       contactContrast === value
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {value}
@@ -4540,8 +4586,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       signatureSize === value
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {value}
@@ -4566,8 +4612,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       signatureAnimation === value
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {value}
@@ -4627,8 +4673,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       overlayTint === tone
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {tone}
@@ -4656,8 +4702,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-md border px-2 py-1 text-[10px] font-semibold uppercase",
                                       backgroundEmphasis === value
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {value}
@@ -4673,8 +4719,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       ctaRegulation === value
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {value}
@@ -4700,8 +4746,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold",
                                     selectedPieceStyle.scale === scale
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {scale}
@@ -4718,8 +4764,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold",
                                     selectedPieceStyle.weight === weight
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {weight}
@@ -4736,8 +4782,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     selectedPieceStyle.font === font
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {font}
@@ -4754,8 +4800,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     selectedPieceStyle.lineHeight === lineHeight
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   lh-{lineHeight}
@@ -4772,8 +4818,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     selectedPieceStyle.tracking === tracking
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   tr-{tracking}
@@ -4791,8 +4837,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       pieceStructure[selectedPiece as LayoutPiece].align === value
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {value}
@@ -4823,8 +4869,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       selectedPieceStyle.color === tone.id
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {tone.label}
@@ -4847,8 +4893,8 @@ export default function PublishedHeroLabPage({
                                     className={[
                                       "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                       selectedPieceStyle.color === tone
-                                        ? "border-border [background:var(--surface-3,var(--card))]"
-                                        : "border-border/70 text-muted-foreground",
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
                                     {tone}
@@ -4874,8 +4920,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     selectedPieceStyle.shadow === shadow
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {shadow}
@@ -4892,8 +4938,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     selectedPieceStyle.emphasis === emphasis
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {emphasis}
@@ -4917,8 +4963,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     ctaStyle === style
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {style}
@@ -4934,8 +4980,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     ctaRegulation === value
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {value}
@@ -4957,8 +5003,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     zoneToColumn(pieceZones["cta-group"]) === column
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {column}
@@ -5048,8 +5094,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     pieceStructure[selectedPiece as LayoutPiece].align === value
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {value}
@@ -5066,8 +5112,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     pieceStructure[selectedPiece as LayoutPiece].width === value
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {value}
@@ -5084,8 +5130,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     pieceStructure[selectedPiece as LayoutPiece].emphasis === value
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {value}
@@ -5102,8 +5148,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     pieceStructure[selectedPiece as LayoutPiece].spacing === value
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {value}
@@ -5130,8 +5176,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     layoutDensity === value
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {value}
@@ -5148,8 +5194,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     layoutBalance === value
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {value}
@@ -5166,8 +5212,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     layoutContentWidth === value
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {value}
@@ -5184,8 +5230,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     layoutMediaDominance === value
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {value}
@@ -5202,8 +5248,8 @@ export default function PublishedHeroLabPage({
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
                                     layoutSafeArea === value
-                                      ? "border-border [background:var(--surface-3,var(--card))]"
-                                      : "border-border/70 text-muted-foreground",
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
                                   {value}
