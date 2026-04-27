@@ -156,6 +156,7 @@ const MANUAL_VARIANT_SLOTS: Array<{
   { key: "thumbnail", title: "thumbnail", actionLabel: "Generar thumbnail" },
   { key: "optimized", title: "optimized", actionLabel: "Generar optimized" },
   { key: "vectorized-svg", title: "SVG", actionLabel: "Generar SVG" },
+  { key: "animated-svg", title: "Animated SVG", actionLabel: "Generar animated SVG" },
 ];
 
 const UPLOAD_FEEDBACK_META: Record<
@@ -365,7 +366,8 @@ function isOriginalAsset(item: AssetItem): boolean {
   return (
     item.variantKey !== "thumbnail" &&
     item.variantKey !== "optimized" &&
-    item.variantKey !== "vectorized-svg"
+    item.variantKey !== "vectorized-svg" &&
+    item.variantKey !== "animated-svg"
   );
 }
 
@@ -649,7 +651,8 @@ export default function TallerMediaPage() {
         if (
           variant.variantKey === "thumbnail" ||
           variant.variantKey === "optimized" ||
-          variant.variantKey === "vectorized-svg"
+          variant.variantKey === "vectorized-svg" ||
+          variant.variantKey === "animated-svg"
         ) {
           if (!variantsByKey[variant.variantKey]) {
             variantsByKey[variant.variantKey] = variant;
@@ -918,6 +921,18 @@ export default function TallerMediaPage() {
         return;
       }
 
+      if (!response.ok && response.reason === "not-animatable") {
+        setVariantFeedbackByAssetId((prev) => ({
+          ...prev,
+          [original._id]: {
+            tone: "error",
+            title: "No animable",
+            detail: response.message,
+          },
+        }));
+        return;
+      }
+
       if (!response.ok) {
         setVariantFeedbackByAssetId((prev) => ({
           ...prev,
@@ -931,7 +946,9 @@ export default function TallerMediaPage() {
       }
 
       const technicalDetail =
-        variantKey === "vectorized-svg" ? buildSvgTechnicalDetail(response) : undefined;
+        variantKey === "vectorized-svg" || variantKey === "animated-svg"
+          ? buildSvgTechnicalDetail(response)
+          : undefined;
       setVariantFeedbackByAssetId((prev) => ({
         ...prev,
         [original._id]: {

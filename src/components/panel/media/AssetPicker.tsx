@@ -100,6 +100,7 @@ const ASSET_VARIANT_KEY_OPTIONS: AssetVariantKey[] = [
   "original",
   "optimized",
   "vectorized-svg",
+  "animated-svg",
   "thumbnail",
 ];
 
