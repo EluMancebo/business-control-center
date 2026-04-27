@@ -51,6 +51,8 @@ type PublicHeroProps = {
   overlayColor?: "blue" | "green" | "amber" | "purple" | "smoke" | "none";
   overlayStyleMode?: "gradient" | "solid" | "none";
   backgroundEmphasis?: "low" | "medium" | "high";
+  backgroundFit?: "cover" | "contain" | "fill";
+  backgroundFocus?: "center" | "top" | "bottom" | "left" | "right";
   labHeadlineTone?:
     | "white"
     | "black"
@@ -320,6 +322,8 @@ export default function PublicHero({
   overlayColor = "blue",
   overlayStyleMode = "gradient",
   backgroundEmphasis = "medium",
+  backgroundFit = "cover",
+  backgroundFocus = "center",
   labHeadlineTone = "white",
   navTriggerSize = "md",
   navTriggerAura = "soft",
@@ -724,12 +728,14 @@ export default function PublicHero({
     ? "[background:transparent]"
     : "[background:var(--hero-frame-surface-bg)]";
   const visualFrameSurfaceClass = frameSurfaceClass;
+  const bgFitClass = backgroundFit === "contain" ? "object-contain" : backgroundFit === "fill" ? "object-fill" : "object-cover";
+  const bgFocusClass = backgroundFocus === "top" ? "object-top" : backgroundFocus === "bottom" ? "object-bottom" : backgroundFocus === "left" ? "object-left" : backgroundFocus === "right" ? "object-right" : "object-center";
   const backgroundImageClass =
     backgroundEmphasis === "low"
-      ? "absolute inset-0 z-0 h-full w-full object-cover brightness-[0.48] saturate-[0.78] scale-[1.02]"
+      ? `absolute inset-0 z-0 h-full w-full ${bgFitClass} ${bgFocusClass} brightness-[0.48] saturate-[0.78] scale-[1.02]`
       : backgroundEmphasis === "high"
-        ? "absolute inset-0 z-0 h-full w-full object-cover brightness-[1.04] saturate-[1.2] scale-[1.08]"
-        : "absolute inset-0 z-0 h-full w-full object-cover brightness-[0.9] saturate-[1.03]";
+        ? `absolute inset-0 z-0 h-full w-full ${bgFitClass} ${bgFocusClass} brightness-[1.04] saturate-[1.2] scale-[1.08]`
+        : `absolute inset-0 z-0 h-full w-full ${bgFitClass} ${bgFocusClass} brightness-[0.9] saturate-[1.03]`;
   const headerNavRelationClass =
     effectiveHeaderRelation === "logo-focus"
       ? "opacity-90"
