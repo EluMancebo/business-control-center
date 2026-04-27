@@ -5,7 +5,7 @@ import { findSystemAssetByIdRepository } from "@/lib/taller/media/repository";
 import { processAssetVariant } from "@/lib/taller/media/pipeline";
 import { normalizeAssetItem } from "@/lib/taller/media/service";
 
-const ALLOWED_MANUAL_VARIANTS = ["thumbnail", "optimized", "vectorized-svg"] as const;
+const ALLOWED_MANUAL_VARIANTS = ["thumbnail", "optimized", "vectorized-svg", "animated-svg"] as const;
 
 function getToken(req: NextRequest) {
   const cookieName = process.env.COOKIE_NAME || "token";
@@ -38,11 +38,13 @@ export async function POST(req: NextRequest) {
     | {
         sourceAssetId?: unknown;
         variantKey?: unknown;
+        force?: unknown;
       }
     | null;
 
   const sourceAssetId = String(payload?.sourceAssetId || "").trim();
   const variantKey = String(payload?.variantKey || "").trim();
+  const force = payload?.force === true;
 
   if (!sourceAssetId) {
     return NextResponse.json({ ok: false, error: "Missing sourceAssetId" }, { status: 400 });
@@ -64,7 +66,8 @@ export async function POST(req: NextRequest) {
   const isDerivedAsset =
     source.variantKey === "thumbnail" ||
     source.variantKey === "optimized" ||
-    source.variantKey === "vectorized-svg";
+    source.variantKey === "vectorized-svg" ||
+    source.variantKey === "animated-svg";
 
   if (hasParent || isDerivedAsset) {
     return NextResponse.json(
@@ -73,7 +76,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const result = await processAssetVariant(source, variantKey);
+  const result = await processAssetVariant(source, variantKey, { force });
 
   if (result.pipelineStatus === "failed") {
     return NextResponse.json(
@@ -92,6 +95,17 @@ export async function POST(req: NextRequest) {
           ok: false,
           reason: "not-vectorizable",
           message: "La imagen no cumple criterios para vectorización SVG",
+        },
+        { status: 422 }
+      );
+    }
+
+    if (variantKey === "animated-svg") {
+      return NextResponse.json(
+        {
+          ok: false,
+          reason: "not-animatable",
+          message: result.pipelineError || "El SVG no cumple criterios para animación",
         },
         { status: 422 }
       );
