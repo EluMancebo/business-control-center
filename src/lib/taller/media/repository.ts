@@ -210,3 +210,15 @@ export async function updateSystemAssetMetadataRepository(
 export async function deleteSystemAssetRepository(id: string) {
   return Asset.findOneAndDelete({ _id: id, scope: "system", businessId: null }).lean();
 }
+
+export async function findVariantBySourceRepository(
+  sourceAssetId: string,
+  variantKey: AssetVariantKey
+) {
+  return Asset.findOne({
+    scope: "system",
+    businessId: null,
+    sourceAssetId,
+    variantKey,
+  }).lean();
+}

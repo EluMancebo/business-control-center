@@ -50,6 +50,7 @@ const ASSET_VARIANT_KEYS: AssetVariantKey[] = [
   "thumbnail",
   "optimized",
   "vectorized-svg",
+  "animated-svg",
 ];
 const ASSET_PIPELINE_STATUSES: AssetPipelineStatus[] = [
   "queued",

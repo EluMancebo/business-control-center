@@ -1,9 +1,11 @@
 import { put } from "@vercel/blob";
 import sharp from "sharp";
 import { prepareSvgPipelineResult } from "@/lib/media/svg-pipeline";
+import { generateAnimatedSvg } from "@/lib/media/animator";
 import {
   updateSystemAssetPipelineRepository,
   upsertSystemAssetVariantRepository,
+  findVariantBySourceRepository,
 } from "@/lib/taller/media/repository";
 import type { AssetItem, AssetVariantKey, ProcessedAssetResult } from "@/lib/taller/media/types";
 
@@ -401,7 +403,8 @@ async function createApproximateVectorSvg(raster: Buffer): Promise<{
 
 export async function processAssetVariant(
   asset: AssetItem,
-  variantKey: DerivedVariantKey
+  variantKey: DerivedVariantKey,
+  options?: { force?: boolean }
 ): Promise<ProcessedAssetResult> {
   const sourceAssetId = toSafeSourceId(asset._id);
   const generatedVariantKeys: AssetVariantKey[] = [];
@@ -542,6 +545,91 @@ export async function processAssetVariant(
         status: "active",
       });
       generatedVariantKeys.push("optimized");
+    } else if (variantKey === "animated-svg") {
+      const vectorizedVariant = await findVariantBySourceRepository(
+        sourceAssetId,
+        "vectorized-svg"
+      );
+
+      if (!vectorizedVariant) {
+        await updateSystemAssetPipelineRepository(sourceAssetId, {
+          pipelineStatus: "skipped",
+          pipelineStage: "done",
+          pipelineError: "Requiere variante vectorized-svg previa",
+        });
+        return {
+          sourceAssetId,
+          pipelineStatus: "skipped",
+          pipelineStage: "done",
+          pipelineError: "Requiere variante vectorized-svg previa",
+          generatedVariantKeys,
+          vectorizable: false,
+        };
+      }
+
+      const svgResponse = await fetch(vectorizedVariant.url, { cache: "no-store" });
+      const fetchedSvg = await svgResponse.text();
+
+      const animResult = generateAnimatedSvg(fetchedSvg, {
+        force: options?.force,
+      });
+
+      if (!animResult.applied) {
+        await updateSystemAssetPipelineRepository(sourceAssetId, {
+          pipelineStatus: "skipped",
+          pipelineStage: "done",
+          pipelineError: animResult.reason,
+        });
+        return {
+          sourceAssetId,
+          pipelineStatus: "skipped",
+          pipelineStage: "done",
+          pipelineError: animResult.reason,
+          generatedVariantKeys,
+          vectorizable: true,
+          svgAnalysis: animResult.analysis,
+          svgAnimation: animResult.decision,
+        };
+      }
+
+      const animatedBuffer = Buffer.from(animResult.animatedSvg, "utf8");
+      const animBlob = await put(
+        buildDerivedStorageKey(asset.key, "animated-svg", "svg"),
+        new Blob([bufferToArrayBuffer(animatedBuffer)], {
+          type: "image/svg+xml",
+        }),
+        {
+          token: getBlobReadWriteToken(),
+          access: "public",
+          contentType: "image/svg+xml",
+        }
+      );
+
+      await upsertSystemAssetVariantRepository({
+        businessId: null,
+        scope: "system",
+        kind: "svg",
+        bucket: "vercel-blob",
+        key: animBlob.pathname,
+        url: animBlob.url,
+        label: `${asset.label} · animated`,
+        tags: asset.tags,
+        allowedIn: asset.allowedIn,
+        mime: "image/svg+xml",
+        bytes: animatedBuffer.byteLength,
+        width: Number(vectorizedVariant.width ?? 0),
+        height: Number(vectorizedVariant.height ?? 0),
+        sourceAssetId,
+        variantKey: "animated-svg",
+        pipelineStatus: "ready",
+        pipelineStage: "done",
+        pipelineError: "",
+        status: "active",
+      });
+      generatedVariantKeys.push("animated-svg");
+      svgAnalysis = animResult.analysis;
+      svgAnimation = animResult.decision;
+
     } else {
       vectorizationAnalysis = await analyzeVectorizationCandidate({
         raster: originalRaster,
