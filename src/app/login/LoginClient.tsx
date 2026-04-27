@@ -12,7 +12,9 @@ export default function LoginClient() {
 
   const nextPath = useMemo(() => {
     const n = params.get("next");
-    return n && n.trim().length ? n : "/panel/dashboard";
+    const requestedPath = n && n.trim().length ? n : null;
+
+    return requestedPath || "/panel/taller";
   }, [params]);
 
   const [email, setEmail] = useState("emango0298@gmail.com");
@@ -52,7 +54,6 @@ export default function LoginClient() {
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center px-6 py-10">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-card-foreground shadow-sm">
-          {/* Header / Branding */}
           <div className="mb-6 flex items-center gap-3">
             <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-muted ring-1 ring-border">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -71,14 +72,14 @@ export default function LoginClient() {
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold mb-1">Entrar al panel</h1>
-          <p className="text-sm text-muted-foreground mb-6">
+          <h1 className="mb-1 text-2xl font-bold">Entrar al panel</h1>
+          <p className="mb-6 text-sm text-muted-foreground">
             Acceso a <span className="font-medium text-foreground">{nextPath}</span>
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1">
+              <label htmlFor="email" className="mb-1 block text-sm font-medium">
                 Email
               </label>
               <input
@@ -96,7 +97,7 @@ export default function LoginClient() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-1">
+              <label htmlFor="password" className="mb-1 block text-sm font-medium">
                 Password
               </label>
               <input
@@ -116,7 +117,7 @@ export default function LoginClient() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-primary py-2 font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 cursor-pointer transition"
+              className="w-full cursor-pointer rounded-xl bg-primary py-2 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
             >
               {loading ? "Entrando..." : "Entrar"}
             </button>
@@ -137,5 +138,4 @@ export default function LoginClient() {
     </main>
   );
 }
-
 

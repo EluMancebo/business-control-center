@@ -14,7 +14,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
   try {
     session = await requireSession();
   } catch {
-    redirect("/login?next=/panel/dashboard");
+    redirect("/login?next=/panel/taller");
   }
 
   const role = session.role!;
