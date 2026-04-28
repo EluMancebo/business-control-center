@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import PanelBadge from "@/components/panel/ui/PanelBadge";
 import PanelButton from "@/components/panel/ui/PanelButton";
 import PanelCard from "@/components/panel/ui/PanelCard";
+import LabPiecePreview from "@/components/content-lab/preview/LabPiecePreview";
 import type { LabPiece, LabPieceStatus } from "@/lib/content-lab/types";
 import { validateLabPiece } from "@/lib/content-lab/validation";
 import { transitionLabPiece } from "@/lib/content-lab/workflow";
@@ -128,6 +129,10 @@ export default function ContentLabCandidateFlow() {
                   </p>
                 </div>
                 <PanelBadge tone={statusMeta.tone}>{statusMeta.label}</PanelBadge>
+              </div>
+
+              <div className="mt-3">
+                <LabPiecePreview piece={piece} />
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs [color:var(--text-subtle,var(--muted-foreground))]">
