@@ -106,6 +106,7 @@ export type LabPiece = {
   id: string;
   type: LabPieceType;
   blockType?: "hero" | "banner";
+  vaultEligible?: boolean;
   title: string;
   status: LabPieceStatus;
   briefId?: string;
