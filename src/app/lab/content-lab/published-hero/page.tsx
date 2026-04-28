@@ -177,6 +177,17 @@ type VariantSnapshot = {
   navOpenBehavior: "overlay" | "drawer" | "fullscreen";
   navLinksVisible: boolean;
   navPlacement: "auto" | "left" | "center" | "right";
+  desktopNavSize: "sm" | "md" | "lg";
+  desktopNavTone: "inverse" | "primary" | "muted";
+  desktopNavSurface: "minimal" | "solid" | "glass";
+  desktopNavHover: "soft" | "lift" | "glow";
+  desktopNavPresence: "low" | "medium" | "high";
+  navPanelOrigin: "left" | "center" | "right";
+  navPanelWidth: "narrow" | "normal" | "wide";
+  navPanelStyle: "minimal" | "solid" | "glass";
+  navMenuAlignment: "left" | "center" | "right";
+  navMenuItemSize: "sm" | "md" | "lg";
+  navMenuVerticalSpacing: "tight" | "normal" | "relaxed";
   logoOpacity: number;
   logoShadow: "none" | "soft" | "medium";
   logoFrameStyle: "minimal" | "solid" | "glass";
@@ -299,7 +310,8 @@ const LAB_PIECE_LABEL: Record<LabHeroPiece, string> = {
   subheadline: "Subtitulo",
   "cta-group": "Botones CTA",
   badge: "Badge",
-  "nav-burger": "Navegacion / hamburguesa",
+  "desktop-nav": "Navegación escritorio",
+  "nav-burger": "Hamburguesa / menú móvil",
   "theme-toggle": "Claro/Oscuro",
   "footer-hero": "Footer hero",
   "contact-strip": "Contacto hero",
@@ -348,6 +360,14 @@ const PIECE_LIBRARY: readonly { id: LabHeroPiece; label: string; layoutEnabled: 
     pieces.push({
       id: "footer-hero",
       label: LAB_PIECE_LABEL["footer-hero"],
+      layoutEnabled: false,
+    });
+  }
+
+  if (!seen.has("desktop-nav")) {
+    pieces.push({
+      id: "desktop-nav",
+      label: LAB_PIECE_LABEL["desktop-nav"],
       layoutEnabled: false,
     });
   }
@@ -445,6 +465,7 @@ const DEFAULT_PIECE_VISIBILITY: PieceVisibility = {
   subheadline: true,
   "cta-group": true,
   badge: true,
+  "desktop-nav": true,
   "nav-burger": true,
   "theme-toggle": true,
   "footer-hero": true,
@@ -1154,7 +1175,7 @@ export default function PublishedHeroLabPage({
   const [assetError, setAssetError] = useState<string>("");
   const [selectedHeroAssetId, setSelectedHeroAssetId] = useState<string>("");
   const [selectedLogoAssetId, setSelectedLogoAssetId] = useState<string>("");
-  const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  const [navPreviewOpen, setNavPreviewOpen] = useState<boolean>(false);
 
   const [pieceVisibility, setPieceVisibility] = useState<PieceVisibility>(DEFAULT_PIECE_VISIBILITY);
   const [selectedPiece, setSelectedPiece] = useState<LabHeroPiece | null>(null);
@@ -1206,6 +1227,17 @@ export default function PublishedHeroLabPage({
   const [navOpenBehavior, setNavOpenBehavior] = useState<"overlay" | "drawer" | "fullscreen">("overlay");
   const [navLinksVisible, setNavLinksVisible] = useState<boolean>(true);
   const [navPlacement, setNavPlacement] = useState<"auto" | "left" | "center" | "right">("auto");
+  const [desktopNavSize, setDesktopNavSize] = useState<"sm" | "md" | "lg">("md");
+  const [desktopNavTone, setDesktopNavTone] = useState<"inverse" | "primary" | "muted">("muted");
+  const [desktopNavSurface, setDesktopNavSurface] = useState<"minimal" | "solid" | "glass">("solid");
+  const [desktopNavHover, setDesktopNavHover] = useState<"soft" | "lift" | "glow">("soft");
+  const [desktopNavPresence, setDesktopNavPresence] = useState<"low" | "medium" | "high">("medium");
+  const [navPanelOrigin, setNavPanelOrigin] = useState<"left" | "center" | "right">("right");
+  const [navPanelWidth, setNavPanelWidth] = useState<"narrow" | "normal" | "wide">("normal");
+  const [navPanelStyle, setNavPanelStyle] = useState<"minimal" | "solid" | "glass">("solid");
+  const [navMenuAlignment, setNavMenuAlignment] = useState<"left" | "center" | "right">("left");
+  const [navMenuItemSize, setNavMenuItemSize] = useState<"sm" | "md" | "lg">("md");
+  const [navMenuVerticalSpacing, setNavMenuVerticalSpacing] = useState<"tight" | "normal" | "relaxed">("normal");
   const [logoOpacity, setLogoOpacity] = useState<number>(96);
   const [logoShadow, setLogoShadow] = useState<"none" | "soft" | "medium">("soft");
   const [logoFrameStyle, setLogoFrameStyle] = useState<"minimal" | "solid" | "glass">("glass");
@@ -1296,6 +1328,17 @@ export default function PublishedHeroLabPage({
       navOpenBehavior,
       navLinksVisible,
       navPlacement,
+      desktopNavSize,
+      desktopNavTone,
+      desktopNavSurface,
+      desktopNavHover,
+      desktopNavPresence,
+      navPanelOrigin,
+      navPanelWidth,
+      navPanelStyle,
+      navMenuAlignment,
+      navMenuItemSize,
+      navMenuVerticalSpacing,
       logoOpacity,
       logoShadow,
       logoFrameStyle,
@@ -1318,7 +1361,14 @@ export default function PublishedHeroLabPage({
   }
 
   function applySnapshot(snapshot: VariantSnapshot) {
-    setPieceVisibility(cloneSnapshot(snapshot.pieceVisibility));
+    const nextDesktopNavVisible =
+      snapshot.pieceVisibility["desktop-nav"] ?? snapshot.navLinksVisible;
+    setPieceVisibility(
+      cloneSnapshot({
+        ...snapshot.pieceVisibility,
+        "desktop-nav": nextDesktopNavVisible,
+      })
+    );
     setHeadlineDraft(snapshot.headlineDraft);
     setSubheadlineDraft(snapshot.subheadlineDraft);
     setBadgeDraft(snapshot.badgeDraft);
@@ -1364,8 +1414,19 @@ export default function PublishedHeroLabPage({
     setNavTriggerSurface(snapshot.navTriggerSurface);
     setNavTriggerAura(snapshot.navTriggerAura);
     setNavOpenBehavior(snapshot.navOpenBehavior);
-    setNavLinksVisible(snapshot.navLinksVisible);
+    setNavLinksVisible(nextDesktopNavVisible);
     setNavPlacement(snapshot.navPlacement);
+    setDesktopNavSize(snapshot.desktopNavSize);
+    setDesktopNavTone(snapshot.desktopNavTone);
+    setDesktopNavSurface(snapshot.desktopNavSurface);
+    setDesktopNavHover(snapshot.desktopNavHover);
+    setDesktopNavPresence(snapshot.desktopNavPresence);
+    setNavPanelOrigin(snapshot.navPanelOrigin);
+    setNavPanelWidth(snapshot.navPanelWidth);
+    setNavPanelStyle(snapshot.navPanelStyle);
+    setNavMenuAlignment(snapshot.navMenuAlignment);
+    setNavMenuItemSize(snapshot.navMenuItemSize);
+    setNavMenuVerticalSpacing(snapshot.navMenuVerticalSpacing);
     setLogoOpacity(snapshot.logoOpacity);
     setLogoShadow(snapshot.logoShadow);
     setLogoFrameStyle(snapshot.logoFrameStyle);
@@ -2435,8 +2496,21 @@ export default function PublishedHeroLabPage({
   ]
     .filter(Boolean)
     .join(" ");
+  const inspectorControlGroupClassName =
+    "rounded-lg border border-border/75 [background:var(--surface-1,var(--background))] p-2";
+  const inspectorControlGroupTitleClassName =
+    "text-[10px] font-semibold uppercase tracking-wide text-muted-foreground";
+
+  function setDesktopNavVisibility(visible: boolean) {
+    setNavLinksVisible(visible);
+    setPieceVisibility((previous) => ({ ...previous, "desktop-nav": visible }));
+  }
 
   function togglePieceVisibility(piece: LabHeroPiece) {
+    if (piece === "desktop-nav") {
+      setDesktopNavVisibility(!navLinksVisible);
+      return;
+    }
     setPieceVisibility((previous) => ({ ...previous, [piece]: !previous[piece] }));
   }
 
@@ -4013,15 +4087,25 @@ export default function PublishedHeroLabPage({
                           mobileLogoScale={mobileLogoScale}
                           navigationMode={resolvedNavigationMode}
                           navPosition={resolvedNavPosition}
-                          navPanelOrigin={resolvedNavPanelOrigin}
+                          navPanelOrigin={navPanelOrigin || resolvedNavPanelOrigin}
                           navTriggerSize={navTriggerSize}
                           navTriggerTone={navTriggerTone}
                           navTriggerSurface={navTriggerSurface}
                           navTriggerAura={navTriggerAura}
+                          desktopNavSize={desktopNavSize}
+                          desktopNavTone={desktopNavTone}
+                          desktopNavSurface={desktopNavSurface}
+                          desktopNavHover={desktopNavHover}
+                          desktopNavPresence={desktopNavPresence}
                           navOpenBehavior={navOpenBehavior}
+                          navPanelWidth={navPanelWidth}
+                          navPanelStyle={navPanelStyle}
+                          navMenuAlignment={navMenuAlignment}
+                          navMenuItemSize={navMenuItemSize}
+                          navMenuVerticalSpacing={navMenuVerticalSpacing}
                           showNavLinks={navLinksVisible}
-                          forceMobileMenuOpen={menuOpen}
-                          onLabMenuOpenChange={setMenuOpen}
+                          forceMobileMenuOpen={navPreviewOpen}
+                          onLabMenuOpenChange={setNavPreviewOpen}
                           headlinePosition={headlinePosition}
                           copyBlockPosition={copyBlockPosition}
                           ctaPosition={ctaPosition}
@@ -4328,180 +4412,386 @@ export default function PublishedHeroLabPage({
                             </div>
                           ) : null}
 
+                          {selectedPiece === "desktop-nav" ? (
+                            <div className="mt-2 space-y-2">
+                              <div className={inspectorControlGroupClassName}>
+                                <p className={inspectorControlGroupTitleClassName}>A. Visibilidad y posicion</p>
+                                <button
+                                  type="button"
+                                  onClick={() => setDesktopNavVisibility(!navLinksVisible)}
+                                  className={[
+                                    "mt-1.5 w-full rounded-md border px-2 py-1.5 text-xs font-semibold",
+                                    navLinksVisible
+                                      ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
+                                      : "border-border/75 [background:var(--surface-1,var(--background))] text-muted-foreground",
+                                  ].join(" ")}
+                                >
+                                  Links visibles: {navLinksVisible ? "ON" : "OFF"}
+                                </button>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["left", "center", "right"] as const).map((position) => (
+                                    <button
+                                      key={position}
+                                      type="button"
+                                      onClick={() => setNavPlacement(position)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        navPlacement === position ||
+                                        (navPlacement === "auto" && resolvedNavPosition === position)
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {position}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className={inspectorControlGroupClassName}>
+                                <p className={inspectorControlGroupTitleClassName}>B. Apariencia</p>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["sm", "md", "lg"] as const).map((size) => (
+                                    <button
+                                      key={size}
+                                      type="button"
+                                      onClick={() => setDesktopNavSize(size)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        desktopNavSize === size
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {size}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["inverse", "primary", "muted"] as const).map((tone) => (
+                                    <button
+                                      key={tone}
+                                      type="button"
+                                      onClick={() => setDesktopNavTone(tone)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        desktopNavTone === tone
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {tone}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["minimal", "solid", "glass"] as const).map((surface) => (
+                                    <button
+                                      key={surface}
+                                      type="button"
+                                      onClick={() => setDesktopNavSurface(surface)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        desktopNavSurface === surface
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {surface}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className={inspectorControlGroupClassName}>
+                                <p className={inspectorControlGroupTitleClassName}>C. Hover y presencia</p>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["low", "medium", "high"] as const).map((presence) => (
+                                    <button
+                                      key={presence}
+                                      type="button"
+                                      onClick={() => setDesktopNavPresence(presence)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        desktopNavPresence === presence
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {presence}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["soft", "lift", "glow"] as const).map((hover) => (
+                                    <button
+                                      key={hover}
+                                      type="button"
+                                      onClick={() => setDesktopNavHover(hover)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        desktopNavHover === hover
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {hover}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          ) : null}
+
                           {selectedPiece === "nav-burger" ? (
                             <div className="mt-2 space-y-2">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setPieceVisibility((previous) => ({
-                                    ...previous,
-                                    "nav-burger": !previous["nav-burger"],
-                                  }))
-                                }
-                                className={[
-                                  "w-full rounded-md border px-2 py-1.5 text-xs font-semibold uppercase",
-                                  pieceVisibility["nav-burger"]
-                                    ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
-                                    : "border-border/75 [background:var(--surface-1,var(--background))] text-muted-foreground",
-                                ].join(" ")}
-                              >
-                                Visible: {pieceVisibility["nav-burger"] ? "ON" : "OFF"}
-                              </button>
-                              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                Posicion mobile
-                              </p>
-                              <div className="flex flex-wrap gap-1">
-                                {(["left", "right"] as const).map((position) => (
-                                  <button
-                                    key={position}
-                                    type="button"
-                                    onClick={() => setOperationalPieceColumn("nav-burger", position)}
-                                    className={[
-                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
-                                      navPlacement === position ||
-                                      (navPlacement === "auto" && resolvedNavPosition === position)
-                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
-                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
-                                    ].join(" ")}
-                                  >
-                                    {position}
-                                  </button>
-                                ))}
-                              </div>
-                              <div className="grid grid-cols-1 gap-1">
+                              <div className={inspectorControlGroupClassName}>
+                                <p className={inspectorControlGroupTitleClassName}>A. Boton hamburguesa</p>
                                 <button
                                   type="button"
-                                  onClick={() => applyNavThemePreset("burger-left-theme-right")}
-                                  className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-[11px] font-semibold"
+                                  onClick={() =>
+                                    setPieceVisibility((previous) => ({
+                                      ...previous,
+                                      "nav-burger": !previous["nav-burger"],
+                                    }))
+                                  }
+                                  className={[
+                                    "mt-1.5 w-full rounded-md border px-2 py-1.5 text-xs font-semibold uppercase",
+                                    pieceVisibility["nav-burger"]
+                                      ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
+                                      : "border-border/75 [background:var(--surface-1,var(--background))] text-muted-foreground",
+                                  ].join(" ")}
                                 >
-                                  Preset: burger izq + theme der
+                                  Visible: {pieceVisibility["nav-burger"] ? "ON" : "OFF"}
                                 </button>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["left", "right"] as const).map((position) => (
+                                    <button
+                                      key={position}
+                                      type="button"
+                                      onClick={() => setOperationalPieceColumn("nav-burger", position)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        navColumn === position
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {position}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["sm", "md", "lg"] as const).map((size) => (
+                                    <button
+                                      key={size}
+                                      type="button"
+                                      onClick={() => setNavTriggerSize(size)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        navTriggerSize === size
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {size}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["inverse", "primary", "muted"] as const).map((tone) => (
+                                    <button
+                                      key={tone}
+                                      type="button"
+                                      onClick={() => setNavTriggerTone(tone)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        navTriggerTone === tone
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {tone}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["minimal", "solid", "glass"] as const).map((surface) => (
+                                    <button
+                                      key={surface}
+                                      type="button"
+                                      onClick={() => setNavTriggerSurface(surface)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        navTriggerSurface === surface
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {surface}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["none", "soft", "strong"] as const).map((aura) => (
+                                    <button
+                                      key={aura}
+                                      type="button"
+                                      onClick={() => setNavTriggerAura(aura)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        navTriggerAura === aura
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {aura}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className={inspectorControlGroupClassName}>
+                                <p className={inspectorControlGroupTitleClassName}>B. Panel del menu</p>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {([
+                                    { value: "overlay", label: "overlay" },
+                                    { value: "drawer", label: "drawer" },
+                                    { value: "fullscreen", label: "expanded" },
+                                  ] as const).map((behavior) => (
+                                    <button
+                                      key={behavior.value}
+                                      type="button"
+                                      onClick={() => setNavOpenBehavior(behavior.value)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        navOpenBehavior === behavior.value
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {behavior.label}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["left", "right", "center"] as const).map((origin) => (
+                                    <button
+                                      key={origin}
+                                      type="button"
+                                      onClick={() => setNavPanelOrigin(origin)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        navPanelOrigin === origin
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {origin}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["narrow", "normal", "wide"] as const).map((panelWidth) => (
+                                    <button
+                                      key={panelWidth}
+                                      type="button"
+                                      onClick={() => setNavPanelWidth(panelWidth)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        navPanelWidth === panelWidth
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {panelWidth}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["minimal", "solid", "glass"] as const).map((panelStyle) => (
+                                    <button
+                                      key={panelStyle}
+                                      type="button"
+                                      onClick={() => setNavPanelStyle(panelStyle)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        navPanelStyle === panelStyle
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {panelStyle}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className={inspectorControlGroupClassName}>
+                                <p className={inspectorControlGroupTitleClassName}>C. Links del menu</p>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["sm", "md", "lg"] as const).map((size) => (
+                                    <button
+                                      key={size}
+                                      type="button"
+                                      onClick={() => setNavMenuItemSize(size)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        navMenuItemSize === size
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {size}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["tight", "normal", "relaxed"] as const).map((spacing) => (
+                                    <button
+                                      key={spacing}
+                                      type="button"
+                                      onClick={() => setNavMenuVerticalSpacing(spacing)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        navMenuVerticalSpacing === spacing
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {spacing}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {(["left", "center", "right"] as const).map((alignment) => (
+                                    <button
+                                      key={alignment}
+                                      type="button"
+                                      onClick={() => setNavMenuAlignment(alignment)}
+                                      className={[
+                                        "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        navMenuAlignment === alignment
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {alignment}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className={inspectorControlGroupClassName}>
+                                <p className={inspectorControlGroupTitleClassName}>D. Accion</p>
                                 <button
                                   type="button"
-                                  onClick={() => applyNavThemePreset("theme-left-burger-right")}
-                                  className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-[11px] font-semibold"
+                                  onClick={() => setNavPreviewOpen((previous) => !previous)}
+                                  className="mt-1.5 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs font-semibold"
                                 >
-                                  Preset: theme izq + burger der
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => applyNavThemePreset("both-right")}
-                                  className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-[11px] font-semibold"
-                                >
-                                  Preset: ambos derecha
+                                  {navPreviewOpen ? "Cerrar menú" : "Ver menú"}
                                 </button>
                               </div>
-                              <div className="flex flex-wrap gap-1">
-                                {(["sm", "md", "lg"] as const).map((size) => (
-                                  <button
-                                    key={size}
-                                    type="button"
-                                    onClick={() => setNavTriggerSize(size)}
-                                    className={[
-                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
-                                      navTriggerSize === size
-                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
-                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
-                                    ].join(" ")}
-                                  >
-                                    {size}
-                                  </button>
-                                ))}
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {(["inverse", "primary", "muted"] as const).map((tone) => (
-                                  <button
-                                    key={tone}
-                                    type="button"
-                                    onClick={() => setNavTriggerTone(tone)}
-                                    className={[
-                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
-                                      navTriggerTone === tone
-                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
-                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
-                                    ].join(" ")}
-                                  >
-                                    {tone}
-                                  </button>
-                                ))}
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {(["minimal", "solid", "glass"] as const).map((surface) => (
-                                  <button
-                                    key={surface}
-                                    type="button"
-                                    onClick={() => setNavTriggerSurface(surface)}
-                                    className={[
-                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
-                                      navTriggerSurface === surface
-                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
-                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
-                                    ].join(" ")}
-                                  >
-                                    {surface}
-                                  </button>
-                                ))}
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {(["none", "soft", "strong"] as const).map((aura) => (
-                                  <button
-                                    key={aura}
-                                    type="button"
-                                    onClick={() => setNavTriggerAura(aura)}
-                                    className={[
-                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
-                                      navTriggerAura === aura
-                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
-                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
-                                    ].join(" ")}
-                                  >
-                                    {aura}
-                                  </button>
-                                ))}
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {(["overlay", "drawer", "fullscreen"] as const).map((behavior) => (
-                                  <button
-                                    key={behavior}
-                                    type="button"
-                                    onClick={() => setNavOpenBehavior(behavior)}
-                                    className={[
-                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
-                                      navOpenBehavior === behavior
-                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
-                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
-                                    ].join(" ")}
-                                  >
-                                    {behavior}
-                                  </button>
-                                ))}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={handleSwapMobileNavTheme}
-                                className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs font-semibold"
-                              >
-                                Intercambiar con theme toggle (mobile)
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setNavLinksVisible((previous) => !previous)}
-                                className={[
-                                  "w-full rounded-md border px-2 py-1.5 text-xs font-semibold",
-                                  navLinksVisible
-                                    ? "border-success [background:var(--success-soft)] [color:var(--success-foreground)]"
-                                    : "border-border/75 [background:var(--surface-1,var(--background))] text-muted-foreground",
-                                ].join(" ")}
-                              >
-                                Links visibles: {navLinksVisible ? "ON" : "OFF"}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setMenuOpen((previous) => !previous)}
-                                className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs font-semibold"
-                              >
-                                {menuOpen ? "Cerrar menu" : "Abrir menu"}
-                              </button>
                             </div>
                           ) : null}
 
