@@ -18,8 +18,10 @@ import {
   COMPONENT_REGISTRY,
 } from "@/lib/content/components/registry";
 import type { ComponentId } from "@/lib/content/components/types";
+import { validateLabPiece } from "@/lib/content-lab/validation";
 import { mapPublishedSnapshotToContentPayload } from "@/lib/content-lab/published/mapPublishedSnapshotToContentPayload";
 import type { PublishedPieceSnapshot } from "@/lib/content-lab/published/types";
+import type { LabPiece } from "@/lib/content-lab/types";
 import {
   getTallerLabVisualCssVars,
   getTallerPanelVisualCssVars,
@@ -1080,6 +1082,40 @@ function propagateViewportSnapshotToDescendants(
   }
 }
 
+function mapSnapshotToLabPiece(snapshot: PublishedPieceSnapshot): LabPiece {
+  return {
+    id: snapshot.id,
+    type: "hero",
+    blockType: "hero",
+    title: snapshot.payload.headline ?? "Sin titular",
+    status: "approved",
+    summary: snapshot.payload.subheadline,
+    editableSlots: [
+      {
+        key: "headline",
+        label: "Titular",
+        type: "text",
+        required: true,
+        value: snapshot.payload.headline ?? "",
+      },
+      {
+        key: "subheadline",
+        label: "Subtitular",
+        type: "textarea",
+        required: true,
+        value: snapshot.payload.subheadline ?? "",
+      },
+      {
+        key: "cta",
+        label: "CTA",
+        type: "cta",
+        required: true,
+        value: snapshot.payload.primaryCta?.label ?? "",
+      },
+    ],
+  };
+}
+
 export default function PublishedHeroLabPage({
   disableInternalBrandHydrator = false,
 }: {
@@ -1181,7 +1217,8 @@ export default function PublishedHeroLabPage({
   const [signatureSize, setSignatureSize] = useState<"sm" | "md" | "lg">("md");
   const [signatureOpacity, setSignatureOpacity] = useState<number>(80);
   const [signatureAnimation, setSignatureAnimation] = useState<"pulse" | "float" | "none">("pulse");
-  const [headlineProposal, setHeadlineProposal] = useState<string>("");
+  const [headlineProposal, setHeadlineProposal] = useState<string | null>(null);
+  const [previousHeadlineDraft, setPreviousHeadlineDraft] = useState<string | null>(null);
   const [headlineProposalMode, setHeadlineProposalMode] = useState<HeadlineTransformMode | null>(null);
   const [deviceEditingNotice, setDeviceEditingNotice] = useState<string>("Este ajuste afecta solo a Mobile.");
 
@@ -1199,10 +1236,13 @@ export default function PublishedHeroLabPage({
   });
 
   const candidateSnapshot = HERO_CANDIDATES[candidateId];
+  const currentSnapshot = candidateSnapshot;
   const candidateHero = useMemo(
     () => mapPublishedSnapshotToContentPayload(candidateSnapshot),
     [candidateSnapshot]
   );
+  const labPiece = useMemo(() => mapSnapshotToLabPiece(currentSnapshot), [currentSnapshot]);
+  const validation = useMemo(() => validateLabPiece(labPiece), [labPiece]);
 
   function captureSnapshot(): VariantSnapshot {
     return {
@@ -1445,7 +1485,7 @@ export default function PublishedHeroLabPage({
     }
 
     if (property === "headlineDraft") {
-      setHeadlineProposal("");
+      setHeadlineProposal(null);
       setHeadlineProposalMode(null);
     }
 
@@ -1596,7 +1636,7 @@ export default function PublishedHeroLabPage({
       outgoingSnapshot;
     applySnapshot(cloneSnapshot(incomingSnapshot));
     setResolvedContentState(nextViewport);
-    setHeadlineProposal("");
+    setHeadlineProposal(null);
     setHeadlineProposalMode(null);
 
     viewportRef.current = nextViewport;
@@ -2738,22 +2778,34 @@ export default function PublishedHeroLabPage({
 
   function proposeHeadlineTransformation(mode: HeadlineTransformMode) {
     const nextProposal = buildHeadlineProposal(mode);
-    setHeadlineProposal(nextProposal);
+    setHeadlineProposal(nextProposal.trim() ? nextProposal : null);
     setHeadlineProposalMode(mode);
   }
 
   function applyHeadlineProposal() {
-    if (!headlineProposal.trim()) return;
-    setContentProperty("headlineDraft", headlineProposal.trim());
+    const nextHeadline = headlineProposal?.trim() ?? "";
+    if (!nextHeadline) return;
+    setPreviousHeadlineDraft(headlineDraft);
+    setContentProperty("headlineDraft", nextHeadline);
     setActionNotice("Titular propuesto aplicado.");
-    setHeadlineProposal("");
+    setHeadlineProposal(null);
     setHeadlineProposalMode(null);
   }
 
   function discardHeadlineProposal() {
-    setHeadlineProposal("");
-    setHeadlineProposalMode(null);
-    setActionNotice("Propuesta de titular descartada.");
+    const pendingProposal = headlineProposal?.trim() ?? "";
+    if (pendingProposal) {
+      setHeadlineProposal(null);
+      setHeadlineProposalMode(null);
+      setActionNotice("Propuesta de titular descartada.");
+      return;
+    }
+
+    if (previousHeadlineDraft !== null) {
+      setContentProperty("headlineDraft", previousHeadlineDraft);
+      setPreviousHeadlineDraft(null);
+      setActionNotice("Titular anterior restaurado.");
+    }
   }
 
   function handleDuplicateVariant() {
@@ -2769,7 +2821,7 @@ export default function PublishedHeroLabPage({
     setVariantName(nextName);
     applySnapshot(cloneSnapshot(currentVariantSet[viewport]));
     setResolvedContentState(viewport);
-    setHeadlineProposal("");
+    setHeadlineProposal(null);
     setHeadlineProposalMode(null);
     setActionNotice(`Variante duplicada: ${nextName}. Incluye los 4 breakpoints.`);
   }
@@ -3187,7 +3239,7 @@ export default function PublishedHeroLabPage({
                               Cargando assets...
                             </p>
                           ) : assetState === "error" ? (
-                            <p className="px-2 py-3 text-center text-xs text-danger">{assetError}</p>
+                            <p className="px-2 py-3 text-center text-xs text-foreground">{assetError}</p>
                           ) : contextualAssets.length === 0 ? (
                             <p className="px-2 py-3 text-center text-xs text-muted-foreground">
                               Sin resultados con filtros actuales.
@@ -3515,7 +3567,7 @@ export default function PublishedHeroLabPage({
                             variant="primary"
                             className="h-7 px-2.5 text-[10px] uppercase"
                             onClick={applyHeadlineProposal}
-                            disabled={!headlineProposal.trim()}
+                            disabled={!headlineProposal?.trim()}
                           >
                             Aplicar
                           </PanelButton>
@@ -3524,11 +3576,16 @@ export default function PublishedHeroLabPage({
                             variant="secondary"
                             className="h-7 px-2.5 text-[10px] uppercase"
                             onClick={discardHeadlineProposal}
-                            disabled={!headlineProposal.trim()}
+                            disabled={!headlineProposal?.trim() && previousHeadlineDraft === null}
                           >
                             Descartar
                           </PanelButton>
                         </div>
+                        {previousHeadlineDraft !== null ? (
+                          <p className="mt-1 text-[10px] text-muted-foreground">
+                            Anterior: {previousHeadlineDraft || "(vacio)"}.
+                          </p>
+                        ) : null}
                       </div>
 
                       <div className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
@@ -5283,6 +5340,21 @@ export default function PublishedHeroLabPage({
                   </PanelCard>
                 </>
               )}
+
+              <PanelCard className="mt-4 p-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold">Quality Gate</h3>
+                  <PanelBadge tone="processing">Score {validation.score}</PanelBadge>
+                </div>
+
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Avisos: {validation.warnings.length} · Bloqueos: {validation.blockers.length}
+                </div>
+
+                {validation.blockers.length > 0 ? (
+                  <div className="mt-2 text-xs text-foreground">{validation.blockers.join(" · ")}</div>
+                ) : null}
+              </PanelCard>
             </aside>
           </div>
         </section>
