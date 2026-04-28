@@ -198,6 +198,7 @@ type VariantSnapshot = {
 };
 type VariantSnapshotSet = Record<PreviewViewport, VariantSnapshot>;
 type HeadlineTransformMode = "shorten" | "commercial" | "seo-local";
+type SuggestionReturnTarget = "design" | "quality";
 type AppliedSuggestionBackup = {
   id: string;
   label: string;
@@ -1228,10 +1229,18 @@ export default function PublishedHeroLabPage({
   const [previousHeadlineDraft, setPreviousHeadlineDraft] = useState<string | null>(null);
   const [headlineProposalMode, setHeadlineProposalMode] = useState<HeadlineTransformMode | null>(null);
   const [appliedSuggestionBackup, setAppliedSuggestionBackup] = useState<AppliedSuggestionBackup | null>(null);
+  const [appliedSuggestionReturnTarget, setAppliedSuggestionReturnTarget] =
+    useState<SuggestionReturnTarget | null>(null);
+  const [previousPanelScrollTop, setPreviousPanelScrollTop] = useState<number | null>(null);
   const [deviceEditingNotice, setDeviceEditingNotice] = useState<string>("Este ajuste afecta solo a Mobile.");
 
   const workspaceViewportRef = useRef<HTMLElement | null>(null);
   const previewStageRef = useRef<HTMLDivElement | null>(null);
+  const inspectorContextualRef = useRef<HTMLHeadingElement | null>(null);
+  const designSuggestionActionsRef = useRef<HTMLDivElement | null>(null);
+  const qualityGateActionsRef = useRef<HTMLDivElement | null>(null);
+  const designAdjustmentDecisionRef = useRef<HTMLDivElement | null>(null);
+  const qualityAdjustmentDecisionRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<PreviewViewport>("mobile");
   const breakpointSnapshotsRef = useRef<VariantSnapshotSet | null>(null);
   const variantSnapshotsRef = useRef<Record<string, VariantSnapshotSet>>({});
@@ -2432,9 +2441,15 @@ export default function PublishedHeroLabPage({
   }
 
   function handlePieceSelect(piece: LabHeroPiece) {
+    const shouldScrollToInspector = selectedPiece !== piece;
     setSelectedPiece(piece);
     if (LAYOUT_ENABLED_PIECES.has(piece)) {
       setActiveLayoutPiece(piece as LayoutPiece);
+    }
+    if (shouldScrollToInspector) {
+      requestAnimationFrame(() => {
+        inspectorContextualRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     }
   }
 
@@ -2687,8 +2702,49 @@ export default function PublishedHeroLabPage({
     setLayoutMediaDominance("medium");
   }
 
-  function applyDesignAdjustmentWithBackup(id: string, label: string, action: () => void) {
+  function resolveSuggestionDecisionElement(
+    target: SuggestionReturnTarget
+  ): HTMLDivElement | null {
+    return target === "design"
+      ? designAdjustmentDecisionRef.current
+      : qualityAdjustmentDecisionRef.current;
+  }
+
+  function resolveSuggestionPanel(target: SuggestionReturnTarget): HTMLElement | null {
+    const anchorElement =
+      target === "design" ? designSuggestionActionsRef.current : qualityGateActionsRef.current;
+    if (anchorElement) {
+      return anchorElement.closest("aside");
+    }
+    const decisionElement = resolveSuggestionDecisionElement(target);
+    return decisionElement ? decisionElement.closest("aside") : null;
+  }
+
+  function restoreSuggestionPanelPosition(
+    target: SuggestionReturnTarget,
+    scrollTop: number | null
+  ) {
+    const panelElement = resolveSuggestionPanel(target);
+    if (panelElement && scrollTop !== null) {
+      panelElement.scrollTop = scrollTop;
+      return;
+    }
+    resolveSuggestionDecisionElement(target)?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }
+
+  function applyDesignAdjustmentWithBackup(
+    id: string,
+    label: string,
+    target: SuggestionReturnTarget,
+    action: () => void
+  ) {
     const snapshot = cloneSnapshot(captureSnapshot());
+    const panelElement = resolveSuggestionPanel(target);
+    setAppliedSuggestionReturnTarget(target);
+    setPreviousPanelScrollTop(panelElement ? panelElement.scrollTop : null);
     setAppliedSuggestionBackup({
       id,
       label,
@@ -2701,12 +2757,53 @@ export default function PublishedHeroLabPage({
 
   function discardAppliedSuggestion() {
     if (!appliedSuggestionBackup) return;
+    const backupTarget = appliedSuggestionReturnTarget;
+    const backupScrollTop = previousPanelScrollTop;
     applySnapshot(cloneSnapshot(appliedSuggestionBackup.snapshot));
     setSelectedHeroAssetId(appliedSuggestionBackup.selectedHeroAssetId);
     setSelectedLogoAssetId(appliedSuggestionBackup.selectedLogoAssetId);
     setAppliedSuggestionBackup(null);
+    setAppliedSuggestionReturnTarget(null);
+    setPreviousPanelScrollTop(null);
     setActionNotice(`Se restauro el ajuste anterior (${appliedSuggestionBackup.label}).`);
+
+    if (backupTarget === null) return;
+    requestAnimationFrame(() => {
+      restoreSuggestionPanelPosition(backupTarget, backupScrollTop);
+    });
   }
+
+  function confirmAppliedSuggestion() {
+    if (!appliedSuggestionBackup) return;
+    const backupTarget = appliedSuggestionReturnTarget;
+    const backupScrollTop = previousPanelScrollTop;
+    const label = appliedSuggestionBackup.label;
+    setAppliedSuggestionBackup(null);
+    setAppliedSuggestionReturnTarget(null);
+    setPreviousPanelScrollTop(null);
+    setActionNotice(`Ajuste confirmado (${label}).`);
+
+    if (backupTarget === null) return;
+    requestAnimationFrame(() => {
+      restoreSuggestionPanelPosition(backupTarget, backupScrollTop);
+    });
+  }
+
+  useEffect(() => {
+    if (!appliedSuggestionBackup || !appliedSuggestionReturnTarget) return;
+    const target = appliedSuggestionReturnTarget;
+    const timeoutId = window.setTimeout(() => {
+      requestAnimationFrame(() => {
+        const decisionElement =
+          target === "design" ? designAdjustmentDecisionRef.current : qualityAdjustmentDecisionRef.current;
+        decisionElement?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      });
+    }, 24);
+    return () => window.clearTimeout(timeoutId);
+  }, [appliedSuggestionBackup, appliedSuggestionReturnTarget]);
 
   function handleAssetPick(item: AssetItem) {
     if (visualSourceKind === "hero-image") {
@@ -3617,7 +3714,10 @@ export default function PublishedHeroLabPage({
                         ) : null}
                       </div>
 
-                      <div className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2">
+                      <div
+                        ref={designSuggestionActionsRef}
+                        className="rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-2"
+                      >
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                           Sugerencias de diseno
                         </p>
@@ -3630,6 +3730,7 @@ export default function PublishedHeroLabPage({
                                 applyDesignAdjustmentWithBackup(
                                   `design-suggestion-${suggestion.label}`,
                                   suggestion.label,
+                                  "design",
                                   suggestion.action
                                 )
                               }
@@ -3639,15 +3740,25 @@ export default function PublishedHeroLabPage({
                             </button>
                           ))}
                         </div>
-                        {appliedSuggestionBackup ? (
-                          <PanelButton
-                            type="button"
-                            variant="secondary"
-                            className="mt-2 h-7 px-2.5 text-[10px] uppercase"
-                            onClick={discardAppliedSuggestion}
-                          >
-                            Descartar ajuste
-                          </PanelButton>
+                        {appliedSuggestionBackup && appliedSuggestionReturnTarget === "design" ? (
+                          <div ref={designAdjustmentDecisionRef} className="mt-2 flex items-center gap-1.5">
+                            <PanelButton
+                              type="button"
+                              variant="primary"
+                              className="h-7 px-2.5 text-[10px] uppercase"
+                              onClick={confirmAppliedSuggestion}
+                            >
+                              Confirmar ajuste
+                            </PanelButton>
+                            <PanelButton
+                              type="button"
+                              variant="secondary"
+                              className="h-7 px-2.5 text-[10px] uppercase"
+                              onClick={discardAppliedSuggestion}
+                            >
+                              Descartar ajuste
+                            </PanelButton>
+                          </div>
                         ) : null}
                       </div>
                     </div>
@@ -4046,7 +4157,10 @@ export default function PublishedHeroLabPage({
               {canvasMode === "preview" ? (
                 <>
                   <PanelCard variant="task" className="p-3">
-                    <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
+                    <h2
+                      ref={inspectorContextualRef}
+                      className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80"
+                    >
                       Inspector contextual
                     </h2>
 
@@ -5142,7 +5256,7 @@ export default function PublishedHeroLabPage({
                       </h2>
                       <PanelBadge tone={qualityTone}>{qualityScore.score} / 100</PanelBadge>
                     </div>
-                    <div className="mt-2 space-y-2">
+                    <div ref={qualityGateActionsRef} className="mt-2 space-y-2">
                       {qualityDimensions.map((dimension) => (
                         <div
                           key={dimension.key}
@@ -5164,6 +5278,7 @@ export default function PublishedHeroLabPage({
                               applyDesignAdjustmentWithBackup(
                                 `quality-${dimension.key}`,
                                 `Ajuste ${dimension.label}`,
+                                "quality",
                                 () => applyQualityRecommendation(dimension.key)
                               )
                             }
@@ -5173,15 +5288,25 @@ export default function PublishedHeroLabPage({
                           </button>
                         </div>
                       ))}
-                      {appliedSuggestionBackup ? (
-                        <PanelButton
-                          type="button"
-                          variant="secondary"
-                          className="h-7 px-2.5 text-[10px] uppercase"
-                          onClick={discardAppliedSuggestion}
-                        >
-                          Descartar ajuste
-                        </PanelButton>
+                      {appliedSuggestionBackup && appliedSuggestionReturnTarget === "quality" ? (
+                        <div ref={qualityAdjustmentDecisionRef} className="flex items-center gap-1.5">
+                          <PanelButton
+                            type="button"
+                            variant="primary"
+                            className="h-7 px-2.5 text-[10px] uppercase"
+                            onClick={confirmAppliedSuggestion}
+                          >
+                            Confirmar ajuste
+                          </PanelButton>
+                          <PanelButton
+                            type="button"
+                            variant="secondary"
+                            className="h-7 px-2.5 text-[10px] uppercase"
+                            onClick={discardAppliedSuggestion}
+                          >
+                            Descartar ajuste
+                          </PanelButton>
+                        </div>
                       ) : null}
                     </div>
                   </PanelCard>
