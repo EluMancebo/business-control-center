@@ -198,6 +198,13 @@ type VariantSnapshot = {
 };
 type VariantSnapshotSet = Record<PreviewViewport, VariantSnapshot>;
 type HeadlineTransformMode = "shorten" | "commercial" | "seo-local";
+type AppliedSuggestionBackup = {
+  id: string;
+  label: string;
+  snapshot: VariantSnapshot;
+  selectedHeroAssetId: string;
+  selectedLogoAssetId: string;
+};
 
 const HERO_CANDIDATES: Record<CandidateId, PublishedPieceSnapshot> = {
   "barber-pro": {
@@ -1220,6 +1227,7 @@ export default function PublishedHeroLabPage({
   const [headlineProposal, setHeadlineProposal] = useState<string | null>(null);
   const [previousHeadlineDraft, setPreviousHeadlineDraft] = useState<string | null>(null);
   const [headlineProposalMode, setHeadlineProposalMode] = useState<HeadlineTransformMode | null>(null);
+  const [appliedSuggestionBackup, setAppliedSuggestionBackup] = useState<AppliedSuggestionBackup | null>(null);
   const [deviceEditingNotice, setDeviceEditingNotice] = useState<string>("Este ajuste afecta solo a Mobile.");
 
   const workspaceViewportRef = useRef<HTMLElement | null>(null);
@@ -2679,6 +2687,27 @@ export default function PublishedHeroLabPage({
     setLayoutMediaDominance("medium");
   }
 
+  function applyDesignAdjustmentWithBackup(id: string, label: string, action: () => void) {
+    const snapshot = cloneSnapshot(captureSnapshot());
+    setAppliedSuggestionBackup({
+      id,
+      label,
+      snapshot,
+      selectedHeroAssetId,
+      selectedLogoAssetId,
+    });
+    action();
+  }
+
+  function discardAppliedSuggestion() {
+    if (!appliedSuggestionBackup) return;
+    applySnapshot(cloneSnapshot(appliedSuggestionBackup.snapshot));
+    setSelectedHeroAssetId(appliedSuggestionBackup.selectedHeroAssetId);
+    setSelectedLogoAssetId(appliedSuggestionBackup.selectedLogoAssetId);
+    setAppliedSuggestionBackup(null);
+    setActionNotice(`Se restauro el ajuste anterior (${appliedSuggestionBackup.label}).`);
+  }
+
   function handleAssetPick(item: AssetItem) {
     if (visualSourceKind === "hero-image") {
       setSelectedHeroAssetId(item._id);
@@ -3597,13 +3626,29 @@ export default function PublishedHeroLabPage({
                             <button
                               key={suggestion.label}
                               type="button"
-                              onClick={suggestion.action}
+                              onClick={() =>
+                                applyDesignAdjustmentWithBackup(
+                                  `design-suggestion-${suggestion.label}`,
+                                  suggestion.label,
+                                  suggestion.action
+                                )
+                              }
                               className="w-full rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-left text-[11px] font-semibold text-foreground transition hover:[background:var(--surface-3,var(--card))]"
                             >
                               {suggestion.label}
                             </button>
                           ))}
                         </div>
+                        {appliedSuggestionBackup ? (
+                          <PanelButton
+                            type="button"
+                            variant="secondary"
+                            className="mt-2 h-7 px-2.5 text-[10px] uppercase"
+                            onClick={discardAppliedSuggestion}
+                          >
+                            Descartar ajuste
+                          </PanelButton>
+                        ) : null}
                       </div>
                     </div>
                   </PanelCard>
@@ -5115,13 +5160,29 @@ export default function PublishedHeroLabPage({
                           <p className="mt-1 text-[11px] text-foreground/85">{dimension.recommendation}</p>
                           <button
                             type="button"
-                            onClick={() => applyQualityRecommendation(dimension.key)}
+                            onClick={() =>
+                              applyDesignAdjustmentWithBackup(
+                                `quality-${dimension.key}`,
+                                `Ajuste ${dimension.label}`,
+                                () => applyQualityRecommendation(dimension.key)
+                              )
+                            }
                             className="mt-1.5 rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 py-1 text-[10px] font-semibold uppercase text-foreground transition hover:[background:var(--surface-3,var(--card))]"
                           >
                             Aplicar ajuste
                           </button>
                         </div>
                       ))}
+                      {appliedSuggestionBackup ? (
+                        <PanelButton
+                          type="button"
+                          variant="secondary"
+                          className="h-7 px-2.5 text-[10px] uppercase"
+                          onClick={discardAppliedSuggestion}
+                        >
+                          Descartar ajuste
+                        </PanelButton>
+                      ) : null}
                     </div>
                   </PanelCard>
                 </>
