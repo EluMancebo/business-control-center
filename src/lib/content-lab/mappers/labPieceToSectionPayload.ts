@@ -13,10 +13,14 @@ export function mapLabPieceToSectionPayload(
   const payload: Record<string, unknown> = {};
   const section = getSectionDefinition(labPiece.type as SectionId);
   const schema = section?.payloadSchema ?? {};
+  const values =
+    labPiece.blocks && labPiece.blocks.length > 0
+      ? labPiece.blocks.map((block) => ({ key: block.key, value: block.value }))
+      : (labPiece.editableSlots ?? []).map((slot) => ({ key: slot.key, value: slot.value ?? "" }));
 
-  for (const block of labPiece.blocks) {
-    if (block.key in schema) {
-      payload[block.key] = block.value;
+  for (const item of values) {
+    if (item.key in schema) {
+      payload[item.key] = item.value;
     }
   }
 

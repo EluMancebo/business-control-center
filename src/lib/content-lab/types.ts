@@ -7,6 +7,8 @@ export type LabPieceStatus =
   | "obsolete"
   | "blocked";
 
+export type LabPieceType = "hero" | "banner";
+
 export type LabPieceApprovalScore = {
   conversion: number;
   communication: number;
@@ -36,10 +38,31 @@ export type ApprovalArtifact = {
 export type ContextBrief = {
   id: string;
   objective: string;
-  audience?: string;
-  channel?: string;
+  audience: string;
+  tone: string;
+  channel: string;
+  ctaIntent: string;
+  restrictions?: string[];
+  createdAt?: string;
+  updatedAt?: string;
   constraints?: string[];
   notes?: string;
+};
+
+export type EditableSlot = {
+  key: string;
+  label: string;
+  type: "text" | "textarea" | "cta" | "media" | "accent";
+  required: boolean;
+  maxLength?: number;
+  value?: string;
+};
+
+export type ValidationSummary = {
+  score: number;
+  missingRequired: string[];
+  warnings: string[];
+  blockers: string[];
 };
 
 export type LabBlockDefinition = {
@@ -71,13 +94,17 @@ export type LabPieceBlockValue = {
 
 export type LabPiece = {
   id: string;
-  type: ContentPieceType;
+  type: LabPieceType;
   title: string;
-  contextBriefId: string;
   status: LabPieceStatus;
+  briefId?: string;
+  contextBriefId?: string;
+  summary?: string;
+  editableSlots?: EditableSlot[];
+  validationSummary?: ValidationSummary;
   approval?: ApprovalArtifact;
   blockDefinitionId?: string;
-  blocks: LabPieceBlockValue[];
+  blocks?: LabPieceBlockValue[];
   presetId?: string;
   rulesetId?: string;
   createdAt?: string;
