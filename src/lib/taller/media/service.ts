@@ -755,6 +755,7 @@ export async function deleteSystemMediaClient(id: string): Promise<void> {
 export async function requestSystemAssetVariantClient(args: {
   sourceAssetId: string;
   variantKey: Exclude<AssetVariantKey, "original">;
+  force?: boolean;
 }): Promise<MediaVariantRequestResult> {
   const sourceAssetId = args.sourceAssetId.trim();
   if (!sourceAssetId) throw new Error("Missing source asset id");
@@ -765,6 +766,7 @@ export async function requestSystemAssetVariantClient(args: {
     body: JSON.stringify({
       sourceAssetId,
       variantKey: args.variantKey,
+      force: args.force ?? false,
     }),
   });
 

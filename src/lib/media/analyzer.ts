@@ -68,7 +68,7 @@ export function extractShapeCounts(svgInput: string): ShapeCounts {
   const totalShapesCount = Object.values(countsByTag).reduce((total, value) => total + value, 0);
 
   return {
-    pathsCount: countsByTag.path,
+    pathsCount: countsByTag.path + countsByTag.polygon + countsByTag.polyline,
     totalShapesCount,
   };
 }

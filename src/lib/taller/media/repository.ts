@@ -96,7 +96,7 @@ function getInitialPipelineDefaults(kind: AssetCreateInput["kind"]): {
 }
 
 export async function listSystemAssetsRepository(query: AssetListQuery) {
-  return Asset.find(query).sort({ createdAt: -1 }).limit(200).lean();
+  return Asset.find(query).sort({ createdAt: -1 }).limit(500).lean();
 }
 
 export async function createSystemAssetRepository(input: AssetCreateInput) {

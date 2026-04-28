@@ -908,6 +908,7 @@ export default function TallerMediaPage() {
       const response = await requestSystemAssetVariantClient({
         sourceAssetId: original._id,
         variantKey,
+        force: variantKey === "animated-svg",
       });
       if (!response.ok && response.reason === "not-vectorizable") {
         setVariantFeedbackByAssetId((prev) => ({
