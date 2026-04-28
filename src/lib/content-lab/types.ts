@@ -95,6 +95,7 @@ export type LabPieceBlockValue = {
 export type LabPiece = {
   id: string;
   type: LabPieceType;
+  blockType?: "hero" | "banner";
   title: string;
   status: LabPieceStatus;
   briefId?: string;

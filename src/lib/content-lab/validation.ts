@@ -1,3 +1,4 @@
+import { BLOCK_DEFINITIONS } from "@/lib/content-lab/blockCapabilities";
 import type { LabPiece, ValidationSummary } from "@/lib/content-lab/types";
 
 function normalizeValue(value?: string) {
@@ -6,14 +7,31 @@ function normalizeValue(value?: string) {
 
 export function validateLabPiece(piece: LabPiece): ValidationSummary {
   const editableSlots = piece.editableSlots ?? [];
+  const slotsByKey = new Map(editableSlots.map((slot) => [slot.key, slot]));
+  const blockDefinition = piece.blockType ? BLOCK_DEFINITIONS[piece.blockType] : undefined;
 
-  const missingRequired = editableSlots
-    .filter((slot) => slot.required && normalizeValue(slot.value) === "")
-    .map((slot) => slot.label);
+  const missingRequired = blockDefinition
+    ? blockDefinition.slots
+        .filter((slot) => slot.required && normalizeValue(slotsByKey.get(slot.key)?.value) === "")
+        .map((slot) => slot.label)
+    : editableSlots
+        .filter((slot) => slot.required && normalizeValue(slot.value) === "")
+        .map((slot) => slot.label);
 
-  const warnings = editableSlots
-    .filter((slot) => typeof slot.maxLength === "number" && normalizeValue(slot.value).length > slot.maxLength)
-    .map((slot) => `${slot.label}: supera la longitud recomendada`);
+  const warnings = blockDefinition
+    ? blockDefinition.slots
+        .filter(
+          (slot) =>
+            typeof slot.maxLength === "number" &&
+            normalizeValue(slotsByKey.get(slot.key)?.value).length > slot.maxLength
+        )
+        .map((slot) => `${slot.label}: supera la longitud recomendada`)
+    : editableSlots
+        .filter(
+          (slot) =>
+            typeof slot.maxLength === "number" && normalizeValue(slot.value).length > slot.maxLength
+        )
+        .map((slot) => `${slot.label}: supera la longitud recomendada`);
 
   const blockers: string[] = [];
 
