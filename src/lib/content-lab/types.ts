@@ -60,9 +60,19 @@ export type EditableSlot = {
 
 export type ValidationSummary = {
   score: number;
+  dimensions?: ValidationDimensions;
   missingRequired: string[];
   warnings: string[];
   blockers: string[];
+};
+
+export type ValidationDimensions = {
+  conversion: number;
+  communication: number;
+  design: number;
+  ux: number;
+  responsive: number;
+  seoA11yPerformance: number;
 };
 
 export type LabBlockDefinition = {
