@@ -25,6 +25,8 @@ export type LabHeroPiece =
   | "subheadline"
   | "cta-group"
   | "badge"
+  | "header-hero"
+  | "desktop-nav"
   | "nav-burger"
   | "theme-toggle"
   | "footer-hero"
@@ -89,8 +91,10 @@ type PublicHeroProps = {
   headerVisualStyle?: "minimal" | "solid" | "glass";
   headerTopSpacing?: "tight" | "normal" | "relaxed";
   headerRelation?: "balanced" | "logo-focus" | "nav-focus";
+  headerBandHeight?: "10" | "15" | "20";
   footerIntegration?: "integrated" | "separated";
   footerVisualStyle?: "minimal" | "solid" | "glass";
+  footerBandHeight?: "10" | "15" | "20";
   footerDensity?: "compact" | "balanced" | "spacious";
   footerSignatureSeparation?: "tight" | "normal" | "relaxed";
   ctaRegulation?: "balanced" | "primary-focus";
@@ -111,6 +115,7 @@ type PublicHeroProps = {
   showLabSubheadline?: boolean;
   showLabCtaGroup?: boolean;
   showLabBadge?: boolean;
+  showLabHeaderHero?: boolean;
   showLabNavBurger?: boolean;
   showLabThemeToggle?: boolean;
   showNavLinks?: boolean;
@@ -120,6 +125,7 @@ type PublicHeroProps = {
   showLabBackgroundMedia?: boolean;
   showLabOverlayAtmosphere?: boolean;
   themeToggleDefault?: "light" | "dark" | "auto";
+  onLabThemeToggleDefaultChange?: (mode: "light" | "dark") => void;
   themeToggleStyle?: "minimal" | "solid" | "glass";
   themeTogglePosition?: "left" | "right";
   labLogoClassName?: string;
@@ -354,8 +360,10 @@ export default function PublicHero({
   headerVisualStyle = "solid",
   headerTopSpacing = "normal",
   headerRelation = "balanced",
+  headerBandHeight = "15",
   footerIntegration = "integrated",
   footerVisualStyle = "solid",
+  footerBandHeight = "15",
   footerDensity = "balanced",
   footerSignatureSeparation = "normal",
   ctaRegulation = "balanced",
@@ -376,6 +384,7 @@ export default function PublicHero({
   showLabSubheadline = true,
   showLabCtaGroup = true,
   showLabBadge = true,
+  showLabHeaderHero = true,
   showLabNavBurger = true,
   showLabThemeToggle = true,
   showNavLinks = true,
@@ -385,6 +394,7 @@ export default function PublicHero({
   showLabBackgroundMedia = true,
   showLabOverlayAtmosphere = true,
   themeToggleDefault = "auto",
+  onLabThemeToggleDefaultChange,
   themeToggleStyle = "glass",
   themeTogglePosition = "right",
   labLogoClassName,
@@ -523,12 +533,8 @@ export default function PublicHero({
   const effectiveNavTriggerHover = isLabMode ? navTriggerHover : "soft";
   const effectiveNavOpenBehavior = isLabMode ? navOpenBehavior : "overlay";
   const effectiveNavPanelWidth = isLabMode ? navPanelWidth : "normal";
-  const navPanelOriginFromPosition: "left" | "center" | "right" =
-    navPosition === "left" ? "left" : navPosition === "center" ? "center" : "right";
   const effectiveNavPanelOrigin = isLabMode
-    ? navigationMode === "mobile"
-      ? navPanelOriginFromPosition
-      : navPanelOrigin
+    ? navPanelOrigin
     : "right";
   const effectiveNavPanelIncludeLogo = isLabMode ? navPanelIncludeLogo : true;
   const effectiveNavPanelStyle = isLabMode
@@ -566,6 +572,31 @@ export default function PublicHero({
     isFooterIntegrated ? "minimal" : effectiveFooterVisualStyle;
   const isHeaderSeparated = !isHeaderIntegrated;
   const isFooterSeparated = !isFooterIntegrated;
+  const headerBandHeightClass =
+    headerBandHeight === "10"
+      ? "h-[10vh]"
+      : headerBandHeight === "20"
+        ? "h-[20vh]"
+        : "h-[15vh]";
+  const footerBandHeightClass =
+    footerBandHeight === "10"
+      ? "min-h-[14vh] md:min-h-[10vh]"
+      : footerBandHeight === "20"
+        ? "min-h-[22vh] md:min-h-[20vh]"
+        : "min-h-[18vh] md:min-h-[15vh]";
+  const headerBandSurfaceClass = isHeaderSeparated
+    ? "[background:var(--hero-header-band-bg,transparent)]"
+    : "";
+  const footerBandSurfaceClass = isFooterSeparated
+    ? "[background:var(--hero-footer-band-bg,transparent)]"
+    : "";
+  const headerShellClass = isHeaderSeparated
+    ? `w-full ${headerBandHeightClass}`
+    : "mx-auto w-full max-w-6xl px-6";
+  const mainShellClass = "mx-auto w-full max-w-6xl px-6";
+  const footerShellFrameClass = isFooterSeparated ? "" : "mx-auto w-full max-w-6xl px-6";
+  const headerContentSizingClass = isHeaderSeparated ? "h-full w-full" : "";
+  const footerContentSizingClass = isFooterSeparated ? "w-full min-h-full" : "";
   const hasHeaderRootSurface =
     isHeaderSeparated && normalizedHeaderVisualStyle !== "minimal";
   const effectiveDesktopNavSize = isLabMode ? desktopNavSize : "md";
@@ -573,43 +604,51 @@ export default function PublicHero({
   const effectiveDesktopNavSurface = isLabMode ? desktopNavSurface : "solid";
   const effectiveDesktopNavHover = isLabMode ? desktopNavHover : "soft";
   const effectiveDesktopNavPresence = isLabMode ? desktopNavPresence : "medium";
+  const labNavPanelWidthClass =
+    effectiveNavPanelWidth === "narrow"
+      ? "w-[76%] min-w-[14rem] max-w-[24rem]"
+      : effectiveNavPanelWidth === "wide"
+        ? "w-full min-w-0 max-w-none"
+        : "w-[86%] min-w-[16rem] max-w-[30rem]";
   const navPanelWidthClass =
     effectiveNavPanelWidth === "narrow"
       ? isLabMode
-        ? "w-full max-w-[20rem]"
+        ? labNavPanelWidthClass
         : "w-[min(100vw,20rem)]"
       : effectiveNavPanelWidth === "wide"
         ? isLabMode
-          ? "w-full max-w-[30rem]"
+          ? labNavPanelWidthClass
           : "w-[min(100vw,30rem)]"
         : isLabMode
-          ? "w-full max-w-[24rem]"
+          ? labNavPanelWidthClass
           : "w-[min(100vw,24rem)]";
   const heroRootClass = isLabMode
     ? "relative isolate h-full w-full overflow-hidden"
     : "relative isolate min-h-svh w-full overflow-hidden";
   const heroContentClass = isLabMode
-    ? "relative z-10 mx-auto flex h-full w-full max-w-6xl flex-col px-6"
+    ? "relative z-10 flex h-full w-full flex-col"
     : "relative z-10 mx-auto flex min-h-svh w-full max-w-6xl flex-col px-6";
 
   const navOverlayOpacityClass =
     effectiveNavOverlayDensity === "low"
       ? "peer-checked:opacity-45"
       : effectiveNavOverlayDensity === "high"
-        ? "peer-checked:opacity-95"
+        ? "peer-checked:opacity-100"
         : "peer-checked:opacity-75";
   const navOverlayStyleClass =
     effectiveNavOverlayStyle === "none"
       ? "bg-transparent"
-      : effectiveNavOverlayStyle === "neutral"
-        ? "[background:color-mix(in_oklab,var(--foreground)_72%,transparent)]"
-        : "[background:var(--hero-menu-backdrop-bg)]";
+      : "[background:var(--hero-menu-backdrop-bg)]";
   const navOverlayReadabilityClass =
     effectiveNavReadabilityBoost === "none"
       ? ""
       : effectiveNavReadabilityBoost === "strong"
-        ? "backdrop-blur-[4px] saturate-[1.12]"
-        : "backdrop-blur-[2px]";
+        ? effectiveNavOverlayDensity === "high"
+          ? "saturate-[1.08]"
+          : "backdrop-blur-[4px] saturate-[1.12]"
+        : effectiveNavOverlayDensity === "high"
+          ? "saturate-[1.04]"
+          : "backdrop-blur-[2px]";
   const menuBackdropClass =
     effectiveNavOpenBehavior === "drawer"
       ? "pointer-events-none hidden"
@@ -659,9 +698,17 @@ export default function PublicHero({
         : isMinimalTriggerSurface
           ? "hover:opacity-90"
           : "hover:[background:var(--hero-chrome-surface-hover-bg)]";
-  const menuTriggerClass = `cursor-pointer transition duration-200 peer-checked:pointer-events-none peer-checked:hidden ${navTriggerSizeClass} ${navTriggerAuraClass} ${navTriggerSurfaceClass} ${navTriggerToneClass} ${navTriggerHoverClass}`;
+  const menuTriggerVisibilityClass = isLabMode
+    ? ""
+    : "peer-checked:pointer-events-none peer-checked:hidden";
+  const menuTriggerClass = `cursor-pointer transition duration-200 ${menuTriggerVisibilityClass} ${navTriggerSizeClass} ${navTriggerAuraClass} ${navTriggerSurfaceClass} ${navTriggerToneClass} ${navTriggerHoverClass}`;
   const menuCloseClass =
-    "cursor-pointer rounded-lg border px-3 py-1 text-xs transition [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)] hover:[background:var(--hero-chrome-surface-hover-bg)]";
+    [
+      "cursor-pointer rounded-lg border transition [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)] hover:[background:var(--hero-chrome-surface-hover-bg)]",
+      isLabMode ? "px-3 py-1.5 text-sm font-semibold" : "px-3 py-1 text-xs",
+    ]
+      .filter(Boolean)
+      .join(" ");
   const desktopNavSizeClass =
     effectiveDesktopNavSize === "sm"
       ? "px-3 py-1.5 text-[11px]"
@@ -700,19 +747,60 @@ export default function PublicHero({
     `rounded-full font-semibold transition ${desktopNavSizeClass} ${desktopNavToneClass} ${desktopNavSurfaceClass} ${desktopNavPresenceClass} ${desktopNavHoverClass}`;
 
   const navPanelVisualClass =
-    effectiveNavPanelStyle === "minimal"
-      ? "[background:transparent] shadow-none border-transparent"
-      : effectiveNavPanelStyle === "glass"
-        ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_72%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_78%,transparent)] backdrop-blur-[3px]"
-        : "[background:var(--hero-menu-opaque-bg)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:var(--hero-menu-border)]";
+    effectiveNavOverlayStyle === "none"
+      ? "[background:transparent] shadow-none border-transparent backdrop-blur-0"
+      : effectiveNavOverlayDensity === "high"
+        ? effectiveNavPanelStyle === "minimal"
+          ? "[background:var(--hero-menu-opaque-bg)] shadow-none border-transparent backdrop-blur-0"
+          : effectiveNavPanelStyle === "glass"
+            ? "[background:var(--hero-menu-opaque-bg)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:var(--hero-menu-border)] backdrop-blur-0"
+            : "[background:var(--hero-menu-opaque-bg)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:var(--hero-menu-border)]"
+        : effectiveNavOverlayDensity === "medium"
+          ? effectiveNavPanelStyle === "minimal"
+            ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_76%,transparent)] shadow-none border-transparent backdrop-blur-0"
+            : effectiveNavPanelStyle === "glass"
+              ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_84%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_84%,transparent)] backdrop-blur-[2px]"
+              : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_88%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_88%,transparent)]"
+          : effectiveNavPanelStyle === "minimal"
+            ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_52%,transparent)] shadow-none border-transparent backdrop-blur-0"
+            : effectiveNavPanelStyle === "glass"
+              ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_66%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_70%,transparent)] backdrop-blur-[2px]"
+              : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_72%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_76%,transparent)]";
+  const isWideLabPanel = isLabMode && effectiveNavPanelWidth === "wide";
+  const labMenuPanelPositionClass =
+    effectiveNavOpenBehavior === "fullscreen"
+      ? isWideLabPanel
+        ? "inset-0 w-full max-w-none translate-y-full rounded-none peer-checked:translate-y-0"
+        : "inset-2 w-auto max-w-none translate-y-full rounded-xl peer-checked:translate-y-0"
+      : effectiveNavOpenBehavior === "drawer"
+        ? effectiveNavPanelOrigin === "left"
+          ? isWideLabPanel
+            ? `inset-y-0 inset-x-0 ${navPanelWidthClass} -translate-x-full rounded-none border-x-0 peer-checked:translate-x-0`
+            : `inset-y-2 left-0 ${navPanelWidthClass} -translate-x-full rounded-r-2xl border-l-0 peer-checked:translate-x-0`
+          : isWideLabPanel
+            ? `inset-y-0 inset-x-0 ${navPanelWidthClass} translate-x-full rounded-none border-x-0 peer-checked:translate-x-0`
+            : `inset-y-2 right-0 ${navPanelWidthClass} translate-x-full rounded-l-2xl border-r-0 peer-checked:translate-x-0`
+        : effectiveNavPanelOrigin === "left"
+          ? isWideLabPanel
+            ? `top-3 bottom-3 inset-x-0 ${navPanelWidthClass} opacity-0 scale-[0.98] rounded-none peer-checked:opacity-100 peer-checked:scale-100`
+            : `top-3 bottom-3 left-3 ${navPanelWidthClass} opacity-0 scale-[0.98] rounded-2xl peer-checked:opacity-100 peer-checked:scale-100`
+          : effectiveNavPanelOrigin === "right"
+            ? isWideLabPanel
+              ? `top-3 bottom-3 inset-x-0 ${navPanelWidthClass} opacity-0 scale-[0.98] rounded-none peer-checked:opacity-100 peer-checked:scale-100`
+              : `top-3 bottom-3 right-3 ${navPanelWidthClass} opacity-0 scale-[0.98] rounded-2xl peer-checked:opacity-100 peer-checked:scale-100`
+            : isWideLabPanel
+              ? `top-3 bottom-3 inset-x-0 ${navPanelWidthClass} opacity-0 scale-[0.98] rounded-none peer-checked:opacity-100 peer-checked:scale-100`
+              : `top-3 bottom-3 left-1/2 ${navPanelWidthClass} -translate-x-1/2 opacity-0 scale-[0.98] rounded-2xl peer-checked:opacity-100 peer-checked:scale-100`;
   const menuPanelClass =
-    `${menuLayerPositionClass} ${effectiveNavOpenBehavior === "fullscreen"
-      ? "inset-0 w-full max-w-none translate-y-full peer-checked:translate-y-0"
-      : effectiveNavPanelOrigin === "left"
-        ? `inset-y-0 left-0 ${navPanelWidthClass} -translate-x-full peer-checked:translate-x-0`
-        : effectiveNavPanelOrigin === "center"
-          ? `top-3 bottom-3 left-1/2 ${navPanelWidthClass} -translate-x-1/2 opacity-0 scale-[0.98] peer-checked:opacity-100 peer-checked:scale-100`
-          : `inset-y-0 right-0 ${navPanelWidthClass} translate-x-full peer-checked:translate-x-0`} ${menuPanelZClass} invisible flex flex-col overflow-y-auto border p-4 transition-all duration-300 ease-out peer-checked:visible [color:var(--hero-text-inverse)] ${navPanelVisualClass}`;
+    `${menuLayerPositionClass} ${isLabMode
+      ? labMenuPanelPositionClass
+      : effectiveNavOpenBehavior === "fullscreen"
+        ? "inset-0 w-full max-w-none translate-y-full peer-checked:translate-y-0"
+        : effectiveNavPanelOrigin === "left"
+          ? `inset-y-0 left-0 ${navPanelWidthClass} -translate-x-full peer-checked:translate-x-0`
+          : effectiveNavPanelOrigin === "center"
+            ? `top-3 bottom-3 left-1/2 ${navPanelWidthClass} -translate-x-1/2 opacity-0 scale-[0.98] peer-checked:opacity-100 peer-checked:scale-100`
+            : `inset-y-0 right-0 ${navPanelWidthClass} translate-x-full peer-checked:translate-x-0`} ${menuPanelZClass} invisible flex flex-col overflow-y-auto border p-4 transition-all duration-300 ease-out peer-checked:visible [color:var(--hero-text-inverse)] ${navPanelVisualClass}`;
 
   const copyWidthClass =
     copyWidth === "narrow" ? "max-w-lg" : copyWidth === "wide" ? "max-w-2xl" : "max-w-xl";
@@ -750,7 +838,7 @@ export default function PublicHero({
       ? "mr-auto ml-4"
       : navPosition === "center"
         ? "mx-auto"
-        : "ml-4";
+        : "ml-auto";
   const desktopNavClass = isMobileNavigation
     ? "hidden"
     : isDesktopNavigation
@@ -768,6 +856,7 @@ export default function PublicHero({
         ? "[background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_54%,transparent)] backdrop-blur-[2px]"
         : "[background:var(--hero-chrome-surface-bg)]";
   const themeToggleDefaultChecked = themeToggleDefault === "dark";
+  const isThemeModeAuto = themeToggleDefault === "auto";
 
   const copyPositionClass =
     resolvedCopyPosition === "center-left"
@@ -841,8 +930,9 @@ export default function PublicHero({
         : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)] [box-shadow:var(--elevation-base,var(--panel-shadow-1))]";
   const headerRegionClass =
     isHeaderSeparated
-      ? `rounded-2xl px-3 py-2 ${headerVisualClass}`
+      ? `h-full w-full rounded-none px-3 py-2 ${headerVisualClass}`
       : "px-0 py-0 border-0 [background:transparent]";
+  const headerInnerOverflowClass = isLabMode ? "overflow-visible" : "overflow-hidden";
   const headerLogoGroupClass =
     effectiveHeaderRelation === "logo-focus"
       ? "flex items-center gap-4"
@@ -854,7 +944,7 @@ export default function PublicHero({
     : "min-h-0 flex-1 pt-5 pb-36 md:pb-0";
   const footerShellClass =
     isFooterSeparated
-      ? "mt-auto pt-3 pb-2"
+      ? `mt-auto w-full ${footerBandHeightClass}`
       : "mt-auto pt-2 pb-2";
   const footerVisualClass =
     normalizedFooterVisualStyle === "minimal"
@@ -862,10 +952,11 @@ export default function PublicHero({
       : normalizedFooterVisualStyle === "glass"
         ? "border [border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_58%,transparent)] [background:color-mix(in_oklab,var(--hero-footer-surface-bg)_58%,transparent)] shadow-none"
         : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-footer-surface-bg)] [box-shadow:var(--elevation-base,var(--panel-shadow-1))]";
-  const footerRadiusClass = isFooterSeparated ? "rounded-2xl" : "rounded-none";
+  const footerRadiusClass = isFooterSeparated ? "rounded-none" : "rounded-none";
+  const isFooterCompact = effectiveFooterDensity === "compact";
   const footerDensityClass =
-    effectiveFooterDensity === "compact"
-      ? "px-3 py-2"
+    isFooterCompact
+      ? "px-2 py-1.5 sm:px-3 sm:py-2"
       : effectiveFooterDensity === "spacious"
         ? "px-5 py-4"
         : "px-4 py-3";
@@ -877,8 +968,8 @@ export default function PublicHero({
         : "mt-3";
   const footerMetaDividerClass = "border-0";
   const footerMetaRowClass = useLabMobileComposition
-    ? `${footerDataSignatureGapClass} ${footerSignatureSeparationClass} flex flex-col items-center gap-2 pt-3 text-[11px] ${footerMetaDividerClass} sm:flex-row sm:justify-between sm:gap-3 md:text-xs`
-    : `${footerDataSignatureGapClass} ${footerSignatureSeparationClass} flex items-center justify-between gap-3 pt-3 text-[11px] ${footerMetaDividerClass} md:text-xs`;
+    ? `${footerDataSignatureGapClass} ${footerSignatureSeparationClass} flex flex-col items-center ${isFooterCompact ? "gap-1.5 pt-2 text-[10px] sm:gap-2" : "gap-2 pt-3 text-[11px]"} ${footerMetaDividerClass} sm:flex-row sm:justify-between sm:gap-3 md:text-xs`
+    : `${footerDataSignatureGapClass} ${footerSignatureSeparationClass} flex items-center justify-between ${isFooterCompact ? "gap-2 pt-2 text-[10px]" : "gap-3 pt-3 text-[11px]"} ${footerMetaDividerClass} md:text-xs`;
   const footerBrandClass = useLabMobileComposition
     ? "min-w-0 text-center sm:text-left"
     : footerPosition === "left"
@@ -887,14 +978,14 @@ export default function PublicHero({
         ? "min-w-0 text-right"
         : "min-w-0 text-center";
   const footerIdentityClass = useLabMobileComposition
-    ? "flex min-w-0 max-w-full flex-wrap items-center justify-center gap-2 text-center sm:justify-start sm:text-left"
+    ? `flex min-w-0 max-w-full flex-wrap items-center justify-center ${isFooterCompact ? "gap-1.5" : "gap-2"} text-center sm:justify-start sm:text-left`
     : footerPosition === "left"
-      ? "flex min-w-0 max-w-full items-center gap-2 text-left"
+      ? `flex min-w-0 max-w-full items-center ${isFooterCompact ? "gap-1.5" : "gap-2"} text-left`
       : footerPosition === "right"
-        ? "ml-auto flex min-w-0 max-w-full items-center justify-end gap-2 text-right"
-        : "mx-auto flex min-w-0 max-w-full items-center justify-center gap-2 text-center";
+        ? `ml-auto flex min-w-0 max-w-full items-center justify-end ${isFooterCompact ? "gap-1.5" : "gap-2"} text-right`
+        : `mx-auto flex min-w-0 max-w-full items-center justify-center ${isFooterCompact ? "gap-1.5" : "gap-2"} text-center`;
   const footerContactGridClass = useLabMobileComposition
-    ? "grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-2"
+    ? `grid w-full max-w-xl grid-cols-1 ${isFooterCompact ? "gap-1.5" : "gap-2"} sm:grid-cols-2`
     : "grid w-full max-w-5xl grid-cols-2 gap-x-6 gap-y-2 md:grid-cols-4";
   const copyPaneOrderClass = visualPosition === "left" ? "md:order-2" : "md:order-1";
   const copyPaneSpacingClass = isSplitComposition
@@ -976,10 +1067,16 @@ export default function PublicHero({
     effectiveNavMenuAlignment === "center" ? "w-fit min-w-[10rem]" : "w-full";
   const menuItemSizeClass =
     effectiveNavMenuItemSize === "sm"
-      ? "px-2 py-1.5 text-xs"
+      ? isLabMode
+        ? "px-3 py-2 text-sm"
+        : "px-2 py-1.5 text-xs"
       : effectiveNavMenuItemSize === "lg"
-        ? "px-4 py-3 text-base"
-        : "px-3 py-2 text-sm";
+        ? isLabMode
+          ? "px-4 py-3.5 text-lg"
+          : "px-4 py-3 text-base"
+        : isLabMode
+          ? "px-3.5 py-2.5 text-base"
+          : "px-3 py-2 text-sm";
   const menuSafeTopClass =
     effectiveNavMenuSafeTopOffset === "tight"
       ? "pt-1"
@@ -994,10 +1091,16 @@ export default function PublicHero({
         : "px-3";
   const menuVerticalSpacingClass =
     effectiveNavMenuVerticalSpacing === "tight"
-      ? "gap-1.5"
+      ? isLabMode
+        ? "gap-2.5"
+        : "gap-1.5"
       : effectiveNavMenuVerticalSpacing === "relaxed"
-        ? "gap-4"
-        : "gap-2.5";
+        ? isLabMode
+          ? "gap-5"
+          : "gap-4"
+        : isLabMode
+          ? "gap-3.5"
+          : "gap-2.5";
   const menuItemToneClass =
     effectiveNavMenuTextTone === "primary"
       ? "[color:var(--accent-strong,var(--primary))]"
@@ -1006,10 +1109,10 @@ export default function PublicHero({
         : "[color:var(--hero-text-inverse)]";
   const menuItemClass =
     effectiveNavPanelStyle === "minimal"
-      ? `block rounded-xl transition hover:opacity-85 ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`
+      ? `block rounded-xl font-semibold transition hover:opacity-85 ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`
       : effectiveNavPanelStyle === "glass"
-        ? `block rounded-xl border border-transparent transition hover:[border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_68%,transparent)] hover:[background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_58%,transparent)] ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`
-        : `block rounded-xl border border-transparent transition hover:[background:var(--hero-chrome-surface-bg)] ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`;
+        ? `block rounded-xl border border-transparent font-semibold transition hover:[border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_68%,transparent)] hover:[background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_58%,transparent)] ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`
+        : `block rounded-xl border border-transparent font-semibold transition hover:[background:var(--hero-chrome-surface-bg)] ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`;
   const ctaRegulationClassName =
     ctaRegulation === "primary-focus"
       ? {
@@ -1026,6 +1129,7 @@ export default function PublicHero({
   const handleLabNavItemClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (!isLabMode || !isMenuControlled) return;
     event.preventDefault();
+    event.stopPropagation();
     onLabMenuOpenChange?.(false);
   };
 
@@ -1041,6 +1145,41 @@ export default function PublicHero({
   const selectLabPiece = (piece: LabHeroPiece) => {
     if (!isLabMode || !onLabPieceSelect) return;
     onLabPieceSelect(piece);
+  };
+  const handleHeaderPieceClick = (event: MouseEvent<HTMLElement>) => {
+    if (!showLabHeaderHero) return;
+    const target = event.target;
+    if (target instanceof HTMLElement) {
+      const nestedPiece = target.closest("[data-lab-piece]");
+      if (nestedPiece && nestedPiece.getAttribute("data-lab-piece") !== "header-hero") {
+        return;
+      }
+    }
+    handleLabPieceClick(event, "header-hero");
+  };
+  const handleThemeToggleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (!isLabMode) return;
+    if (!onLabThemeToggleDefaultChange) return;
+    if (isThemeModeAuto) {
+      onLabThemeToggleDefaultChange("dark");
+      return;
+    }
+    onLabThemeToggleDefaultChange(event.target.checked ? "dark" : "light");
+  };
+  const handleLabBurgerClick = (event: MouseEvent<HTMLLabelElement>) => {
+    event.stopPropagation();
+    selectLabPiece("nav-burger");
+  };
+  const handleLabMenuCloseClick = (event: MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    if (isMenuControlled) {
+      event.preventDefault();
+      onLabMenuOpenChange?.(false);
+      return;
+    }
+  };
+  const stopMenuEventPropagation = (event: MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
   };
 
   const getLabPieceClassName = (piece: LabHeroPiece): string => {
@@ -1097,8 +1236,15 @@ export default function PublicHero({
       <input
         id={themeToggleInputId}
         type="checkbox"
-        defaultChecked={themeToggleDefaultChecked}
         className="peer/theme sr-only"
+        {...(isLabMode
+          ? {
+              checked: isThemeModeAuto ? false : themeToggleDefault === "dark",
+              onChange: handleThemeToggleChange,
+            }
+          : {
+              defaultChecked: themeToggleDefaultChecked,
+            })}
       />
 
       {bg ? (
@@ -1130,9 +1276,19 @@ export default function PublicHero({
       ) : null}
 
       <div className={`${heroContentClass} peer-checked/theme:[filter:saturate(0.9)]`}>
-        <header className={headerTopSpacingClass}>
-          <div className={`flex items-center justify-between overflow-hidden ${headerRegionClass}`}>
-            <div className={headerLogoGroupClass}>
+        <header
+          className={`${isHeaderSeparated ? "pt-0" : headerTopSpacingClass} ${headerShellClass} ${headerBandSurfaceClass} ${showLabHeaderHero ? getLabPieceClassName("header-hero") : ""}`}
+          data-lab-piece={showLabHeaderHero ? "header-hero" : undefined}
+          onClick={showLabHeaderHero ? handleHeaderPieceClick : undefined}
+        >
+          <div
+            className={`flex items-center justify-between ${headerInnerOverflowClass} ${headerContentSizingClass} ${headerRegionClass}`}
+          >
+            <div
+              className={`${headerLogoGroupClass} ${getLabPieceClassName("logo")}`}
+              data-lab-piece="logo"
+              onClick={(event) => handleLabPieceClick(event, "logo")}
+            >
               {headerLogoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -1158,7 +1314,11 @@ export default function PublicHero({
             </div>
 
             {showNavLinks ? (
-              <nav className={desktopNavClass}>
+              <nav
+                className={`${desktopNavClass} ${getLabPieceClassName("desktop-nav")}`}
+                data-lab-piece="desktop-nav"
+                onClick={(event) => handleLabPieceClick(event, "desktop-nav")}
+              >
                 <a
                   href="#"
                   className={desktopNavItemClass}
@@ -1186,7 +1346,7 @@ export default function PublicHero({
                 data-lab-piece="theme-toggle"
                 onClick={() => selectLabPiece("theme-toggle")}
                 className={[
-                  "inline-flex h-8 items-center justify-center rounded-full border px-3 text-[10px] font-semibold uppercase tracking-wide transition md:h-9",
+                  "relative inline-flex h-8 min-w-[6.7rem] items-center rounded-full border px-1.5 transition md:h-9",
                   "cursor-pointer [border-color:var(--hero-chrome-surface-border-safe)] [color:var(--hero-text-inverse)]",
                   themeTogglePositionClass,
                   themeToggleStyleClass,
@@ -1197,39 +1357,68 @@ export default function PublicHero({
                 title="Alternar modo oscuro/claro"
                 aria-label="Alternar modo oscuro/claro"
               >
-                <span className="peer-checked/theme:hidden">Light</span>
-                <span className="hidden peer-checked/theme:inline">Dark</span>
+                <span className="pointer-events-none relative z-10 grid w-full grid-cols-3 items-center text-center text-[9px] font-semibold uppercase leading-none tracking-[0.03em]">
+                  <span
+                    className={
+                      themeToggleDefault === "light"
+                        ? "opacity-100"
+                        : "opacity-70 peer-checked/theme:opacity-100"
+                    }
+                  >
+                    Sol
+                  </span>
+                  <span className={themeToggleDefault === "auto" ? "opacity-100" : "opacity-55"}>
+                    Auto
+                  </span>
+                  <span
+                    className={
+                      themeToggleDefault === "dark"
+                        ? "opacity-100"
+                        : "opacity-70 peer-checked/theme:opacity-100"
+                    }
+                  >
+                    Noche
+                  </span>
+                </span>
+                <span
+                  aria-hidden="true"
+                  className={[
+                    "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border [border-color:var(--hero-chrome-surface-border-safe)] [background:color-mix(in_oklab,var(--hero-text-inverse)_88%,transparent)] [box-shadow:0_1px_6px_color-mix(in_oklab,var(--foreground)_24%,transparent)] transition-transform duration-200",
+                    themeToggleDefault === "auto"
+                      ? "left-1/2 -translate-x-1/2"
+                      : "left-1.5 peer-checked/theme:translate-x-[2.8rem]",
+                  ].join(" ")}
+                />
               </label>
             ) : null}
 
-            <div
+            <input
+              id={mobileMenuInputId}
+              type="checkbox"
+              className="peer sr-only"
+              onClick={isLabMode ? stopMenuEventPropagation : undefined}
+              {...(shouldBindLabMenuHandlers
+                ? {
+                    checked: Boolean(forceMobileMenuOpen),
+                    onChange: (event: ChangeEvent<HTMLInputElement>) =>
+                      handleMenuStateChange(event.target.checked),
+                  }
+                : {})}
+            />
+
+            <label
+              htmlFor={mobileMenuInputId}
               className={[
                 showLabNavBurger ? mobileNavClass : "hidden",
                 mobileNavPositionClass,
+                menuTriggerClass,
                 getLabPieceClassName("nav-burger"),
                 labNavBurgerClassName,
               ]
                 .filter(Boolean)
                 .join(" ")}
               data-lab-piece="nav-burger"
-              onClick={() => selectLabPiece("nav-burger")}
-            >
-              <input
-                id={mobileMenuInputId}
-                type="checkbox"
-                className="peer sr-only"
-                {...(shouldBindLabMenuHandlers
-                  ? {
-                      checked: Boolean(forceMobileMenuOpen),
-                      onChange: (event: ChangeEvent<HTMLInputElement>) =>
-                        handleMenuStateChange(event.target.checked),
-                    }
-                  : {})}
-              />
-
-            <label
-              htmlFor={mobileMenuInputId}
-              className={menuTriggerClass}
+              onClick={handleLabBurgerClick}
               aria-label="Abrir menú"
             >
               <span
@@ -1245,11 +1434,15 @@ export default function PublicHero({
 
             <label
               htmlFor={mobileMenuInputId}
-              className={menuBackdropClass}
+              className={`${menuBackdropClass} ${isDesktopNavigation ? "hidden" : isMobileNavigation ? "" : "md:hidden"}`}
               aria-label="Cerrar menú"
+              onClick={handleLabMenuCloseClick}
             />
 
-            <div className={menuPanelClass}>
+            <div
+              className={`${menuPanelClass} ${isDesktopNavigation ? "hidden" : isMobileNavigation ? "" : "md:hidden"}`}
+              onClick={stopMenuEventPropagation}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {effectiveNavPanelIncludeLogo && headerLogoUrl ? (
@@ -1263,12 +1456,23 @@ export default function PublicHero({
                   <div className="text-sm font-semibold">{business?.name ?? "Menú"}</div>
                 </div>
 
-                <label
-                  htmlFor={mobileMenuInputId}
-                  className={menuCloseClass}
-                >
-                  Cerrar
-                </label>
+                {shouldBindLabMenuHandlers ? (
+                  <button
+                    type="button"
+                    className={menuCloseClass}
+                    onClick={handleLabMenuCloseClick}
+                  >
+                    Cerrar
+                  </button>
+                ) : (
+                  <label
+                    htmlFor={mobileMenuInputId}
+                    className={menuCloseClass}
+                    onClick={stopMenuEventPropagation}
+                  >
+                    Cerrar
+                  </label>
+                )}
               </div>
 
               <div
@@ -1304,10 +1508,9 @@ export default function PublicHero({
               </div>
             </div>
           </div>
-          </div>
         </header>
 
-        <main className={heroMainClass}>
+        <main className={`${heroMainClass} ${mainShellClass}`}>
           <div className={heroGridClass}>
             <div className={`${copyPositionClass} ${copyPaneOrderClass} ${copyPaneSpacingClass}`}>
               {showLabLogo && useLabMobileComposition ? (
@@ -1485,11 +1688,14 @@ export default function PublicHero({
 
         {showLabFooterHero ? (
         <footer
-          className={`${footerShellClass} ${getLabPieceClassName("footer-hero")} ${labFooterHeroClassName || ""}`}
+          className={`${footerShellClass} ${footerBandSurfaceClass} ${getLabPieceClassName("footer-hero")} ${labFooterHeroClassName || ""}`}
           data-lab-piece="footer-hero"
           onClick={(event) => handleLabPieceClick(event, "footer-hero")}
         >
-          <div className={`${footerRadiusClass} ${footerDensityClass} ${footerVisualClass} [color:var(--hero-text-88)]`}>
+          <div className={footerShellFrameClass}>
+            <div
+              className={`${footerRadiusClass} ${footerDensityClass} ${footerVisualClass} ${footerContentSizingClass} [color:var(--hero-text-88)]`}
+            >
             <div className={`mx-auto flex w-full max-w-5xl flex-col gap-2 ${footerDesktopAlignClass}`}>
               {showLabContactStrip ? (
                 <div
@@ -1540,6 +1746,7 @@ export default function PublicHero({
                 </div>
               ) : null}
             </div>
+            </div>
           </div>
         </footer>
         ) : null}
@@ -1547,4 +1754,5 @@ export default function PublicHero({
     </section>
   );
 }
+
 

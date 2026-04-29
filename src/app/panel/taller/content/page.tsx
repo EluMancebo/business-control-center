@@ -2,6 +2,7 @@ import PageHeader from "@/components/panel/PageHeader";
 import PanelBadge from "@/components/panel/ui/PanelBadge";
 import PanelButton from "@/components/panel/ui/PanelButton";
 import PanelCard from "@/components/panel/ui/PanelCard";
+import ContentLabCandidateFlow from "./ContentLabCandidateFlow";
 
 type ContentHubCard = {
   id: string;
@@ -219,6 +220,10 @@ export default function TallerContentPage() {
             ))}
           </div>
         </PanelCard>
+      </section>
+
+      <section className="mt-6">
+        <ContentLabCandidateFlow />
       </section>
     </main>
   );
