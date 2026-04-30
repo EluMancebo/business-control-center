@@ -12,14 +12,14 @@ test("brandHydratorScope: cliente no-admin usa panel", () => {
   assert.equal(scope, "panel");
 });
 
-test("brandHydratorScope: admin usa panel en Taller Brand con flag OFF", () => {
+test("brandHydratorScope: admin usa studio en Taller Brand con flag OFF", () => {
   const scope = resolvePanelBrandHydratorScope({
     isAdmin: true,
     pathname: "/panel/taller/brand",
     systemSemanticRuntimeEnabled: false,
   });
 
-  assert.equal(scope, "panel");
+  assert.equal(scope, "studio");
 });
 
 test("brandHydratorScope: admin usa system solo en taller brand con flag ON", () => {
@@ -42,7 +42,7 @@ test("brandHydratorScope: admin usa panel en otras rutas de Studio", () => {
   assert.equal(scope, "studio");
 });
 
-test("brandHydratorScope: admin fuera de studio usa panel", () => {
+test("brandHydratorScope: admin en ajustes/appearance usa studio", () => {
   const scope = resolvePanelBrandHydratorScope({
     isAdmin: true,
     pathname: "/panel/settings/appearance",
@@ -50,6 +50,16 @@ test("brandHydratorScope: admin fuera de studio usa panel", () => {
   });
 
   assert.equal(scope, "studio");
+});
+
+test("brandHydratorScope: owner en ajustes/appearance usa panel", () => {
+  const scope = resolvePanelBrandHydratorScope({
+    isAdmin: false,
+    pathname: "/panel/settings/appearance",
+    systemSemanticRuntimeEnabled: true,
+  });
+
+  assert.equal(scope, "panel");
 });
 
 test("brandHydratorScope: no-admin en Studio usa studio", () => {

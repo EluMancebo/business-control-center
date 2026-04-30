@@ -28,7 +28,11 @@ export function resolvePanelBrandHydratorScope(input: {
     return "system";
   }
 
-  if (isStudioPath(input.pathname) || isStudioAppearanceSettingsPath(input.pathname)) {
+  if (isStudioPath(input.pathname)) {
+    return "studio";
+  }
+
+  if (input.isAdmin && isStudioAppearanceSettingsPath(input.pathname)) {
     return "studio";
   }
 

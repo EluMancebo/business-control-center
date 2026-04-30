@@ -492,7 +492,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const [studioAppearanceError, setStudioAppearanceError] = useState("");
   const sourceAssetPickerRef = useRef<HTMLDetailsElement | null>(null);
 
-  const isStudioAppearanceScope = scope === "panel";
+  const isStudioAppearanceScope = scope === "studio";
   const scopeUsesBusinessSlug = scope === "panel" || scope === "web";
   const canUsePaletteEngine = scope === "system";
   const showLabPreview = scope === "system";
@@ -510,8 +510,9 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const [brand, setBrandLocal] = useState<Brand>(fallback);
 
   useEffect(() => {
+    if (isStudioAppearanceScope) return;
     setBrandLocal((prev) => (isSameBrand(prev, current) ? prev : current));
-  }, [current]);
+  }, [current, isStudioAppearanceScope]);
   useEffect(() => {
     if ((!scopeUsesBusinessSlug && !canUsePaletteEngine) || (businessSlug && businessSlug.trim())) return;
     const sync = () => setResolvedSlug(readActiveBusinessSlug());
@@ -1319,7 +1320,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
           <p className="mt-1 text-sm text-muted-foreground">
             {scope === "system"
               ? "Laboratorio visual para decisiones cromáticas con preview local aislada."
-              : scope === "panel"
+              : scope === "studio"
                 ? "Apariencia Studio (no afecta a clientes)."
                 : "Editor de apariencia por scope."}
           </p>
