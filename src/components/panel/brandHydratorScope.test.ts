@@ -39,13 +39,33 @@ test("brandHydratorScope: admin usa panel en otras rutas de Studio", () => {
     systemSemanticRuntimeEnabled: true,
   });
 
-  assert.equal(scope, "panel");
+  assert.equal(scope, "studio");
 });
 
 test("brandHydratorScope: admin fuera de studio usa panel", () => {
   const scope = resolvePanelBrandHydratorScope({
     isAdmin: true,
     pathname: "/panel/settings/appearance",
+    systemSemanticRuntimeEnabled: true,
+  });
+
+  assert.equal(scope, "studio");
+});
+
+test("brandHydratorScope: no-admin en Studio usa studio", () => {
+  const scope = resolvePanelBrandHydratorScope({
+    isAdmin: false,
+    pathname: "/panel/taller/content",
+    systemSemanticRuntimeEnabled: true,
+  });
+
+  assert.equal(scope, "studio");
+});
+
+test("brandHydratorScope: no-admin fuera de Studio usa panel", () => {
+  const scope = resolvePanelBrandHydratorScope({
+    isAdmin: false,
+    pathname: "/panel/leads",
     systemSemanticRuntimeEnabled: true,
   });
 

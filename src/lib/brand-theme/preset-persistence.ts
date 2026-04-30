@@ -194,9 +194,9 @@ function toIsoString(input: unknown): string {
 }
 
 function buildFallbackPresetName(businessSlug: string, createdAt: unknown): string {
-  const createdIso = toIsoString(createdAt);
-  const shortDate = createdIso.slice(0, 10);
-  return `${businessSlug} - ${shortDate}`;
+  void businessSlug;
+  void createdAt;
+  return "BCC Studio Brand Lab";
 }
 
 function toBrandPresetRecord(doc: BrandPresetLean | null | undefined): BrandPresetRecord | null {

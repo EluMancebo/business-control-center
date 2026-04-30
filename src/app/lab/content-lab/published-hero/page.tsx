@@ -14,6 +14,10 @@ import PanelButton from "@/components/panel/ui/PanelButton";
 import PanelCard from "@/components/panel/ui/PanelCard";
 import PublicHero, { type LabHeroPiece } from "@/components/web/hero/PublicHero";
 import type { BrandScope } from "@/lib/brand/storage";
+import type {
+  BrandPresetVaultResponse,
+  BrandPresetVaultTokens,
+} from "@/lib/brand-theme/vault-contract";
 import {
   COMPONENT_REGISTRY,
 } from "@/lib/content/components/registry";
@@ -1214,6 +1218,8 @@ export default function PublishedHeroLabPage({
   const [selectedHeroAssetId, setSelectedHeroAssetId] = useState<string>("");
   const [selectedLogoAssetId, setSelectedLogoAssetId] = useState<string>("");
   const [navPreviewOpen, setNavPreviewOpen] = useState<boolean>(false);
+  const [activeBrandPresetTokens, setActiveBrandPresetTokens] =
+    useState<BrandPresetVaultTokens | null>(null);
 
   const [pieceVisibility, setPieceVisibility] = useState<PieceVisibility>(DEFAULT_PIECE_VISIBILITY);
   const [selectedPiece, setSelectedPiece] = useState<LabHeroPiece | null>(null);
@@ -1994,6 +2000,57 @@ export default function PublishedHeroLabPage({
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    const readActiveSlug = () => {
+      if (typeof window === "undefined") return "";
+      const fromLS = window.localStorage.getItem("bcc:activeBusinessSlug")?.trim() || "";
+      if (fromLS) return fromLS;
+      return typeof process.env.NEXT_PUBLIC_DEMO_BUSINESS_SLUG === "string"
+        ? process.env.NEXT_PUBLIC_DEMO_BUSINESS_SLUG.trim()
+        : "";
+    };
+
+    const syncActivePresetTokens = async () => {
+      const slug = readActiveSlug();
+      if (!slug) {
+        if (!active) return;
+        setActiveBrandPresetTokens(null);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/taller/brand-presets?slug=${encodeURIComponent(slug)}`,
+          { cache: "no-store" }
+        );
+        const payload = (await response.json().catch(() => null)) as BrandPresetVaultResponse | null;
+        if (!response.ok || !payload?.ok) {
+          throw new Error(payload?.error || "No se pudo cargar preset activo.");
+        }
+
+        const items = Array.isArray(payload.items) ? payload.items : [];
+        const activeItem =
+          items.find((item) => item.id === payload.activeBrandPresetId) ??
+          items.find((item) => item.isActive) ??
+          null;
+        if (!active) return;
+        setActiveBrandPresetTokens(activeItem?.tokens ?? null);
+      } catch {
+        if (!active) return;
+        setActiveBrandPresetTokens(null);
+      }
+    };
+
+    void syncActivePresetTokens();
+    window.addEventListener("storage", syncActivePresetTokens);
+    return () => {
+      active = false;
+      window.removeEventListener("storage", syncActivePresetTokens);
+    };
+  }, []);
+
   const toneToSurfaceColor = (
     tone: "neutral" | "primary" | "secondary" | "accent" | "dark"
   ): string => {
@@ -2028,10 +2085,25 @@ export default function PublishedHeroLabPage({
 
     const headerToneColor = toneToSurfaceColor(headerSurfaceTone);
     const footerToneColor = toneToSurfaceColor(footerSurfaceTone);
+    const activePresetCssVars = activeBrandPresetTokens
+      ? {
+          "--primary": activeBrandPresetTokens.primary,
+          "--secondary": activeBrandPresetTokens.neutral,
+          "--accent": activeBrandPresetTokens.accent,
+          "--background": activeBrandPresetTokens.background,
+          "--card": activeBrandPresetTokens.card,
+          "--surface-2": activeBrandPresetTokens.surface2,
+          "--surface-3": activeBrandPresetTokens.surface3,
+          "--link": activeBrandPresetTokens.link,
+          "--border": activeBrandPresetTokens.border,
+          "--ring": activeBrandPresetTokens.border,
+        }
+      : {};
 
     return {
       ...getTallerPanelVisualCssVars(),
       ...getTallerLabVisualCssVars(),
+      ...activePresetCssVars,
       "--hero-menu-backdrop-bg": overlayBackdropColor,
       "--hero-menu-opaque-bg": overlayPanelColor,
       "--hero-chrome-surface-bg":
@@ -2050,8 +2122,9 @@ export default function PublishedHeroLabPage({
         footerSurfaceTone === "neutral"
           ? "color-mix(in oklab,var(--surface-2,var(--card)) 84%,transparent)"
           : `color-mix(in oklab,${footerToneColor} 74%,var(--hero-overlay-strong,var(--foreground)) 26%)`,
-    } as CSSProperties;
+    } as unknown as CSSProperties;
   }, [
+    activeBrandPresetTokens,
     footerSurfaceTone,
     headerSurfaceTone,
     navOverlayDensity,

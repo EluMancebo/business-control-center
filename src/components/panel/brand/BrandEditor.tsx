@@ -92,6 +92,16 @@ const TYPOGRAPHY_FONT_STACK: Record<BrandTypographyPreset, string> = {
 };
 
 type BrandEditorProps = { scope?: BrandScope; businessSlug?: string };
+type StudioAppearanceConfig = {
+  mode: BrandMode;
+  atmosphere: BrandPaletteKey;
+  harmony: BrandHarmonyStrategy;
+  accentStyle: BrandAccentStyle;
+  typography: BrandTypographyPreset;
+};
+type StudioAppearanceResponse =
+  | { ok: true; config: StudioAppearanceConfig }
+  | { ok: false; error?: string };
 type RGB = { r: number; g: number; b: number };
 const DARK_SWATCH_TEXT: RGB = { r: 11, g: 18, b: 32 };
 const LIGHT_SWATCH_TEXT: RGB = { r: 248, g: 250, b: 252 };
@@ -191,6 +201,13 @@ const SOURCE_INTERPRETATION_FACTOR: Record<BrandPaletteSeedSource, number> = {
   manual: 0.72,
   logo: 0.92,
   hero: 1.08,
+};
+const STUDIO_APPEARANCE_DEFAULTS: StudioAppearanceConfig = {
+  mode: "system",
+  atmosphere: "bcc",
+  harmony: DEFAULT_BRAND_THEME_CONFIG.harmony,
+  accentStyle: DEFAULT_BRAND_THEME_CONFIG.accentStyle,
+  typography: DEFAULT_BRAND_THEME_CONFIG.typographyPreset,
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -314,7 +331,13 @@ function modulateTokensWithPreset(args: {
 }
 function readActiveBusinessSlug() {
   if (typeof window === "undefined") return "";
-  return window.localStorage.getItem("bcc:activeBusinessSlug")?.trim() || "";
+  const fromLS = window.localStorage.getItem("bcc:activeBusinessSlug")?.trim() || "";
+  if (fromLS) return fromLS;
+  const fromEnv =
+    typeof process.env.NEXT_PUBLIC_DEMO_BUSINESS_SLUG === "string"
+      ? process.env.NEXT_PUBLIC_DEMO_BUSINESS_SLUG.trim()
+      : "";
+  return fromEnv;
 }
 
 function formatVaultDate(value: string) {
@@ -326,6 +349,18 @@ function formatVaultDate(value: string) {
     month: "2-digit",
     year: "numeric",
   }).format(parsed);
+}
+
+function reconcileVaultItemsActiveState(
+  items: BrandPresetVaultItem[],
+  activeBrandPresetId?: string | null
+) {
+  const activeId = typeof activeBrandPresetId === "string" ? activeBrandPresetId.trim() : "";
+  if (!activeId) return items;
+  return items.map((item) => ({
+    ...item,
+    isActive: item.id === activeId,
+  }));
 }
 
 function normalizeAssetSearchText(asset: AssetItem) {
@@ -449,17 +484,27 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const [presetVaultError, setPresetVaultError] = useState("");
   const [vaultCollapsed, setVaultCollapsed] = useState(false);
   const [nativeColorPickActive, setNativeColorPickActive] = useState(false);
+  const [studioAppearanceConfig, setStudioAppearanceConfig] =
+    useState<StudioAppearanceConfig>(STUDIO_APPEARANCE_DEFAULTS);
+  const [studioAppearanceLoading, setStudioAppearanceLoading] = useState(false);
+  const [studioAppearanceSaving, setStudioAppearanceSaving] = useState(false);
+  const [studioAppearanceNotice, setStudioAppearanceNotice] = useState("");
+  const [studioAppearanceError, setStudioAppearanceError] = useState("");
   const sourceAssetPickerRef = useRef<HTMLDetailsElement | null>(null);
 
+  const isStudioAppearanceScope = scope === "panel";
   const scopeUsesBusinessSlug = scope === "panel" || scope === "web";
   const canUsePaletteEngine = scope === "system";
   const showLabPreview = scope === "system";
   const effectiveSlug = scopeUsesBusinessSlug ? (businessSlug?.trim() || resolvedSlug) : "";
   const vaultSlug = (businessSlug?.trim() || resolvedSlug).trim();
   const v1BusinessSlug = scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined;
+  const runtimeScope: BrandScope = isStudioAppearanceScope ? "studio" : scope;
+  const runtimeBusinessSlug = runtimeScope === "web" ? v1BusinessSlug : undefined;
   const skipWebWithoutSlug = scope === "web" && !effectiveSlug;
   const storageKey = getBrandStorageKey(scope, scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined);
   const channel = getBrandChannel(scope, scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined);
+  const runtimeChannel = getBrandChannel(runtimeScope, runtimeBusinessSlug);
   const fallback = getDefaultBrandForScope(scope);
   const current = useBrandScoped(storageKey, channel, fallback, !skipWebWithoutSlug);
   const [brand, setBrandLocal] = useState<Brand>(fallback);
@@ -490,6 +535,98 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
       cancelled = true;
     };
   }, [canUsePaletteEngine]);
+  const applyStudioAppearanceToLocalState = useCallback(
+    (config: StudioAppearanceConfig) => {
+      setStudioAppearanceConfig(config);
+      setBrandLocal((prev) => ({
+        ...prev,
+        mode: config.mode,
+        palette: config.atmosphere,
+      }));
+      setPreviewHarmony(config.harmony);
+      setPreviewAccentStyle(config.accentStyle);
+      setPreviewTypography(config.typography);
+    },
+    []
+  );
+  const loadStudioAppearanceConfig = useCallback(async () => {
+    if (!isStudioAppearanceScope) return;
+    setStudioAppearanceLoading(true);
+    setStudioAppearanceError("");
+    try {
+      const response = await fetch("/api/panel/studio/appearance", {
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | StudioAppearanceResponse
+        | null;
+      if (!response.ok || !payload || !payload.ok) {
+        throw new Error(payload && !payload.ok ? payload.error : "No se pudo cargar Apariencia Studio.");
+      }
+      applyStudioAppearanceToLocalState(payload.config);
+    } catch (error: unknown) {
+      setStudioAppearanceError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo cargar Apariencia Studio."
+      );
+    } finally {
+      setStudioAppearanceLoading(false);
+    }
+  }, [isStudioAppearanceScope, applyStudioAppearanceToLocalState]);
+  const persistStudioAppearanceConfig = useCallback(
+    async (nextConfig: StudioAppearanceConfig) => {
+      if (!isStudioAppearanceScope) return;
+      setStudioAppearanceSaving(true);
+      setStudioAppearanceNotice("");
+      setStudioAppearanceError("");
+      try {
+        const response = await fetch("/api/panel/studio/appearance", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(nextConfig),
+        });
+        const payload = (await response.json().catch(() => null)) as
+          | StudioAppearanceResponse
+          | null;
+        if (!response.ok || !payload || !payload.ok) {
+          throw new Error(payload && !payload.ok ? payload.error : "No se pudo guardar Apariencia Studio.");
+        }
+        applyStudioAppearanceToLocalState(payload.config);
+        setStudioAppearanceNotice("Apariencia Studio guardada.");
+      } catch (error: unknown) {
+        setStudioAppearanceError(
+          error instanceof Error
+            ? error.message
+            : "No se pudo guardar Apariencia Studio."
+        );
+      } finally {
+        setStudioAppearanceSaving(false);
+      }
+    },
+    [isStudioAppearanceScope, applyStudioAppearanceToLocalState]
+  );
+  const updateStudioAppearanceConfig = useCallback(
+    (patch: Partial<StudioAppearanceConfig>) => {
+      if (!isStudioAppearanceScope) return;
+      const nextConfig: StudioAppearanceConfig = {
+        ...studioAppearanceConfig,
+        ...patch,
+      };
+      applyStudioAppearanceToLocalState(nextConfig);
+      void persistStudioAppearanceConfig(nextConfig);
+    },
+    [
+      isStudioAppearanceScope,
+      studioAppearanceConfig,
+      applyStudioAppearanceToLocalState,
+      persistStudioAppearanceConfig,
+    ]
+  );
+  useEffect(() => {
+    if (!isStudioAppearanceScope) return;
+    void loadStudioAppearanceConfig();
+  }, [isStudioAppearanceScope, loadStudioAppearanceConfig]);
 
   const selectedVisualAsset = useMemo(() => mediaAssets.find((item) => item._id === selectedVisualAssetId) ?? null, [mediaAssets, selectedVisualAssetId]);
   const assetContextHint = useMemo(
@@ -533,8 +670,8 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const brandThemeStateV1 = useMemo(
     () =>
       buildBrandThemeStateV1FromEditorInput({
-        scope,
-        businessSlug: v1BusinessSlug,
+        scope: runtimeScope,
+        businessSlug: runtimeBusinessSlug,
         brand,
         seed: {
           source: paletteSeedSource,
@@ -554,8 +691,8 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
         },
       }),
     [
-      scope,
-      v1BusinessSlug,
+      runtimeScope,
+      runtimeBusinessSlug,
       brand,
       paletteSeedSource,
       paletteSeedPrimary,
@@ -657,7 +794,10 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
         if (!response.ok || !payload?.ok) {
           throw new Error(payload?.error || "No se pudo cargar Preset Vault.");
         }
-        setPresetVaultItems(Array.isArray(payload.items) ? payload.items : []);
+        const nextItems = Array.isArray(payload.items)
+          ? reconcileVaultItemsActiveState(payload.items, payload.activeBrandPresetId)
+          : [];
+        setPresetVaultItems(nextItems);
         if (payload.mode === "light" || payload.mode === "dark" || payload.mode === "system") {
           setPresetVaultMode(payload.mode);
         }
@@ -678,21 +818,27 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   useEffect(() => {
     if (skipWebWithoutSlug) return;
     const savedState = saveBrandThemeStateV1Shadow({
-      scope,
-      businessSlug: v1BusinessSlug,
+      scope: runtimeScope,
+      businessSlug: runtimeBusinessSlug,
       state: brandThemeStateV1,
     });
 
-    if (!savedState || typeof window === "undefined" || scope === "system") return;
+    if (!savedState || typeof window === "undefined" || runtimeScope === "system") return;
 
-    window.dispatchEvent(new Event(channel));
+    window.dispatchEvent(new Event(runtimeChannel));
 
     if (typeof BroadcastChannel !== "undefined") {
-      const bc = new BroadcastChannel(channel);
+      const bc = new BroadcastChannel(runtimeChannel);
       bc.postMessage({ type: "brand-theme:v1-shadow-update" });
       bc.close();
     }
-  }, [skipWebWithoutSlug, scope, v1BusinessSlug, brandThemeStateV1, channel]);
+  }, [
+    skipWebWithoutSlug,
+    runtimeScope,
+    runtimeBusinessSlug,
+    brandThemeStateV1,
+    runtimeChannel,
+  ]);
 
   useEffect(() => {
     if (!canUsePaletteEngine || process.env.NODE_ENV === "production") return;
@@ -792,11 +938,11 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
         }),
       persistShadow: () =>
         saveBrandThemeStateV1Shadow({
-          scope,
-          businessSlug: v1BusinessSlug,
+          scope: runtimeScope,
+          businessSlug: runtimeBusinessSlug,
           state: buildBrandThemeStateV1FromEditorInput({
-            scope,
-            businessSlug: v1BusinessSlug,
+            scope: runtimeScope,
+            businessSlug: runtimeBusinessSlug,
             brand: next,
             seed: {
               source: paletteSeedSource,
@@ -854,10 +1000,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
         : paletteSeedSource === "logo"
           ? "logo"
           : "hybrid";
-    const generatedName = `${brand.brandName?.trim() || "Brand"} ${new Date()
-      .toISOString()
-      .slice(0, 16)
-      .replace("T", " ")}`;
+    const generatedName = "BCC Studio Brand Lab";
     const neutralToken = resolvedPaletteSeed?.neutral || neutralDisplayValue || "#94a3b8";
 
     setPresetVaultSaving(true);
@@ -897,7 +1040,9 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
 
       setSavePresetNotice(`Preset guardado: ${payload.item.name}`);
       if (Array.isArray(payload.items)) {
-        setPresetVaultItems(payload.items);
+        setPresetVaultItems(
+          reconcileVaultItemsActiveState(payload.items, payload.activeBrandPresetId)
+        );
       } else {
         await loadPresetVault(vaultSlug);
       }
@@ -934,7 +1079,9 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
         throw new Error(payload?.error || "No se pudo activar el preset.");
       }
       if (Array.isArray(payload.items)) {
-        setPresetVaultItems(payload.items);
+        setPresetVaultItems(
+          reconcileVaultItemsActiveState(payload.items, payload.activeBrandPresetId)
+        );
       } else {
         await loadPresetVault(vaultSlug);
       }
@@ -991,7 +1138,9 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
       }
 
       if (Array.isArray(payload.items)) {
-        setPresetVaultItems(payload.items);
+        setPresetVaultItems(
+          reconcileVaultItemsActiveState(payload.items, payload.activeBrandPresetId)
+        );
       } else {
         await loadPresetVault(vaultSlug);
       }
@@ -1053,7 +1202,9 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
       }
 
       if (Array.isArray(payload.items)) {
-        setPresetVaultItems(payload.items);
+        setPresetVaultItems(
+          reconcileVaultItemsActiveState(payload.items, payload.activeBrandPresetId)
+        );
       } else {
         await loadPresetVault(vaultSlug);
       }
@@ -1165,7 +1316,13 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
       <div className="rounded-2xl border border-border/35 p-4 shadow-[0_20px_45px_-28px_rgba(15,23,42,0.45)] [background:color-mix(in_oklab,var(--background)_92%,var(--surface-2,var(--card)))] dark:[background:var(--background)] sm:p-6">
         <header>
           <h1 className="text-xl font-semibold">{scope === "system" ? "Brand Lab (Taller / Capa 1)" : "Apariencia"}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{scope === "system" ? "Laboratorio visual para decisiones cromáticas con preview local aislada." : "Editor de apariencia por scope."}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {scope === "system"
+              ? "Laboratorio visual para decisiones cromáticas con preview local aislada."
+              : scope === "panel"
+                ? "Apariencia Studio (no afecta a clientes)."
+                : "Editor de apariencia por scope."}
+          </p>
         </header>
 
         {showLabPreview ? (
@@ -1525,8 +1682,15 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                   <label className="grid min-w-0 gap-0.5">
                     <span className="text-[11px] font-medium text-muted-foreground">Mode</span>
                     <select
-                      value={brand.mode}
-                      onChange={(e) => update({ ...brand, mode: e.target.value as BrandMode })}
+                      value={isStudioAppearanceScope ? studioAppearanceConfig.mode : brand.mode}
+                      onChange={(e) => {
+                        const mode = e.target.value as BrandMode;
+                        if (isStudioAppearanceScope) {
+                          updateStudioAppearanceConfig({ mode });
+                          return;
+                        }
+                        update({ ...brand, mode });
+                      }}
                       className="h-8 w-full min-w-0 rounded-md border border-border/40 px-2 text-[11px] text-foreground shadow-[0_8px_12px_-16px_rgba(15,23,42,0.3)] [background:color-mix(in_oklab,var(--background)_88%,var(--surface-3,var(--card)))] dark:border-border/45 dark:[background:color-mix(in_oklab,var(--background)_84%,var(--surface-2,var(--card)))]"
                     >
                       {MODES.map((item) => (
@@ -1537,15 +1701,28 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                     </select>
                   </label>
                   <label className="grid min-w-0 gap-0.5">
-                    <span className="text-[11px] font-medium text-muted-foreground">Preset palette</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">
+                      {isStudioAppearanceScope ? "Atmosphere" : "Preset palette"}
+                    </span>
                     <select
-                      value={brand.palette}
-                      onChange={(e) => update({ ...brand, palette: e.target.value as BrandPaletteKey })}
+                      value={
+                        isStudioAppearanceScope
+                          ? studioAppearanceConfig.atmosphere
+                          : brand.palette
+                      }
+                      onChange={(e) => {
+                        const atmosphere = e.target.value as BrandPaletteKey;
+                        if (isStudioAppearanceScope) {
+                          updateStudioAppearanceConfig({ atmosphere });
+                          return;
+                        }
+                        update({ ...brand, palette: atmosphere });
+                      }}
                       className="h-8 w-full min-w-0 rounded-md border border-border/40 px-2 text-[11px] text-foreground shadow-[0_8px_12px_-16px_rgba(15,23,42,0.3)] [background:color-mix(in_oklab,var(--background)_88%,var(--surface-3,var(--card)))] dark:border-border/45 dark:[background:color-mix(in_oklab,var(--background)_84%,var(--surface-2,var(--card)))]"
                     >
                       {BRAND_PALETTES.map((item) => (
                         <option key={item.key} value={item.key}>
-                          {item.label}
+                          {item.key === "bcc" ? "System" : item.label}
                         </option>
                       ))}
                     </select>
@@ -1553,8 +1730,19 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                   <label className="grid min-w-0 gap-0.5">
                     <span className="text-[11px] font-medium text-muted-foreground">Harmony</span>
                     <select
-                      value={previewHarmony}
-                      onChange={(e) => setPreviewHarmony(e.target.value as BrandHarmonyStrategy)}
+                      value={
+                        isStudioAppearanceScope
+                          ? studioAppearanceConfig.harmony
+                          : previewHarmony
+                      }
+                      onChange={(e) => {
+                        const harmony = e.target.value as BrandHarmonyStrategy;
+                        if (isStudioAppearanceScope) {
+                          updateStudioAppearanceConfig({ harmony });
+                          return;
+                        }
+                        setPreviewHarmony(harmony);
+                      }}
                       className="h-8 w-full min-w-0 rounded-md border border-border/40 px-2 text-[11px] text-foreground shadow-[0_8px_12px_-16px_rgba(15,23,42,0.3)] [background:color-mix(in_oklab,var(--background)_88%,var(--surface-3,var(--card)))] dark:border-border/45 dark:[background:color-mix(in_oklab,var(--background)_84%,var(--surface-2,var(--card)))]"
                     >
                       {BRAND_THEME_HARMONY_OPTIONS.map((item) => (
@@ -1567,8 +1755,19 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                   <label className="grid min-w-0 gap-0.5">
                     <span className="text-[11px] font-medium text-muted-foreground">Accent style</span>
                     <select
-                      value={previewAccentStyle}
-                      onChange={(e) => setPreviewAccentStyle(e.target.value as BrandAccentStyle)}
+                      value={
+                        isStudioAppearanceScope
+                          ? studioAppearanceConfig.accentStyle
+                          : previewAccentStyle
+                      }
+                      onChange={(e) => {
+                        const accentStyle = e.target.value as BrandAccentStyle;
+                        if (isStudioAppearanceScope) {
+                          updateStudioAppearanceConfig({ accentStyle });
+                          return;
+                        }
+                        setPreviewAccentStyle(accentStyle);
+                      }}
                       className="h-8 w-full min-w-0 rounded-md border border-border/40 px-2 text-[11px] text-foreground shadow-[0_8px_12px_-16px_rgba(15,23,42,0.3)] [background:color-mix(in_oklab,var(--background)_88%,var(--surface-3,var(--card)))] dark:border-border/45 dark:[background:color-mix(in_oklab,var(--background)_84%,var(--surface-2,var(--card)))]"
                     >
                       {BRAND_THEME_ACCENT_STYLE_OPTIONS.map((item) => (
@@ -1581,8 +1780,19 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                   <label className="grid min-w-0 gap-0.5">
                     <span className="text-[11px] font-medium text-muted-foreground">Typography</span>
                     <select
-                      value={previewTypography}
-                      onChange={(e) => setPreviewTypography(e.target.value as BrandTypographyPreset)}
+                      value={
+                        isStudioAppearanceScope
+                          ? studioAppearanceConfig.typography
+                          : previewTypography
+                      }
+                      onChange={(e) => {
+                        const typography = e.target.value as BrandTypographyPreset;
+                        if (isStudioAppearanceScope) {
+                          updateStudioAppearanceConfig({ typography });
+                          return;
+                        }
+                        setPreviewTypography(typography);
+                      }}
                       className="h-8 w-full min-w-0 rounded-md border border-border/40 px-2 text-[11px] text-foreground shadow-[0_8px_12px_-16px_rgba(15,23,42,0.3)] [background:color-mix(in_oklab,var(--background)_88%,var(--surface-3,var(--card)))] dark:border-border/45 dark:[background:color-mix(in_oklab,var(--background)_84%,var(--surface-2,var(--card)))]"
                     >
                       {BRAND_THEME_TYPOGRAPHY_OPTIONS.map((item) => (
@@ -1593,6 +1803,15 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
                     </select>
                   </label>
                 </div>
+                {isStudioAppearanceScope ? (
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Apariencia Studio (no afecta a clientes).
+                    {studioAppearanceLoading ? " Cargando..." : ""}
+                    {studioAppearanceSaving ? " Guardando..." : ""}
+                    {studioAppearanceNotice ? ` ${studioAppearanceNotice}` : ""}
+                    {studioAppearanceError ? ` ${studioAppearanceError}` : ""}
+                  </p>
+                ) : null}
               </section>
             </div>
 
@@ -1989,5 +2208,3 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     </section>
   );
 }
-
-
