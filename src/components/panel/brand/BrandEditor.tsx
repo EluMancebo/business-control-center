@@ -501,18 +501,40 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   const v1BusinessSlug = scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined;
   const runtimeScope: BrandScope = isStudioAppearanceScope ? "studio" : scope;
   const runtimeBusinessSlug = runtimeScope === "web" ? v1BusinessSlug : undefined;
+  const hasInvalidScopeBridge = scope === "panel" && runtimeScope === "studio";
+  const shouldApplyBrandToDocument = scope === "panel" || scope === "studio";
   const skipWebWithoutSlug = scope === "web" && !effectiveSlug;
   const storageKey = getBrandStorageKey(scope, scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined);
   const channel = getBrandChannel(scope, scopeUsesBusinessSlug ? effectiveSlug || undefined : undefined);
   const runtimeChannel = getBrandChannel(runtimeScope, runtimeBusinessSlug);
   const fallback = getDefaultBrandForScope(scope);
-  const current = useBrandScoped(storageKey, channel, fallback, !skipWebWithoutSlug);
+  // Studio, Panel y Web son dominios aislados. No deben compartir estado ni eventos.
+  // En scope "studio" evitamos sincronizar el store legacy para no contaminarse con capa cliente.
+  const current = useBrandScoped(
+    storageKey,
+    channel,
+    fallback,
+    !skipWebWithoutSlug && !isStudioAppearanceScope
+  );
   const [brand, setBrandLocal] = useState<Brand>(fallback);
 
   useEffect(() => {
     if (isStudioAppearanceScope) return;
     setBrandLocal((prev) => (isSameBrand(prev, current) ? prev : current));
   }, [current, isStudioAppearanceScope]);
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    if (hasInvalidScopeBridge) {
+      console.warn(
+        "[BrandEditor] Scope isolation warning: scope 'panel' no puede emitir en runtime 'studio'."
+      );
+    }
+    if (scope === "studio" && businessSlug?.trim()) {
+      console.warn(
+        "[BrandEditor] Scope isolation warning: scope 'studio' no debe recibir businessSlug."
+      );
+    }
+  }, [hasInvalidScopeBridge, scope, businessSlug]);
   useEffect(() => {
     if ((!scopeUsesBusinessSlug && !canUsePaletteEngine) || (businessSlug && businessSlug.trim())) return;
     const sync = () => setResolvedSlug(readActiveBusinessSlug());
@@ -521,9 +543,19 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     return () => window.removeEventListener("storage", sync);
   }, [scopeUsesBusinessSlug, canUsePaletteEngine, businessSlug]);
   useEffect(() => {
+    if (isStudioAppearanceScope) return;
     if (skipWebWithoutSlug) return;
-    syncBrandFromStorage(storageKey, channel, fallback, { applyToDocument: scope === "panel" || scope === "studio" });
-  }, [skipWebWithoutSlug, storageKey, channel, fallback, scope]);
+    syncBrandFromStorage(storageKey, channel, fallback, {
+      applyToDocument: shouldApplyBrandToDocument,
+    });
+  }, [
+    isStudioAppearanceScope,
+    skipWebWithoutSlug,
+    storageKey,
+    channel,
+    fallback,
+    shouldApplyBrandToDocument,
+  ]);
   useEffect(() => {
     if (!canUsePaletteEngine) return;
     let cancelled = false;
@@ -817,6 +849,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
   }, [canUsePaletteEngine, vaultSlug, loadPresetVault]);
 
   useEffect(() => {
+    if (hasInvalidScopeBridge) return;
     if (skipWebWithoutSlug) return;
     const savedState = saveBrandThemeStateV1Shadow({
       scope: runtimeScope,
@@ -839,6 +872,7 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     runtimeBusinessSlug,
     brandThemeStateV1,
     runtimeChannel,
+    hasInvalidScopeBridge,
   ]);
 
   useEffect(() => {
@@ -935,10 +969,11 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
     persistLegacyAndBrandThemeShadow({
       persistLegacy: () =>
         setBrand(next, storageKey, channel, fallback, {
-          applyToDocument: scope === "panel" || scope === "studio",
+          applyToDocument: shouldApplyBrandToDocument,
         }),
-      persistShadow: () =>
-        saveBrandThemeStateV1Shadow({
+      persistShadow: () => {
+        if (hasInvalidScopeBridge) return null;
+        return saveBrandThemeStateV1Shadow({
           scope: runtimeScope,
           businessSlug: runtimeBusinessSlug,
           state: buildBrandThemeStateV1FromEditorInput({
@@ -962,7 +997,8 @@ export default function BrandEditor({ scope = "panel", businessSlug }: BrandEdit
               presetModulationPercent: PRESET_MODULATION_PERCENT,
             },
           }),
-        }),
+        });
+      },
     });
   }
   function resetPreviewState() {

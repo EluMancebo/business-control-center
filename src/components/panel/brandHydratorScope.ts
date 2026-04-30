@@ -20,6 +20,8 @@ export function resolvePanelBrandHydratorScope(input: {
   pathname: string;
   systemSemanticRuntimeEnabled: boolean;
 }): BrandScope {
+  // Studio, Panel y Web son dominios aislados. No deben compartir estado ni eventos.
+  // Este resolver es la frontera que evita contaminación entre runtimes.
   if (
     input.isAdmin &&
     input.systemSemanticRuntimeEnabled &&
