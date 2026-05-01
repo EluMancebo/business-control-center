@@ -194,7 +194,7 @@ const HERO_SURFACE_MODE_TOKEN_CLASS = {
 } as const;
 
 const HERO_MENU_MODE_TOKEN_CLASS = {
-  lab: "[--hero-menu-backdrop-bg:color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_90%,transparent)] [--hero-menu-opaque-bg:color-mix(in_oklab,var(--surface-3,var(--card))_52%,var(--hero-overlay-strong,var(--foreground))_48%)] [--hero-menu-opaque-shadow:var(--elevation-task,var(--panel-shadow-2))] [--hero-menu-border:color-mix(in_oklab,var(--hero-text-inverse)_34%,transparent)] [--hero-menu-text-shadow:0_2px_12px_color-mix(in_oklab,var(--foreground)_46%,transparent)]",
+  lab: "[--hero-menu-backdrop-bg:color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_94%,transparent)] [--hero-menu-opaque-bg:color-mix(in_oklab,color-mix(in_oklab,var(--surface-3,var(--card))_58%,var(--hero-overlay-strong,var(--foreground))_42%)_74%,var(--accent,var(--primary))_26%)] [--hero-menu-opaque-shadow:var(--elevation-overlay,var(--panel-shadow-3))] [--hero-menu-border:color-mix(in_oklab,var(--hero-text-inverse)_40%,transparent)] [--hero-menu-text-shadow:0_2px_12px_color-mix(in_oklab,var(--foreground)_46%,transparent)]",
   runtime:
     "[--hero-menu-backdrop-bg:color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_92%,transparent)] [--hero-menu-opaque-bg:color-mix(in_oklab,var(--surface-3,var(--card))_42%,var(--hero-overlay-strong,var(--foreground))_58%)] [--hero-menu-opaque-shadow:var(--elevation-overlay,var(--panel-shadow-3))] [--hero-menu-border:color-mix(in_oklab,var(--hero-text-inverse)_34%,transparent)] [--hero-menu-text-shadow:0_2px_18px_color-mix(in_oklab,var(--foreground)_56%,transparent)]",
 } as const;
@@ -757,15 +757,27 @@ export default function PublicHero({
             : "[background:var(--hero-menu-opaque-bg)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:var(--hero-menu-border)]"
         : effectiveNavOverlayDensity === "medium"
           ? effectiveNavPanelStyle === "minimal"
-            ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_76%,transparent)] shadow-none border-transparent backdrop-blur-0"
+            ? isLabMode
+              ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_88%,transparent)] shadow-none border-transparent backdrop-blur-0"
+              : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_76%,transparent)] shadow-none border-transparent backdrop-blur-0"
             : effectiveNavPanelStyle === "glass"
-              ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_84%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_84%,transparent)] backdrop-blur-[2px]"
-              : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_88%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_88%,transparent)]"
+              ? isLabMode
+                ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_92%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_90%,transparent)] backdrop-blur-[2px]"
+                : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_84%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_84%,transparent)] backdrop-blur-[2px]"
+              : isLabMode
+                ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_94%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_92%,transparent)]"
+                : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_88%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_88%,transparent)]"
           : effectiveNavPanelStyle === "minimal"
-            ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_52%,transparent)] shadow-none border-transparent backdrop-blur-0"
+            ? isLabMode
+              ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_74%,transparent)] shadow-none border-transparent backdrop-blur-0"
+              : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_52%,transparent)] shadow-none border-transparent backdrop-blur-0"
             : effectiveNavPanelStyle === "glass"
-              ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_66%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_70%,transparent)] backdrop-blur-[2px]"
-              : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_72%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_76%,transparent)]";
+              ? isLabMode
+                ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_84%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_84%,transparent)] backdrop-blur-[2px]"
+                : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_66%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_70%,transparent)] backdrop-blur-[2px]"
+              : isLabMode
+                ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_88%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_88%,transparent)]"
+                : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_72%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_76%,transparent)]";
   const isWideLabPanel = isLabMode && effectiveNavPanelWidth === "wide";
   const labMenuPanelPositionClass =
     effectiveNavOpenBehavior === "fullscreen"
