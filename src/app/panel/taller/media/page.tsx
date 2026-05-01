@@ -1979,6 +1979,9 @@ export default function TallerMediaPage() {
                               const isSlotBusy = isVariantBusyForOriginal && busyVariantKey === slot.key;
 
                               if (!variant) {
+                                if (slot.key === "animated-svg" && !group.variantsByKey["vectorized-svg"]) {
+                                  return null;
+                                }
                                 const showLocalSvgFeedbackInMobile =
                                   slot.key === "vectorized-svg" &&
                                   (semanticFeedbackTone === "warning" || semanticFeedbackTone === "danger");
