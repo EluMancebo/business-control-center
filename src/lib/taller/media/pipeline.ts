@@ -602,6 +602,7 @@ export async function processAssetVariant(
           token: getBlobReadWriteToken(),
           access: "public",
           contentType: "image/svg+xml",
+          allowOverwrite: true,
         }
       );
 

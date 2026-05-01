@@ -76,14 +76,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const result = await processAssetVariant(source, variantKey, { force });
+  let result;
+  try {
+    result = await processAssetVariant(source, variantKey, { force });
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "No se pudo completar la generación de la variante solicitada." },
+      { status: 500 }
+    );
+  }
 
   if (result.pipelineStatus === "failed") {
     return NextResponse.json(
-      {
-        ok: false,
-        error: "No se pudo completar la generación de la variante solicitada.",
-      },
+      { ok: false, error: "No se pudo completar la generación de la variante solicitada." },
       { status: 500 }
     );
   }

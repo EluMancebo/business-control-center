@@ -220,11 +220,11 @@ export function inferComplexity({
   pathsCount,
   colorsCount,
 }: ComplexityInput): SvgAnalysis["complexity"] {
-  if (totalShapesCount > 24 || pathsCount > 18 || colorsCount > 6) {
+  if (totalShapesCount > 120 || pathsCount > 80 || colorsCount > 30) {
     return "high";
   }
 
-  if (totalShapesCount > 8 || pathsCount > 4 || colorsCount > 2) {
+  if (totalShapesCount > 30 || pathsCount > 15 || colorsCount > 8) {
     return "medium";
   }
 
@@ -238,7 +238,7 @@ export function inferSuggestedType({
   colorsCount,
   isMonochrome,
 }: SuggestedTypeInput): SvgAnalysis["suggestedType"] {
-  if (complexity === "high" || totalShapesCount > 24 || colorsCount > 6) {
+  if (complexity === "high" || totalShapesCount > 120 || colorsCount > 30) {
     return "illustration";
   }
 

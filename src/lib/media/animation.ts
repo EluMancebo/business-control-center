@@ -35,12 +35,12 @@ export type SvgAnimationDecisionFromRawSvg = SvgAnimationDecision & {
   analysis: SvgAnalysis;
 };
 
-const DRAW_MAX_PATHS = 12;
+const DRAW_MAX_PATHS = 30;
 const STAGGER_MIN_PATHS = 3;
-const STAGGER_MAX_PATHS = 10;
-const HIGH_COLOR_THRESHOLD = 6;
-const MEDIUM_COLOR_THRESHOLD = 3;
-const DRAW_MAX_COLORS = 2;
+const STAGGER_MAX_PATHS = 40;
+const HIGH_COLOR_THRESHOLD = 30;
+const MEDIUM_COLOR_THRESHOLD = 8;
+const DRAW_MAX_COLORS = 4;
 
 const SVG_OPEN_TAG_REGEX = /<svg[\s>]/i;
 const SVG_CLOSE_TAG_REGEX = /<\/svg>/i;
