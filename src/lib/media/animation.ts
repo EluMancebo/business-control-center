@@ -52,32 +52,32 @@ const NONE_RECIPE: SvgAnimationRecipe = {
 };
 
 const ANIMATION_RECIPES: Record<Exclude<SvgAnimationType, "none">, SvgAnimationRecipe> = {
-  // UI transitions 180-280ms, conservador.
+  // Operational panels/overlays 240-380ms.
   fade: {
     type: "fade",
-    durationMs: 220,
+    durationMs: 400,
     easing: "easeInOut",
   },
-  // Operational panels/overlays 240-380ms.
+  // Ceremonial / brand motion 900-1400ms.
   draw: {
     type: "draw",
-    durationMs: 260,
-    delayMs: 30,
+    durationMs: 1200,
+    delayMs: 300,
     easing: "easeInOut",
   },
-  // UI transitions 180-280ms.
+  // Context transitions 500-900ms.
   reveal: {
     type: "reveal",
-    durationMs: 240,
-    delayMs: 20,
+    durationMs: 600,
+    delayMs: 150,
     easing: "easeOut",
   },
-  // Operational timing con stagger suave.
+  // Context transitions 500-900ms.
   stagger: {
     type: "stagger",
-    durationMs: 320,
-    delayMs: 30,
-    staggerMs: 45,
+    durationMs: 800,
+    delayMs: 100,
+    staggerMs: 120,
     easing: "easeInOut",
   },
 };
