@@ -1187,6 +1187,20 @@ function mapSnapshotToLabPiece(snapshot: PublishedPieceSnapshot): LabPiece {
   };
 }
 
+function resolveActiveSlugFromRuntime(): string {
+  if (typeof window !== "undefined") {
+    const fromLS = window.localStorage.getItem("bcc:activeBusinessSlug")?.trim() || "";
+    if (fromLS) return fromLS;
+  }
+
+  const fromEnv =
+    typeof process.env.NEXT_PUBLIC_DEMO_BUSINESS_SLUG === "string"
+      ? process.env.NEXT_PUBLIC_DEMO_BUSINESS_SLUG.trim()
+      : "";
+
+  return fromEnv || "lab";
+}
+
 export default function PublishedHeroLabPage({
   disableInternalBrandHydrator = false,
 }: {
@@ -1220,6 +1234,9 @@ export default function PublishedHeroLabPage({
   const [navPreviewOpen, setNavPreviewOpen] = useState<boolean>(false);
   const [activeBrandPresetTokens, setActiveBrandPresetTokens] =
     useState<BrandPresetVaultTokens | null>(null);
+  const [activeBusinessSlug, setActiveBusinessSlug] = useState<string>(() =>
+    resolveActiveSlugFromRuntime()
+  );
 
   const [pieceVisibility, setPieceVisibility] = useState<PieceVisibility>(DEFAULT_PIECE_VISIBILITY);
   const [selectedPiece, setSelectedPiece] = useState<LabHeroPiece | null>(null);
@@ -2003,17 +2020,11 @@ export default function PublishedHeroLabPage({
   useEffect(() => {
     let active = true;
 
-    const readActiveSlug = () => {
-      if (typeof window === "undefined") return "";
-      const fromLS = window.localStorage.getItem("bcc:activeBusinessSlug")?.trim() || "";
-      if (fromLS) return fromLS;
-      return typeof process.env.NEXT_PUBLIC_DEMO_BUSINESS_SLUG === "string"
-        ? process.env.NEXT_PUBLIC_DEMO_BUSINESS_SLUG.trim()
-        : "";
-    };
-
     const syncActivePresetTokens = async () => {
-      const slug = readActiveSlug();
+      const slug = resolveActiveSlugFromRuntime();
+      if (active) {
+        setActiveBusinessSlug(slug);
+      }
       if (!slug) {
         if (!active) return;
         setActiveBrandPresetTokens(null);
@@ -4452,6 +4463,7 @@ export default function PublishedHeroLabPage({
                     <span>Modo: <strong className="text-foreground uppercase">{canvasMode}</strong></span>
                     <span>Blueprint: <strong className="text-foreground">{blueprint}</strong></span>
                     <span>Rol: <strong className="text-foreground">{sessionRole ?? "anon"}</strong></span>
+                    <span>Slug: <strong className="text-foreground">{activeBusinessSlug || "-"}</strong></span>
                   </div>
                   <div className="flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                     <span>Tablero {canvasWidth}x{canvasHeight}</span>
@@ -4474,6 +4486,7 @@ export default function PublishedHeroLabPage({
                       <div
                         className={`relative origin-top-left ${previewHeroFrameClassName}`}
                         style={{
+                          ...labVisualCssVars,
                           width: `${canvasWidth}px`,
                           height: `${canvasHeight}px`,
                           transform: `scale(${canvasScale})`,
@@ -4483,7 +4496,7 @@ export default function PublishedHeroLabPage({
                           key={`hero-preview-${signatureAnimation}-${signatureDrawRefreshKey}`}
                           data={mappedHero}
                           business={{
-                            slug: "lab",
+                            slug: activeBusinessSlug || "lab",
                             name: "BCC Lab",
                             activeHeroVariantKey: `validation-${variantName}`,
                             logoUrl: heroLogoUrl || "/brand/logo-mark.svg",
