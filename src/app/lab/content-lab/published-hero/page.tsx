@@ -15,9 +15,11 @@ import PanelCard from "@/components/panel/ui/PanelCard";
 import PublicHero, { type LabHeroPiece } from "@/components/web/hero/PublicHero";
 import type { BrandScope } from "@/lib/brand/storage";
 import type {
+  BrandPresetVaultItem,
   BrandPresetVaultResponse,
-  BrandPresetVaultTokens,
 } from "@/lib/brand-theme/vault-contract";
+import { resolveBrandPresetToSemanticTokens } from "@/lib/brand-theme/resolver";
+import { toBrandCssVariables } from "@/lib/brand-theme/tokens";
 import {
   COMPONENT_REGISTRY,
 } from "@/lib/content/components/registry";
@@ -1232,8 +1234,10 @@ export default function PublishedHeroLabPage({
   const [selectedHeroAssetId, setSelectedHeroAssetId] = useState<string>("");
   const [selectedLogoAssetId, setSelectedLogoAssetId] = useState<string>("");
   const [navPreviewOpen, setNavPreviewOpen] = useState<boolean>(false);
-  const [activeBrandPresetTokens, setActiveBrandPresetTokens] =
-    useState<BrandPresetVaultTokens | null>(null);
+  const [activeBrandPresetItem, setActiveBrandPresetItem] =
+    useState<BrandPresetVaultItem | null>(null);
+  const [activeBrandPresetMode, setActiveBrandPresetMode] =
+    useState<"system" | "light" | "dark">("system");
   const [activeBusinessSlug, setActiveBusinessSlug] = useState<string>(() =>
     resolveActiveSlugFromRuntime()
   );
@@ -2027,7 +2031,8 @@ export default function PublishedHeroLabPage({
       }
       if (!slug) {
         if (!active) return;
-        setActiveBrandPresetTokens(null);
+        setActiveBrandPresetItem(null);
+        setActiveBrandPresetMode("system");
         return;
       }
 
@@ -2047,10 +2052,12 @@ export default function PublishedHeroLabPage({
           items.find((item) => item.isActive) ??
           null;
         if (!active) return;
-        setActiveBrandPresetTokens(activeItem?.tokens ?? null);
+        setActiveBrandPresetItem(activeItem);
+        setActiveBrandPresetMode(payload.mode);
       } catch {
         if (!active) return;
-        setActiveBrandPresetTokens(null);
+        setActiveBrandPresetItem(null);
+        setActiveBrandPresetMode("system");
       }
     };
 
@@ -2096,20 +2103,24 @@ export default function PublishedHeroLabPage({
 
     const headerToneColor = toneToSurfaceColor(headerSurfaceTone);
     const footerToneColor = toneToSurfaceColor(footerSurfaceTone);
-    const activePresetCssVars = activeBrandPresetTokens
-      ? {
-          "--primary": activeBrandPresetTokens.primary,
-          "--secondary": activeBrandPresetTokens.neutral,
-          "--accent": activeBrandPresetTokens.accent,
-          "--background": activeBrandPresetTokens.background,
-          "--card": activeBrandPresetTokens.card,
-          "--surface-2": activeBrandPresetTokens.surface2,
-          "--surface-3": activeBrandPresetTokens.surface3,
-          "--link": activeBrandPresetTokens.link,
-          "--border": activeBrandPresetTokens.border,
-          "--ring": activeBrandPresetTokens.border,
+    const activePresetCssVars = (() => {
+      if (!activeBrandPresetItem) return {};
+      const semanticTokens = resolveBrandPresetToSemanticTokens(
+        {
+          sourceMode: activeBrandPresetItem.sourceMode,
+          harmony: activeBrandPresetItem.harmony,
+          accentStyle: activeBrandPresetItem.accentStyle,
+          typography: activeBrandPresetItem.typography,
+          tokens: activeBrandPresetItem.tokens,
+        },
+        {
+          mode: activeBrandPresetMode,
+          runtime: { systemModeFallback: "light" },
         }
-      : {};
+      );
+      if (!semanticTokens) return {};
+      return toBrandCssVariables(semanticTokens);
+    })();
 
     return {
       ...getTallerPanelVisualCssVars(),
@@ -2135,7 +2146,8 @@ export default function PublishedHeroLabPage({
           : `color-mix(in oklab,${footerToneColor} 74%,var(--hero-overlay-strong,var(--foreground)) 26%)`,
     } as unknown as CSSProperties;
   }, [
-    activeBrandPresetTokens,
+    activeBrandPresetItem,
+    activeBrandPresetMode,
     footerSurfaceTone,
     headerSurfaceTone,
     navOverlayDensity,
