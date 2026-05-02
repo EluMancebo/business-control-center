@@ -176,10 +176,40 @@ function normalizeColorValue(rawValue: string): string | null {
   return normalized;
 }
 
+function hexToRgb(hex: string): [number, number, number] | null {
+  const clean = hex.startsWith("#") ? hex.slice(1) : null;
+  if (!clean || clean.length !== 6) return null;
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
+  return [r, g, b];
+}
+
+function quantizeColor(normalizedColor: string): string {
+  if (normalizedColor.startsWith("#")) {
+    const rgb = hexToRgb(normalizedColor);
+    if (rgb) {
+      const [r, g, b] = rgb.map((c) => Math.round(c / 64));
+      return `q_${r}_${g}_${b}`;
+    }
+  }
+  const rgbMatch = normalizedColor.match(
+    /^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/
+  );
+  if (rgbMatch) {
+    const [r, g, b] = [rgbMatch[1], rgbMatch[2], rgbMatch[3]].map(
+      (v) => Math.round(Number(v) / 64)
+    );
+    return `q_${r}_${g}_${b}`;
+  }
+  return normalizedColor;
+}
+
 function addColorToSet(colorSet: Set<string>, rawColorValue: string): void {
   const normalizedColor = normalizeColorValue(rawColorValue);
   if (normalizedColor) {
-    colorSet.add(normalizedColor);
+    colorSet.add(quantizeColor(normalizedColor));
   }
 }
 
@@ -260,7 +290,7 @@ export function analyzeSvg(svgInput: string): SvgAnalysis {
   const { pathsCount, totalShapesCount } = extractShapeCounts(sanitizedInput);
   const colors = extractColorSet(sanitizedInput);
   const colorsCount = colors.size;
-  const isMonochrome = colorsCount <= 1;
+  const isMonochrome = colorsCount <= 2;
   const complexity = inferComplexity({
     totalShapesCount,
     pathsCount,

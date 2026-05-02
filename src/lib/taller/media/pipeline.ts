@@ -434,7 +434,7 @@ export async function processAssetVariant(
     };
   }
 
-  if (asset.kind !== "image") {
+  if (asset.kind !== "image" && !(asset.kind === "svg" && variantKey === "animated-svg")) {
     return {
       sourceAssetId,
       pipelineStatus: "skipped",
@@ -443,6 +443,108 @@ export async function processAssetVariant(
       generatedVariantKeys,
       vectorizable: false,
     };
+  }
+
+  if (asset.kind === "svg" && variantKey === "animated-svg") {
+    try {
+      await updateSystemAssetPipelineRepository(sourceAssetId, {
+        pipelineStatus: "processing",
+        pipelineStage: "derive",
+        pipelineError: "",
+      });
+
+      const svgResponse = await fetch(asset.url, { cache: "no-store" });
+      const fetchedSvg = await svgResponse.text();
+
+      const animResult = generateAnimatedSvg(fetchedSvg, { force: options?.force });
+
+      if (!animResult.applied) {
+        await updateSystemAssetPipelineRepository(sourceAssetId, {
+          pipelineStatus: "skipped",
+          pipelineStage: "done",
+          pipelineError: animResult.reason,
+        });
+        return {
+          sourceAssetId,
+          pipelineStatus: "skipped",
+          pipelineStage: "done",
+          pipelineError: animResult.reason,
+          generatedVariantKeys,
+          vectorizable: true,
+          svgAnalysis: animResult.analysis,
+          svgAnimation: animResult.decision,
+        };
+      }
+
+      const animatedBuffer = Buffer.from(animResult.animatedSvg, "utf8");
+      const animBlob = await put(
+        buildDerivedStorageKey(asset.key, "animated-svg", "svg"),
+        new Blob([bufferToArrayBuffer(animatedBuffer)], { type: "image/svg+xml" }),
+        {
+          token: getBlobReadWriteToken(),
+          access: "public",
+          contentType: "image/svg+xml",
+          allowOverwrite: true,
+        }
+      );
+
+      await upsertSystemAssetVariantRepository({
+        businessId: null,
+        scope: "system",
+        kind: "svg",
+        bucket: "vercel-blob",
+        key: animBlob.pathname,
+        url: animBlob.url,
+        label: `${asset.label} · animated`,
+        tags: asset.tags,
+        allowedIn: asset.allowedIn,
+        mime: "image/svg+xml",
+        bytes: animatedBuffer.byteLength,
+        width: asset.width,
+        height: asset.height,
+        sourceAssetId,
+        variantKey: "animated-svg",
+        pipelineStatus: "ready",
+        pipelineStage: "done",
+        pipelineError: "",
+        status: "active",
+      });
+
+      await updateSystemAssetPipelineRepository(sourceAssetId, {
+        pipelineStatus: "ready",
+        pipelineStage: "done",
+        pipelineError: "",
+      });
+
+      return {
+        sourceAssetId,
+        pipelineStatus: "ready",
+        pipelineStage: "done",
+        pipelineError: "",
+        generatedVariantKeys: ["animated-svg"],
+        vectorizable: true,
+        svgAnalysis: animResult.analysis,
+        svgAnimation: animResult.decision,
+        appliedAnimation: animResult.decision.recipe.type === "none"
+          ? "fade"
+          : animResult.decision.recipe.type,
+      };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Pipeline processing failed";
+      await updateSystemAssetPipelineRepository(sourceAssetId, {
+        pipelineStatus: "failed",
+        pipelineStage: "done",
+        pipelineError: message,
+      });
+      return {
+        sourceAssetId,
+        pipelineStatus: "failed",
+        pipelineStage: "done",
+        pipelineError: message,
+        generatedVariantKeys,
+        vectorizable: true,
+      };
+    }
   }
 
   try {
@@ -481,6 +583,7 @@ export async function processAssetVariant(
           token: getBlobReadWriteToken(),
           access: "public",
           contentType: "image/webp",
+          allowOverwrite: true,
         }
       );
 
@@ -520,6 +623,7 @@ export async function processAssetVariant(
           token: getBlobReadWriteToken(),
           access: "public",
           contentType: "image/webp",
+          allowOverwrite: true,
         }
       );
 
@@ -675,6 +779,7 @@ export async function processAssetVariant(
           token: getBlobReadWriteToken(),
           access: "public",
           contentType: "image/svg+xml",
+          allowOverwrite: true,
         }
       );
 

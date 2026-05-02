@@ -160,6 +160,7 @@ export type ProcessedAssetResult = {
   vectorizable: boolean;
   svgAnalysis?: SvgAnalysis;
   svgAnimation?: SvgAnimationDecision;
+  appliedAnimation?: string;
   vectorizationAnalysis?: {
     kind: VectorizationKind;
     candidate: boolean;

@@ -1978,8 +1978,19 @@ export default function TallerMediaPage() {
                               const variant = group.variantsByKey[slot.key];
                               const isSlotBusy = isVariantBusyForOriginal && busyVariantKey === slot.key;
 
+                              if (
+                                ["thumbnail", "optimized", "vectorized-svg"].includes(slot.key) &&
+                                group.original.kind === "svg"
+                              ) {
+                                return null;
+                              }
+
                               if (!variant) {
-                                if (slot.key === "animated-svg" && !group.variantsByKey["vectorized-svg"]) {
+                                if (
+                                  slot.key === "animated-svg" &&
+                                  !group.variantsByKey["vectorized-svg"] &&
+                                  group.original.kind !== "svg"
+                                ) {
                                   return null;
                                 }
                                 const showLocalSvgFeedbackInMobile =
@@ -2046,7 +2057,16 @@ export default function TallerMediaPage() {
                                 <div key={slot.key} className={variantSlotShellClass}>
                                   <div className={variantSlotHeaderClass}>
                                     <div className="h-7 w-7 shrink-0 overflow-hidden rounded-md border border-border [background:var(--surface-2,var(--card))]">
-                                      {renderThumb(variant)}
+                                      {slot.key === "animated-svg" ? (
+                                        <object
+                                          data={variant.url}
+                                          type="image/svg+xml"
+                                          className="h-full w-full object-contain p-1.5"
+                                          aria-label={variant.label}
+                                        />
+                                      ) : (
+                                        renderThumb(variant)
+                                      )}
                                     </div>
 
                                     <div className="min-w-0 flex-1">
