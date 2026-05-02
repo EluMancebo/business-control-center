@@ -50,7 +50,18 @@ type PublicHeroProps = {
   footerPosition?: "left" | "center" | "right";
   visualPosition?: "left" | "center" | "right";
   logoPosition?: "left" | "center" | "right";
-  overlayColor?: "blue" | "green" | "amber" | "purple" | "smoke" | "none";
+  overlayColor?:
+    | "blue"
+    | "green"
+    | "amber"
+    | "purple"
+    | "smoke"
+    | "primary"
+    | "secondary"
+    | "accent"
+    | "neutral"
+    | "dark"
+    | "none";
   overlayStyleMode?: "gradient" | "solid" | "none";
   backgroundEmphasis?: "low" | "medium" | "high";
   backgroundFit?: "cover" | "contain" | "fill";
@@ -166,6 +177,16 @@ const HERO_OVERLAY_GRADIENT_TINT_TOKEN_CLASS: Record<HeroOverlayColor, string> =
     "[--hero-overlay-tint-bg:linear-gradient(140deg,color-mix(in_oklab,var(--accent-strong,var(--accent,var(--primary)))_74%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--accent-soft,var(--surface-3,var(--muted)))_58%,var(--hero-overlay-strong,var(--foreground)))_50%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_72%,var(--foreground)))]",
   smoke:
     "[--hero-overlay-tint-bg:linear-gradient(140deg,color-mix(in_oklab,var(--foreground,var(--primary))_74%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--surface-3,var(--muted))_58%,var(--hero-overlay-strong,var(--foreground)))_50%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_72%,var(--foreground)))]",
+  primary:
+    "[--hero-overlay-tint-bg:linear-gradient(140deg,color-mix(in_oklab,var(--primary)_74%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--primary)_56%,var(--hero-overlay-strong,var(--foreground)))_50%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_70%,var(--foreground)))]",
+  secondary:
+    "[--hero-overlay-tint-bg:linear-gradient(140deg,color-mix(in_oklab,var(--secondary)_74%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--secondary)_56%,var(--hero-overlay-strong,var(--foreground)))_50%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_70%,var(--foreground)))]",
+  accent:
+    "[--hero-overlay-tint-bg:linear-gradient(140deg,color-mix(in_oklab,var(--accent,var(--primary))_74%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--accent,var(--primary))_56%,var(--hero-overlay-strong,var(--foreground)))_50%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_70%,var(--foreground)))]",
+  neutral:
+    "[--hero-overlay-tint-bg:linear-gradient(140deg,color-mix(in_oklab,var(--surface-3,var(--card))_78%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--surface-2,var(--card))_62%,var(--hero-overlay-strong,var(--foreground)))_50%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_70%,var(--foreground)))]",
+  dark:
+    "[--hero-overlay-tint-bg:linear-gradient(140deg,color-mix(in_oklab,var(--foreground)_80%,var(--hero-overlay-strong,var(--foreground))),color-mix(in_oklab,var(--foreground)_66%,var(--hero-overlay-strong,var(--foreground)))_50%,color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_72%,black))]",
   none:
     "[--hero-overlay-tint-bg:linear-gradient(140deg,transparent,transparent)] [--hero-overlay-tint-opacity:0]",
 };
@@ -181,6 +202,16 @@ const HERO_OVERLAY_SOLID_TINT_TOKEN_CLASS: Record<HeroOverlayColor, string> = {
     "[--hero-overlay-tint-bg:color-mix(in_oklab,var(--accent-strong,var(--accent,var(--primary)))_76%,var(--hero-overlay-strong,var(--foreground)))]",
   smoke:
     "[--hero-overlay-tint-bg:color-mix(in_oklab,var(--foreground,var(--primary))_78%,var(--hero-overlay-strong,var(--foreground)))]",
+  primary:
+    "[--hero-overlay-tint-bg:color-mix(in_oklab,var(--primary)_78%,var(--hero-overlay-strong,var(--foreground)))]",
+  secondary:
+    "[--hero-overlay-tint-bg:color-mix(in_oklab,var(--secondary)_78%,var(--hero-overlay-strong,var(--foreground)))]",
+  accent:
+    "[--hero-overlay-tint-bg:color-mix(in_oklab,var(--accent,var(--primary))_78%,var(--hero-overlay-strong,var(--foreground)))]",
+  neutral:
+    "[--hero-overlay-tint-bg:color-mix(in_oklab,var(--surface-3,var(--card))_78%,var(--hero-overlay-strong,var(--foreground)))]",
+  dark:
+    "[--hero-overlay-tint-bg:color-mix(in_oklab,var(--foreground)_82%,var(--hero-overlay-strong,var(--foreground)))]",
   none:
     "[--hero-overlay-tint-bg:transparent] [--hero-overlay-tint-opacity:0]",
 };
@@ -189,14 +220,15 @@ const HERO_OVERLAY_STYLE_NONE_TOKEN_CLASS =
   "[--hero-overlay-tint-bg:transparent] [--hero-overlay-tint-opacity:0]";
 
 const HERO_SURFACE_MODE_TOKEN_CLASS = {
-  lab: "[--hero-chrome-surface-bg:color-mix(in_oklab,var(--surface-3,var(--card))_76%,transparent)] [--hero-chrome-surface-hover-bg:color-mix(in_oklab,var(--surface-3,var(--card))_88%,transparent)] [--hero-frame-surface-bg:color-mix(in_oklab,var(--surface-3,var(--card))_68%,transparent)] [--hero-footer-surface-bg:color-mix(in_oklab,var(--surface-3,var(--card))_72%,transparent)] [--hero-chrome-surface-border:color-mix(in_oklab,var(--border)_88%,transparent)]",
-  runtime: "",
+  lab: "[--hero-chrome-surface-bg-fallback:color-mix(in_oklab,var(--surface-3,var(--card))_76%,transparent)] [--hero-footer-surface-bg-fallback:color-mix(in_oklab,var(--surface-3,var(--card))_72%,transparent)] [--hero-chrome-surface-hover-bg-fallback:color-mix(in_oklab,var(--surface-3,var(--card))_88%,transparent)] [--hero-frame-surface-bg:color-mix(in_oklab,var(--surface-3,var(--card))_68%,transparent)] [--hero-chrome-surface-border:color-mix(in_oklab,var(--border)_88%,transparent)] [--hero-chrome-surface-bg-safe:var(--hero-chrome-surface-bg,var(--hero-chrome-surface-bg-fallback))] [--hero-footer-surface-bg-safe:var(--hero-footer-surface-bg,var(--hero-footer-surface-bg-fallback))] [--hero-chrome-surface-hover-bg-safe:var(--hero-chrome-surface-hover-bg,var(--hero-chrome-surface-hover-bg-fallback))]",
+  runtime:
+    "[--hero-chrome-surface-bg-safe:var(--hero-chrome-surface-bg)] [--hero-footer-surface-bg-safe:var(--hero-footer-surface-bg)] [--hero-chrome-surface-hover-bg-safe:var(--hero-chrome-surface-hover-bg)]",
 } as const;
 
 const HERO_MENU_MODE_TOKEN_CLASS = {
-  lab: "[--hero-menu-backdrop-bg:color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_94%,transparent)] [--hero-menu-opaque-bg:color-mix(in_oklab,color-mix(in_oklab,var(--surface-3,var(--card))_58%,var(--hero-overlay-strong,var(--foreground))_42%)_74%,var(--accent,var(--primary))_26%)] [--hero-menu-opaque-shadow:var(--elevation-overlay,var(--panel-shadow-3))] [--hero-menu-border:color-mix(in_oklab,var(--hero-text-inverse)_40%,transparent)] [--hero-menu-text-shadow:0_2px_12px_color-mix(in_oklab,var(--foreground)_46%,transparent)]",
+  lab: "[--hero-menu-backdrop-bg-fallback:color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_94%,transparent)] [--hero-menu-opaque-bg-fallback:color-mix(in_oklab,color-mix(in_oklab,var(--surface-3,var(--card))_58%,var(--hero-overlay-strong,var(--foreground))_42%)_74%,var(--accent,var(--primary))_26%)] [--hero-menu-opaque-shadow:var(--elevation-overlay,var(--panel-shadow-3))] [--hero-menu-border:color-mix(in_oklab,var(--hero-text-inverse)_40%,transparent)] [--hero-menu-text-shadow:0_2px_12px_color-mix(in_oklab,var(--foreground)_46%,transparent)] [--hero-menu-backdrop-bg-safe:var(--hero-menu-backdrop-bg,var(--hero-menu-backdrop-bg-fallback))] [--hero-menu-opaque-bg-safe:var(--hero-menu-opaque-bg,var(--hero-menu-opaque-bg-fallback))]",
   runtime:
-    "[--hero-menu-backdrop-bg:color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_92%,transparent)] [--hero-menu-opaque-bg:color-mix(in_oklab,var(--surface-3,var(--card))_42%,var(--hero-overlay-strong,var(--foreground))_58%)] [--hero-menu-opaque-shadow:var(--elevation-overlay,var(--panel-shadow-3))] [--hero-menu-border:color-mix(in_oklab,var(--hero-text-inverse)_34%,transparent)] [--hero-menu-text-shadow:0_2px_18px_color-mix(in_oklab,var(--foreground)_56%,transparent)]",
+    "[--hero-menu-backdrop-bg:color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_92%,transparent)] [--hero-menu-opaque-bg:color-mix(in_oklab,var(--surface-3,var(--card))_42%,var(--hero-overlay-strong,var(--foreground))_58%)] [--hero-menu-opaque-shadow:var(--elevation-overlay,var(--panel-shadow-3))] [--hero-menu-border:color-mix(in_oklab,var(--hero-text-inverse)_34%,transparent)] [--hero-menu-text-shadow:0_2px_18px_color-mix(in_oklab,var(--foreground)_56%,transparent)] [--hero-menu-backdrop-bg-safe:var(--hero-menu-backdrop-bg)] [--hero-menu-opaque-bg-safe:var(--hero-menu-opaque-bg)]",
 } as const;
 
 const HERO_LAB_HEADLINE_TONE_TOKEN_CLASS: Record<HeroLabHeadlineTone, string> = {
@@ -212,7 +244,7 @@ const HERO_LAB_HEADLINE_TONE_TOKEN_CLASS: Record<HeroLabHeadlineTone, string> = 
 };
 
 const HERO_RUNTIME_FALLBACK_TOKEN_CLASS =
-  "[--hero-text-inverse:var(--fg-dark,var(--text-inverse,var(--foreground)))] [--hero-text-90:color-mix(in_oklab,var(--hero-text-inverse)_90%,transparent)] [--hero-text-88:color-mix(in_oklab,var(--hero-text-inverse)_88%,transparent)] [--hero-text-85:color-mix(in_oklab,var(--hero-text-inverse)_85%,transparent)] [--hero-text-82:color-mix(in_oklab,var(--hero-text-inverse)_82%,transparent)] [--hero-text-80:color-mix(in_oklab,var(--hero-text-inverse)_80%,transparent)] [--hero-text-50:color-mix(in_oklab,var(--hero-text-inverse)_50%,transparent)] [--hero-chrome-surface-border-safe:var(--hero-chrome-surface-border,var(--border))] [--hero-cta-primary:var(--cta-primary,var(--primary))] [--hero-cta-primary-foreground:var(--cta-primary-foreground,var(--primary-foreground))] [--hero-cta-primary-hover:var(--cta-primary-hover,var(--primary))] [--hero-cta-secondary:var(--cta-secondary,var(--secondary,var(--background)))] [--hero-cta-secondary-foreground:var(--cta-secondary-foreground,var(--foreground))] [--hero-cta-secondary-hover:var(--cta-secondary-hover,var(--muted))]";
+  "[--hero-text-inverse:var(--fg-dark,var(--text-inverse,var(--foreground)))] [--hero-text-90:color-mix(in_oklab,var(--hero-text-inverse)_90%,transparent)] [--hero-text-88:color-mix(in_oklab,var(--hero-text-inverse)_88%,transparent)] [--hero-text-85:color-mix(in_oklab,var(--hero-text-inverse)_85%,transparent)] [--hero-text-82:color-mix(in_oklab,var(--hero-text-inverse)_82%,transparent)] [--hero-text-80:color-mix(in_oklab,var(--hero-text-inverse)_80%,transparent)] [--hero-text-50:color-mix(in_oklab,var(--hero-text-inverse)_50%,transparent)] [--hero-integrated-chrome-text:var(--hero-text-inverse)] [--hero-integrated-chrome-shadow:0_2px_10px_color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_34%,transparent)] [--hero-chrome-surface-border-safe:var(--hero-chrome-surface-border,var(--border))] [--hero-cta-primary-safe:var(--hero-cta-primary,var(--cta-primary,var(--primary)))] [--hero-cta-primary-foreground-safe:var(--hero-cta-primary-foreground,var(--cta-primary-foreground,var(--primary-foreground)))] [--hero-cta-primary-hover-safe:var(--hero-cta-primary-hover,var(--cta-primary-hover,var(--primary)))] [--hero-cta-secondary-safe:var(--hero-cta-secondary,var(--cta-secondary,var(--secondary,var(--background))))] [--hero-cta-secondary-foreground-safe:var(--hero-cta-secondary-foreground,var(--cta-secondary-foreground,var(--foreground)))] [--hero-cta-secondary-hover-safe:var(--hero-cta-secondary-hover,var(--cta-secondary-hover,var(--muted)))]";
 
 function normalizeAssetUrl(url?: string): string | undefined {
   if (typeof url !== "string") return undefined;
@@ -267,7 +299,7 @@ function Pill({
       className={[
         "inline-flex items-center rounded-full border px-3 py-1 text-xs",
         "[border-color:var(--hero-chrome-surface-border-safe)]",
-        "[background:var(--hero-chrome-surface-bg)] [color:var(--hero-text-inverse)]",
+        "[background:var(--hero-chrome-surface-bg-safe)] [color:var(--hero-text-inverse)]",
         className,
       ].join(" ")}
     >
@@ -638,7 +670,7 @@ export default function PublicHero({
   const navOverlayStyleClass =
     effectiveNavOverlayStyle === "none"
       ? "bg-transparent"
-      : "[background:var(--hero-menu-backdrop-bg)]";
+      : "[background:var(--hero-menu-backdrop-bg-safe)]";
   const navOverlayReadabilityClass =
     effectiveNavReadabilityBoost === "none"
       ? ""
@@ -676,8 +708,8 @@ export default function PublicHero({
     hasHeaderRootSurface || effectiveNavTriggerSurface === "minimal"
       ? "border border-transparent [background:transparent]"
       : effectiveNavTriggerSurface === "glass"
-        ? "border [border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_72%,transparent)] [background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_54%,transparent)] backdrop-blur-[2px]"
-        : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)]";
+        ? "border [border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_72%,transparent)] [background:color-mix(in_oklab,var(--hero-chrome-surface-bg-safe)_54%,transparent)] backdrop-blur-[2px]"
+        : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg-safe)]";
   const isMinimalTriggerSurface =
     hasHeaderRootSurface || effectiveNavTriggerSurface === "minimal";
   const navTriggerToneClass =
@@ -690,21 +722,21 @@ export default function PublicHero({
     effectiveNavTriggerHover === "lift"
       ? isMinimalTriggerSurface
         ? "hover:-translate-y-0.5"
-        : "hover:-translate-y-0.5 hover:[background:var(--hero-chrome-surface-hover-bg)]"
+        : "hover:-translate-y-0.5 hover:[background:var(--hero-chrome-surface-hover-bg-safe)]"
       : effectiveNavTriggerHover === "glow"
         ? isMinimalTriggerSurface
           ? "hover:[filter:drop-shadow(0_2px_10px_color-mix(in_oklab,var(--hero-text-inverse)_24%,transparent))]"
-          : "hover:[background:var(--hero-chrome-surface-hover-bg)] hover:[box-shadow:0_0_0_1px_color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_68%,transparent),var(--hero-menu-opaque-shadow)]"
+          : "hover:[background:var(--hero-chrome-surface-hover-bg-safe)] hover:[box-shadow:0_0_0_1px_color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_68%,transparent),var(--hero-menu-opaque-shadow)]"
         : isMinimalTriggerSurface
           ? "hover:opacity-90"
-          : "hover:[background:var(--hero-chrome-surface-hover-bg)]";
+          : "hover:[background:var(--hero-chrome-surface-hover-bg-safe)]";
   const menuTriggerVisibilityClass = isLabMode
     ? ""
     : "peer-checked:pointer-events-none peer-checked:hidden";
   const menuTriggerClass = `cursor-pointer transition duration-200 ${menuTriggerVisibilityClass} ${navTriggerSizeClass} ${navTriggerAuraClass} ${navTriggerSurfaceClass} ${navTriggerToneClass} ${navTriggerHoverClass}`;
   const menuCloseClass =
     [
-      "cursor-pointer rounded-lg border transition [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)] hover:[background:var(--hero-chrome-surface-hover-bg)]",
+      "cursor-pointer rounded-lg border transition [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg-safe)] hover:[background:var(--hero-chrome-surface-hover-bg-safe)]",
       isLabMode ? "px-3 py-1.5 text-sm font-semibold" : "px-3 py-1 text-xs",
     ]
       .filter(Boolean)
@@ -725,8 +757,8 @@ export default function PublicHero({
     hasHeaderRootSurface || effectiveDesktopNavSurface === "minimal"
       ? "border border-transparent [background:transparent]"
       : effectiveDesktopNavSurface === "glass"
-        ? "border [border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_70%,transparent)] [background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_58%,transparent)] backdrop-blur-[2px]"
-        : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)]";
+        ? "border [border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_70%,transparent)] [background:color-mix(in_oklab,var(--hero-chrome-surface-bg-safe)_58%,transparent)] backdrop-blur-[2px]"
+        : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg-safe)]";
   const desktopNavPresenceClass =
     hasHeaderRootSurface
       ? ""
@@ -739,10 +771,10 @@ export default function PublicHero({
     hasHeaderRootSurface
       ? "hover:opacity-90"
       : effectiveDesktopNavHover === "lift"
-      ? "hover:-translate-y-0.5 hover:[background:var(--hero-chrome-surface-hover-bg)]"
+      ? "hover:-translate-y-0.5 hover:[background:var(--hero-chrome-surface-hover-bg-safe)]"
       : effectiveDesktopNavHover === "glow"
-        ? "hover:[background:var(--hero-chrome-surface-hover-bg)] hover:[box-shadow:0_0_0_1px_color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_58%,transparent),var(--elevation-base,var(--panel-shadow-1))]"
-        : "hover:[background:var(--hero-chrome-surface-hover-bg)]";
+        ? "hover:[background:var(--hero-chrome-surface-hover-bg-safe)] hover:[box-shadow:0_0_0_1px_color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_58%,transparent),var(--elevation-base,var(--panel-shadow-1))]"
+        : "hover:[background:var(--hero-chrome-surface-hover-bg-safe)]";
   const desktopNavItemClass =
     `rounded-full font-semibold transition ${desktopNavSizeClass} ${desktopNavToneClass} ${desktopNavSurfaceClass} ${desktopNavPresenceClass} ${desktopNavHoverClass}`;
 
@@ -751,33 +783,33 @@ export default function PublicHero({
       ? "[background:transparent] shadow-none border-transparent backdrop-blur-0"
       : effectiveNavOverlayDensity === "high"
         ? effectiveNavPanelStyle === "minimal"
-          ? "[background:var(--hero-menu-opaque-bg)] shadow-none border-transparent backdrop-blur-0"
+          ? "[background:var(--hero-menu-opaque-bg-safe)] shadow-none border-transparent backdrop-blur-0"
           : effectiveNavPanelStyle === "glass"
-            ? "[background:var(--hero-menu-opaque-bg)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:var(--hero-menu-border)] backdrop-blur-0"
-            : "[background:var(--hero-menu-opaque-bg)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:var(--hero-menu-border)]"
+            ? "[background:var(--hero-menu-opaque-bg-safe)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:var(--hero-menu-border)] backdrop-blur-0"
+            : "[background:var(--hero-menu-opaque-bg-safe)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:var(--hero-menu-border)]"
         : effectiveNavOverlayDensity === "medium"
           ? effectiveNavPanelStyle === "minimal"
             ? isLabMode
-              ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_88%,transparent)] shadow-none border-transparent backdrop-blur-0"
-              : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_76%,transparent)] shadow-none border-transparent backdrop-blur-0"
+              ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg-safe)_88%,transparent)] shadow-none border-transparent backdrop-blur-0"
+              : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg-safe)_76%,transparent)] shadow-none border-transparent backdrop-blur-0"
             : effectiveNavPanelStyle === "glass"
               ? isLabMode
-                ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_92%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_90%,transparent)] backdrop-blur-[2px]"
-                : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_84%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_84%,transparent)] backdrop-blur-[2px]"
+                ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg-safe)_92%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_90%,transparent)] backdrop-blur-[2px]"
+                : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg-safe)_84%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_84%,transparent)] backdrop-blur-[2px]"
               : isLabMode
-                ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_94%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_92%,transparent)]"
-                : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_88%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_88%,transparent)]"
+                ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg-safe)_94%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_92%,transparent)]"
+                : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg-safe)_88%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_88%,transparent)]"
           : effectiveNavPanelStyle === "minimal"
             ? isLabMode
-              ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_74%,transparent)] shadow-none border-transparent backdrop-blur-0"
-              : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_52%,transparent)] shadow-none border-transparent backdrop-blur-0"
+              ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg-safe)_74%,transparent)] shadow-none border-transparent backdrop-blur-0"
+              : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg-safe)_52%,transparent)] shadow-none border-transparent backdrop-blur-0"
             : effectiveNavPanelStyle === "glass"
               ? isLabMode
-                ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_84%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_84%,transparent)] backdrop-blur-[2px]"
-                : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_66%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_70%,transparent)] backdrop-blur-[2px]"
+                ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg-safe)_84%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_84%,transparent)] backdrop-blur-[2px]"
+                : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg-safe)_66%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_70%,transparent)] backdrop-blur-[2px]"
               : isLabMode
-                ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_88%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_88%,transparent)]"
-                : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg)_72%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_76%,transparent)]";
+                ? "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg-safe)_88%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_88%,transparent)]"
+                : "[background:color-mix(in_oklab,var(--hero-menu-opaque-bg-safe)_72%,transparent)] [box-shadow:var(--hero-menu-opaque-shadow)] [border-color:color-mix(in_oklab,var(--hero-menu-border)_76%,transparent)]";
   const isWideLabPanel = isLabMode && effectiveNavPanelWidth === "wide";
   const labMenuPanelPositionClass =
     effectiveNavOpenBehavior === "fullscreen"
@@ -865,8 +897,8 @@ export default function PublicHero({
     themeToggleStyle === "minimal"
       ? "border-transparent [background:transparent]"
       : themeToggleStyle === "glass"
-        ? "[background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_54%,transparent)] backdrop-blur-[2px]"
-        : "[background:var(--hero-chrome-surface-bg)]";
+        ? "[background:color-mix(in_oklab,var(--hero-chrome-surface-bg-safe)_54%,transparent)] backdrop-blur-[2px]"
+        : "[background:var(--hero-chrome-surface-bg-safe)]";
   const themeToggleDefaultChecked = themeToggleDefault === "dark";
   const isThemeModeAuto = themeToggleDefault === "auto";
 
@@ -938,12 +970,12 @@ export default function PublicHero({
     normalizedHeaderVisualStyle === "minimal"
       ? "border-0 [background:transparent] shadow-none"
       : normalizedHeaderVisualStyle === "glass"
-        ? "border [border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_58%,transparent)] [background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_52%,transparent)] shadow-none"
-        : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg)] [box-shadow:var(--elevation-base,var(--panel-shadow-1))]";
+        ? "border [border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_58%,transparent)] [background:color-mix(in_oklab,var(--hero-chrome-surface-bg-safe)_52%,transparent)] shadow-none"
+        : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-chrome-surface-bg-safe)] [box-shadow:var(--elevation-base,var(--panel-shadow-1))]";
   const headerRegionClass =
     isHeaderSeparated
       ? `h-full w-full rounded-none px-3 py-2 ${headerVisualClass}`
-      : "px-0 py-0 border-0 [background:transparent]";
+      : "px-0 py-0 border-0 [background:transparent] [color:var(--hero-integrated-chrome-text,var(--hero-text-inverse))] [text-shadow:var(--hero-integrated-chrome-shadow,none)]";
   const headerInnerOverflowClass = isLabMode ? "overflow-visible" : "overflow-hidden";
   const headerLogoGroupClass =
     effectiveHeaderRelation === "logo-focus"
@@ -962,8 +994,11 @@ export default function PublicHero({
     normalizedFooterVisualStyle === "minimal"
       ? "border-0 [background:transparent] shadow-none"
       : normalizedFooterVisualStyle === "glass"
-        ? "border [border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_58%,transparent)] [background:color-mix(in_oklab,var(--hero-footer-surface-bg)_58%,transparent)] shadow-none"
-        : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-footer-surface-bg)] [box-shadow:var(--elevation-base,var(--panel-shadow-1))]";
+        ? "border [border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_58%,transparent)] [background:color-mix(in_oklab,var(--hero-footer-surface-bg-safe)_58%,transparent)] shadow-none"
+        : "border [border-color:var(--hero-chrome-surface-border-safe)] [background:var(--hero-footer-surface-bg-safe)] [box-shadow:var(--elevation-base,var(--panel-shadow-1))]";
+  const footerToneClass = isFooterSeparated
+    ? "[color:var(--hero-text-88)]"
+    : "[color:var(--hero-integrated-chrome-text,var(--hero-text-inverse))] [text-shadow:var(--hero-integrated-chrome-shadow,none)]";
   const footerRadiusClass = isFooterSeparated ? "rounded-none" : "rounded-none";
   const isFooterCompact = effectiveFooterDensity === "compact";
   const footerDensityClass =
@@ -1123,8 +1158,8 @@ export default function PublicHero({
     effectiveNavPanelStyle === "minimal"
       ? `block rounded-xl font-semibold transition hover:opacity-85 ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`
       : effectiveNavPanelStyle === "glass"
-        ? `block rounded-xl border border-transparent font-semibold transition hover:[border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_68%,transparent)] hover:[background:color-mix(in_oklab,var(--hero-chrome-surface-bg)_58%,transparent)] ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`
-        : `block rounded-xl border border-transparent font-semibold transition hover:[background:var(--hero-chrome-surface-bg)] ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`;
+        ? `block rounded-xl border border-transparent font-semibold transition hover:[border-color:color-mix(in_oklab,var(--hero-chrome-surface-border-safe)_68%,transparent)] hover:[background:color-mix(in_oklab,var(--hero-chrome-surface-bg-safe)_58%,transparent)] ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`
+        : `block rounded-xl border border-transparent font-semibold transition hover:[background:var(--hero-chrome-surface-bg-safe)] ${menuItemSizeClass} ${menuItemWidthClass} ${menuItemToneClass}`;
   const ctaRegulationClassName =
     ctaRegulation === "primary-focus"
       ? {
@@ -1202,28 +1237,28 @@ export default function PublicHero({
   };
 
   const mobilePrimaryCtaClassName = [
-    "inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition [background:var(--hero-cta-primary)] [color:var(--hero-cta-primary-foreground)] hover:[background:var(--hero-cta-primary-hover)]",
+    "inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition [background:var(--hero-cta-primary-safe)] [color:var(--hero-cta-primary-foreground-safe)] hover:[background:var(--hero-cta-primary-hover-safe)]",
     labPrimaryCtaClassName,
     ctaRegulationClassName.primary,
   ]
     .filter(Boolean)
     .join(" ");
   const mobileSecondaryCtaClassName = [
-    "inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition [background:var(--hero-cta-secondary)] [color:var(--hero-cta-secondary-foreground)] hover:[background:var(--hero-cta-secondary-hover)]",
+    "inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition [background:var(--hero-cta-secondary-safe)] [color:var(--hero-cta-secondary-foreground-safe)] hover:[background:var(--hero-cta-secondary-hover-safe)]",
     labSecondaryCtaClassName,
     ctaRegulationClassName.secondary,
   ]
     .filter(Boolean)
     .join(" ");
   const desktopPrimaryCtaClassName = [
-    "inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition [background:var(--hero-cta-primary)] [color:var(--hero-cta-primary-foreground)] hover:[background:var(--hero-cta-primary-hover)]",
+    "inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition [background:var(--hero-cta-primary-safe)] [color:var(--hero-cta-primary-foreground-safe)] hover:[background:var(--hero-cta-primary-hover-safe)]",
     labPrimaryCtaClassName,
     ctaRegulationClassName.primary,
   ]
     .filter(Boolean)
     .join(" ");
   const desktopSecondaryCtaClassName = [
-    "inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition [background:var(--hero-cta-secondary)] [color:var(--hero-cta-secondary-foreground)] hover:[background:var(--hero-cta-secondary-hover)]",
+    "inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition [background:var(--hero-cta-secondary-safe)] [color:var(--hero-cta-secondary-foreground-safe)] hover:[background:var(--hero-cta-secondary-hover-safe)]",
     labSecondaryCtaClassName,
     ctaRegulationClassName.secondary,
   ]
@@ -1362,7 +1397,7 @@ export default function PublicHero({
                   "cursor-pointer [border-color:var(--hero-chrome-surface-border-safe)] [color:var(--hero-text-inverse)]",
                   themeTogglePositionClass,
                   themeToggleStyleClass,
-                  "peer-checked/theme:[background:color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_22%,var(--hero-chrome-surface-bg))]",
+                  "peer-checked/theme:[background:color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_22%,var(--hero-chrome-surface-bg-safe))]",
                   getLabPieceClassName("theme-toggle"),
                   labThemeToggleClassName,
                 ].join(" ")}
@@ -1706,7 +1741,7 @@ export default function PublicHero({
         >
           <div className={footerShellFrameClass}>
             <div
-              className={`${footerRadiusClass} ${footerDensityClass} ${footerVisualClass} ${footerContentSizingClass} [color:var(--hero-text-88)]`}
+              className={`${footerRadiusClass} ${footerDensityClass} ${footerVisualClass} ${footerContentSizingClass} ${footerToneClass}`}
             >
             <div className={`mx-auto flex w-full max-w-5xl flex-col gap-2 ${footerDesktopAlignClass}`}>
               {showLabContactStrip ? (
@@ -1766,5 +1801,3 @@ export default function PublicHero({
     </section>
   );
 }
-
-

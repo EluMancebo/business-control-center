@@ -84,12 +84,16 @@ type TextStyleFont = "sans" | "display";
 type TextStyleLineHeight = "tight" | "normal" | "relaxed";
 type TextStyleTracking = "tight" | "normal" | "wide";
 type CtaStyle = "filled" | "outline" | "soft";
+type CtaPrimaryTone = "primary" | "secondary" | "accent" | "neutral" | "dark" | "light";
+type CtaSecondaryMode = "auto" | "outline" | "soft" | "inverse";
 type LayoutDensity = "compact" | "balanced" | "airy";
 type LayoutBalance = "copy-first" | "balanced" | "media-first";
 type LayoutContentWidth = "narrow" | "medium" | "wide";
 type LayoutMediaDominance = "low" | "medium" | "high";
 type LayoutSafeArea = "tight" | "normal" | "relaxed";
-type OverlayColor = "blue" | "green" | "amber" | "purple" | "smoke";
+type OverlayGenericTint = "blue" | "green" | "amber" | "purple" | "smoke";
+type OverlayPaletteTone = "primary" | "secondary" | "accent" | "neutral" | "dark";
+type OverlayColor = OverlayGenericTint | OverlayPaletteTone;
 type OverlayStyleMode = "gradient" | "solid" | "none";
 type BackgroundEmphasis = "low" | "medium" | "high";
 type BackgroundFit = "cover" | "contain" | "fill";
@@ -104,7 +108,7 @@ type LabHeadlineTone =
 type CtaRegulation = "balanced" | "primary-focus";
 type AssetPickerView = "closed" | "open";
 type AssetComponentFilter = "all" | "hero" | "logo" | "icon";
-type AssetContextFilter = "all" | "hero" | "navbar" | "footer";
+type AssetSectorFilter = "all" | string;
 type QualityDimensionKey =
   | "conversion"
   | "design"
@@ -160,6 +164,8 @@ type VariantSnapshot = {
   secondaryCtaHrefDraft: string;
   textStyles: Record<Extract<LabHeroPiece, "headline" | "subheadline" | "cta-group">, TextStyle>;
   ctaStyle: CtaStyle;
+  ctaPrimaryTone: CtaPrimaryTone;
+  ctaSecondaryMode: CtaSecondaryMode;
   overlayDensity: HeroAppearanceVariant;
   overlayStyleMode: OverlayStyleMode;
   overlayTint: OverlayColor;
@@ -319,7 +325,7 @@ const PIECE_FAMILY_TABS: readonly { id: PieceFamily; label: string; status: "act
   { id: "landing", label: "Landing", status: "planned" },
   { id: "cards", label: "Cards", status: "planned" },
   { id: "promos", label: "Promos", status: "planned" },
-  { id: "more", label: "More", status: "planned" },
+  { id: "more", label: "Más", status: "planned" },
 ];
 
 const COMPONENT_TO_LAB_PIECE: Partial<Record<ComponentId, LabHeroPiece>> = {
@@ -343,11 +349,11 @@ const LAB_PIECE_LABEL: Record<LabHeroPiece, string> = {
   subheadline: "Subtitulo",
   "cta-group": "Botones CTA",
   badge: "Badge",
-  "header-hero": "Header hero",
-  "desktop-nav": "Navegacion escritorio",
+  "header-hero": "Cabecera hero",
+  "desktop-nav": "Navegación escritorio",
   "nav-burger": "Hamburguesa / menu movil",
   "theme-toggle": "Claro/Oscuro",
-  "footer-hero": "Footer hero",
+  "footer-hero": "Pie hero",
   "contact-strip": "Contacto hero",
   "animated-signature": "Firma animada",
   "background-media": "Fondo / media",
@@ -423,7 +429,197 @@ const OVERLAY_TINT_PREVIEW_CLASS: Record<OverlayColor, string> = {
   amber: "bg-gradient-to-r from-amber-700 to-stone-900",
   purple: "bg-gradient-to-r from-violet-700 to-indigo-900",
   smoke: "bg-gradient-to-r from-slate-700 to-slate-950",
+  primary: "bg-gradient-to-r from-[var(--primary)] to-[color-mix(in_oklab,var(--primary)_65%,black)]",
+  secondary:
+    "bg-gradient-to-r from-[var(--secondary)] to-[color-mix(in_oklab,var(--secondary)_65%,black)]",
+  accent: "bg-gradient-to-r from-[var(--accent)] to-[color-mix(in_oklab,var(--accent)_65%,black)]",
+  neutral:
+    "bg-gradient-to-r from-[var(--surface-3,var(--card))] to-[color-mix(in_oklab,var(--surface-3,var(--card))_70%,black)]",
+  dark:
+    "bg-gradient-to-r from-[var(--foreground)] to-[color-mix(in_oklab,var(--foreground)_72%,black)]",
 };
+
+const OVERLAY_GENERIC_TINT_OPTIONS: readonly {
+  value: OverlayGenericTint;
+  label: string;
+  swatchClassName: string;
+}[] = [
+  {
+    value: "blue",
+    label: "Azul",
+    swatchClassName:
+      "[background:color-mix(in_oklab,var(--processing,var(--primary))_62%,var(--surface-1,var(--background))_38%)]",
+  },
+  {
+    value: "green",
+    label: "Verde",
+    swatchClassName:
+      "[background:color-mix(in_oklab,var(--success,var(--primary))_62%,var(--surface-1,var(--background))_38%)]",
+  },
+  {
+    value: "amber",
+    label: "Ambar",
+    swatchClassName:
+      "[background:color-mix(in_oklab,var(--warning,var(--primary))_62%,var(--surface-1,var(--background))_38%)]",
+  },
+  {
+    value: "purple",
+    label: "Purpura",
+    swatchClassName:
+      "[background:color-mix(in_oklab,var(--accent,var(--primary))_62%,var(--surface-1,var(--background))_38%)]",
+  },
+  {
+    value: "smoke",
+    label: "Humo",
+    swatchClassName:
+      "[background:color-mix(in_oklab,var(--foreground)_58%,var(--surface-1,var(--background))_42%)]",
+  },
+];
+
+const OVERLAY_PALETTE_TINT_OPTIONS: readonly {
+  value: OverlayPaletteTone;
+  label: string;
+  title: string;
+}[] = [
+  { value: "primary", label: "Primario", title: "Tono principal del preset activo" },
+  { value: "secondary", label: "Secundario", title: "Tono secundario del preset activo" },
+  { value: "accent", label: "Acento", title: "Tono de acento del preset activo" },
+  { value: "neutral", label: "Neutro", title: "Superficie neutra del preset activo" },
+  { value: "dark", label: "Oscuro", title: "Tono oscuro del preset activo" },
+];
+
+const PALETTE_TONE_OPTIONS: readonly {
+  value: "neutral" | "primary" | "secondary" | "accent" | "dark";
+  label: string;
+  title: string;
+}[] = [
+  { value: "primary", label: "Primario", title: "Color principal del preset activo" },
+  { value: "secondary", label: "Secundario", title: "Color secundario del preset activo" },
+  { value: "accent", label: "Acento", title: "Color de acento del preset activo" },
+  { value: "neutral", label: "Neutro", title: "Superficie neutra del sistema" },
+  { value: "dark", label: "Oscuro", title: "Token foreground / modo oscuro" },
+];
+
+const SURFACE_STYLE_OPTIONS: readonly {
+  value: "minimal" | "solid" | "glass";
+  label: string;
+  title: string;
+}[] = [
+  { value: "minimal", label: "Minimo", title: "Superficie minima y limpia" },
+  { value: "solid", label: "Solido", title: "Bloque de superficie solida" },
+  { value: "glass", label: "Cristal", title: "Superficie con efecto cristal" },
+];
+
+const CTA_PRIMARY_TONE_OPTIONS: readonly {
+  value: CtaPrimaryTone;
+  label: string;
+  title: string;
+}[] = [
+  { value: "primary", label: "Primario", title: "Usa token primary" },
+  { value: "secondary", label: "Secundario", title: "Usa token secondary" },
+  { value: "accent", label: "Acento", title: "Usa token accent" },
+  { value: "neutral", label: "Neutro", title: "Usa superficie neutra" },
+  { value: "dark", label: "Oscuro", title: "Usa foreground" },
+  { value: "light", label: "Claro", title: "Usa background" },
+];
+
+const CTA_SECONDARY_MODE_OPTIONS: readonly {
+  value: CtaSecondaryMode;
+  label: string;
+  title: string;
+}[] = [
+  { value: "auto", label: "Auto", title: "Equilibrio automatico con CTA primario" },
+  { value: "outline", label: "Outline", title: "Secundario con borde" },
+  { value: "soft", label: "Soft", title: "Secundario suave" },
+  { value: "inverse", label: "Inverso", title: "Secundario de alto contraste" },
+];
+
+const SECTOR_LABEL_MAP: Record<string, string> = {
+  general: "General",
+  barberia: "Barberia",
+  peluqueria: "Peluqueria",
+  dental: "Dental",
+  taller: "Taller",
+  estetica: "Estetica",
+  inmobiliaria: "Inmobiliaria",
+  "agencia de viajes": "Agencia de viajes",
+  comercio: "Comercio",
+  servicios: "Servicios",
+  pasteleria: "Pasteleria",
+};
+
+function toDisplayCapitalized(value: string): string {
+  return value
+    .trim()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function readAssetSectorValue(tags: string[]): string {
+  const fromTag = tags
+    .map((tag) => String(tag || "").trim().toLowerCase())
+    .find((tag) => tag.startsWith("sector:"));
+  if (!fromTag) return "general";
+  const value = fromTag.slice("sector:".length).trim();
+  return value || "general";
+}
+
+function toSectorFilterLabel(value: string): string {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "all") return "Todos";
+  return SECTOR_LABEL_MAP[normalized] ?? toDisplayCapitalized(normalized);
+}
+
+function isOverlayGenericTint(value: OverlayColor): value is OverlayGenericTint {
+  return (
+    value === "blue" ||
+    value === "green" ||
+    value === "amber" ||
+    value === "purple" ||
+    value === "smoke"
+  );
+}
+
+const OVERLAY_TINT_LABEL_MAP: Record<OverlayColor, string> = {
+  blue: "Azul",
+  green: "Verde",
+  amber: "Ambar",
+  purple: "Purpura",
+  smoke: "Humo",
+  primary: "Primario",
+  secondary: "Secundario",
+  accent: "Acento",
+  neutral: "Neutro",
+  dark: "Oscuro",
+};
+
+const FILTER_OPTION_LABEL_MAP: Record<string, string> = {
+  all: "Todos",
+  optimized: "Optimizada",
+  original: "Original",
+  thumbnail: "Miniatura",
+  "vectorized-svg": "SVG vectorizado",
+  "animated-svg": "SVG animado",
+  landscape: "Horizontal",
+  portrait: "Vertical",
+  square: "Cuadrada",
+  unknown: "Sin orientacion",
+  approved: "Aprobado",
+  reviewed: "Revisado",
+  draft: "Borrador",
+  rejected: "Rechazado",
+  deprecated: "Obsoleto",
+  hero: "Hero",
+  logo: "Logo",
+  icon: "Icono",
+};
+
+const toFilterOptionLabel = (value: string): string =>
+  FILTER_OPTION_LABEL_MAP[value] ?? toDisplayCapitalized(value);
 
 const LAYOUT_PIECES: readonly LayoutPiece[] = ["logo", "headline", "subheadline", "cta-group"];
 const LAYOUT_ZONES: readonly LayoutZone[] = [
@@ -466,8 +662,9 @@ const ORIENTATION_FILTERS: readonly (MediaOrientation | "all")[] = [
 const REVIEW_FILTERS: readonly (MediaReviewStatus | "all")[] = [
   "all",
   "approved",
-  "reviewed",
   "draft",
+  "rejected",
+  "reviewed",
 ];
 
 const HERO_SOURCE_ALLOWED_CONTEXT = "home.hero.background";
@@ -939,22 +1136,74 @@ function ctaStyleClasses(style: CtaStyle): { primary: string; secondary: string 
   if (style === "outline") {
     return {
       primary:
-        "border border-[color:var(--hero-text-inverse)] !bg-transparent [color:var(--hero-text-inverse)] hover:[background:color-mix(in_oklab,var(--hero-text-inverse)_14%,transparent)]",
+        "border [border-color:var(--hero-cta-primary-safe)] !bg-transparent [color:var(--hero-cta-primary-safe)] hover:[background:color-mix(in_oklab,var(--hero-cta-primary-safe)_14%,transparent)]",
       secondary:
-        "border border-[color:var(--hero-text-90)] !bg-transparent [color:var(--hero-text-90)] hover:[background:color-mix(in_oklab,var(--hero-text-inverse)_10%,transparent)]",
+        "border [border-color:var(--hero-cta-secondary-safe)] !bg-transparent [color:var(--hero-cta-secondary-safe)] hover:[background:color-mix(in_oklab,var(--hero-cta-secondary-safe)_12%,transparent)]",
     };
   }
 
   if (style === "soft") {
     return {
       primary:
-        "border border-transparent ![background:color-mix(in_oklab,var(--hero-cta-primary)_60%,var(--surface-3,var(--card))_40%)] [color:var(--hero-cta-primary-foreground)]",
+        "border border-transparent ![background:color-mix(in_oklab,var(--hero-cta-primary-safe)_60%,var(--surface-3,var(--card))_40%)] [color:var(--hero-cta-primary-foreground-safe)]",
       secondary:
-        "border border-transparent ![background:color-mix(in_oklab,var(--hero-cta-secondary)_78%,var(--surface-3,var(--card))_22%)] [color:var(--hero-cta-secondary-foreground)]",
+        "border border-transparent ![background:color-mix(in_oklab,var(--hero-cta-secondary-safe)_78%,var(--surface-3,var(--card))_22%)] [color:var(--hero-cta-secondary-foreground-safe)]",
     };
   }
 
   return { primary: "", secondary: "" };
+}
+
+function toneToCtaColor(tone: CtaPrimaryTone): string {
+  if (tone === "primary") return "var(--primary)";
+  if (tone === "secondary") return "var(--secondary)";
+  if (tone === "accent") return "var(--accent,var(--primary))";
+  if (tone === "neutral") return "var(--surface-3,var(--card))";
+  if (tone === "dark") return "var(--foreground)";
+  return "var(--background)";
+}
+
+function toneToCtaForeground(tone: CtaPrimaryTone): string {
+  if (tone === "primary") return "var(--primary-foreground,var(--background))";
+  if (tone === "secondary") return "var(--secondary-foreground,var(--foreground))";
+  if (tone === "accent") return "var(--accent-foreground,var(--primary-foreground,var(--background)))";
+  if (tone === "dark") return "var(--background)";
+  return "var(--foreground)";
+}
+
+function resolveCtaSecondaryTokens(
+  primaryToneColor: string,
+  mode: CtaSecondaryMode
+): { bg: string; fg: string; hover: string } {
+  if (mode === "outline") {
+    return {
+      bg: "transparent",
+      fg: primaryToneColor,
+      hover: `color-mix(in oklab,${primaryToneColor} 16%,transparent)`,
+    };
+  }
+
+  if (mode === "soft") {
+    return {
+      bg: `color-mix(in oklab,${primaryToneColor} 22%,var(--surface-3,var(--card)) 78%)`,
+      fg: "var(--foreground)",
+      hover: `color-mix(in oklab,${primaryToneColor} 30%,var(--surface-3,var(--card)) 70%)`,
+    };
+  }
+
+  if (mode === "inverse") {
+    return {
+      bg: "var(--hero-text-inverse)",
+      fg: "var(--foreground)",
+      hover: "color-mix(in oklab,var(--hero-text-inverse) 84%,var(--surface-3,var(--card)) 16%)",
+    };
+  }
+
+  return {
+    bg: `color-mix(in oklab,${primaryToneColor} 26%,var(--surface-3,var(--card)) 74%)`,
+    fg: "var(--foreground)",
+    hover: `color-mix(in oklab,${primaryToneColor} 34%,var(--surface-3,var(--card)) 66%)`,
+  };
 }
 
 function getAssetPreviewTone(item: AssetItem): "processing" | "success" | "warning" {
@@ -1223,11 +1472,11 @@ export default function PublishedHeroLabPage({
   const [visualSourceKind, setVisualSourceKind] = useState<VisualSourceKind>("hero-image");
   const [assetPickerView, setAssetPickerView] = useState<AssetPickerView>("closed");
   const [showAssetFilters, setShowAssetFilters] = useState<boolean>(false);
-  const [variantFilter, setVariantFilter] = useState<AssetVariantKey | "all">("optimized");
-  const [orientationFilter, setOrientationFilter] = useState<MediaOrientation | "all">("landscape");
-  const [reviewFilter, setReviewFilter] = useState<MediaReviewStatus | "all">("approved");
-  const [assetComponentFilter, setAssetComponentFilter] = useState<AssetComponentFilter>("hero");
-  const [assetContextFilter, setAssetContextFilter] = useState<AssetContextFilter>("hero");
+  const [variantFilter, setVariantFilter] = useState<AssetVariantKey | "all">("all");
+  const [orientationFilter, setOrientationFilter] = useState<MediaOrientation | "all">("all");
+  const [reviewFilter, setReviewFilter] = useState<MediaReviewStatus | "all">("all");
+  const [assetComponentFilter, setAssetComponentFilter] = useState<AssetComponentFilter>("all");
+  const [assetSectorFilter, setAssetSectorFilter] = useState<AssetSectorFilter>("all");
   const [allAssets, setAllAssets] = useState<AssetItem[]>([]);
   const [assetState, setAssetState] = useState<"idle" | "loading" | "ready" | "error">("loading");
   const [assetError, setAssetError] = useState<string>("");
@@ -1260,6 +1509,8 @@ export default function PublishedHeroLabPage({
 
   const [textStyles, setTextStyles] = useState(DEFAULT_TEXT_STYLES);
   const [ctaStyle, setCtaStyle] = useState<CtaStyle>("filled");
+  const [ctaPrimaryTone, setCtaPrimaryTone] = useState<CtaPrimaryTone>("primary");
+  const [ctaSecondaryMode, setCtaSecondaryMode] = useState<CtaSecondaryMode>("auto");
   const [overlayDensity, setOverlayDensity] = useState<HeroAppearanceVariant>("soft");
   const [overlayStyleMode, setOverlayStyleMode] = useState<OverlayStyleMode>("gradient");
   const [overlayTint, setOverlayTint] = useState<OverlayColor>("blue");
@@ -1408,6 +1659,8 @@ export default function PublishedHeroLabPage({
       secondaryCtaHrefDraft,
       textStyles,
       ctaStyle,
+      ctaPrimaryTone,
+      ctaSecondaryMode,
       overlayDensity,
       overlayStyleMode,
       overlayTint,
@@ -1510,6 +1763,8 @@ export default function PublishedHeroLabPage({
     setSecondaryCtaHrefDraft(snapshot.secondaryCtaHrefDraft);
     setTextStyles(cloneSnapshot(snapshot.textStyles));
     setCtaStyle(snapshot.ctaStyle);
+    setCtaPrimaryTone(snapshot.ctaPrimaryTone ?? "primary");
+    setCtaSecondaryMode(snapshot.ctaSecondaryMode ?? "auto");
     setOverlayDensity(snapshot.overlayDensity);
     setOverlayStyleMode(snapshot.overlayStyleMode);
     setOverlayTint(snapshot.overlayTint);
@@ -2103,6 +2358,13 @@ export default function PublishedHeroLabPage({
 
     const headerToneColor = toneToSurfaceColor(headerSurfaceTone);
     const footerToneColor = toneToSurfaceColor(footerSurfaceTone);
+    const ctaPrimaryColor = toneToCtaColor(ctaPrimaryTone);
+    const ctaPrimaryForeground = toneToCtaForeground(ctaPrimaryTone);
+    const ctaPrimaryHover =
+      ctaPrimaryTone === "light"
+        ? "color-mix(in oklab,var(--background) 90%,var(--foreground) 10%)"
+        : `color-mix(in oklab,${ctaPrimaryColor} 84%,var(--hero-overlay-strong,var(--foreground)) 16%)`;
+    const ctaSecondaryTokens = resolveCtaSecondaryTokens(ctaPrimaryColor, ctaSecondaryMode);
     const activePresetCssVars = (() => {
       if (!activeBrandPresetItem) return {};
       const semanticTokens = resolveBrandPresetToSemanticTokens(
@@ -2144,10 +2406,21 @@ export default function PublishedHeroLabPage({
         footerSurfaceTone === "neutral"
           ? "color-mix(in oklab,var(--surface-2,var(--card)) 84%,transparent)"
           : `color-mix(in oklab,${footerToneColor} 74%,var(--hero-overlay-strong,var(--foreground)) 26%)`,
+      "--hero-integrated-chrome-text": "var(--hero-text-inverse)",
+      "--hero-integrated-chrome-shadow":
+        "0_2px_10px_color-mix(in_oklab,var(--hero-overlay-strong,var(--foreground))_34%,transparent)",
+      "--hero-cta-primary": ctaPrimaryColor,
+      "--hero-cta-primary-foreground": ctaPrimaryForeground,
+      "--hero-cta-primary-hover": ctaPrimaryHover,
+      "--hero-cta-secondary": ctaSecondaryTokens.bg,
+      "--hero-cta-secondary-foreground": ctaSecondaryTokens.fg,
+      "--hero-cta-secondary-hover": ctaSecondaryTokens.hover,
     } as unknown as CSSProperties;
   }, [
     activeBrandPresetItem,
     activeBrandPresetMode,
+    ctaPrimaryTone,
+    ctaSecondaryMode,
     footerSurfaceTone,
     headerSurfaceTone,
     navOverlayDensity,
@@ -2197,6 +2470,12 @@ export default function PublishedHeroLabPage({
     [logoAssets, selectedLogoAssetId]
   );
 
+  const availableAssetSectorOptions = useMemo(() => {
+    const sectors = new Set<string>();
+    allAssets.forEach((item) => sectors.add(readAssetSectorValue(item.tags)));
+    return ["all", ...Array.from(sectors).sort((left, right) => left.localeCompare(right, "es"))];
+  }, [allAssets]);
+
   const contextualAssets = useMemo(() => {
     const base =
       visualSourceKind === "hero-image"
@@ -2213,18 +2492,8 @@ export default function PublishedHeroLabPage({
         if (assetComponentFilter === "hero" && !item.allowedComponents.includes("hero")) return false;
         if (assetComponentFilter === "logo" && item.assetRole !== "logo") return false;
         if (assetComponentFilter === "icon" && item.assetRole !== "icon") return false;
-        if (
-          assetContextFilter === "hero" &&
-          !(
-            item.preferredUsage === "hero-background" ||
-            item.preferredUsage === "hero-logo" ||
-            includesHeroAllowedContext(item.allowedIn)
-          )
-        ) {
-          return false;
-        }
-        if (assetContextFilter === "navbar" && item.preferredUsage !== "navbar-logo") return false;
-        if (assetContextFilter === "footer" && item.preferredUsage !== "footer-mark") return false;
+        const sectorValue = readAssetSectorValue(item.tags);
+        if (assetSectorFilter !== "all" && sectorValue !== assetSectorFilter) return false;
         return true;
       })
       .sort((left, right) => {
@@ -2234,7 +2503,7 @@ export default function PublishedHeroLabPage({
       });
   }, [
     assetComponentFilter,
-    assetContextFilter,
+    assetSectorFilter,
     heroImageAssets,
     logoAssets,
     orientationFilter,
@@ -2580,6 +2849,10 @@ export default function PublishedHeroLabPage({
     .filter(Boolean)
     .join(" ");
   const ctaStyleClassName = ctaStyleClasses(ctaStyle);
+  const ctaSecondaryModeClassName =
+    ctaSecondaryMode === "outline"
+      ? "border [border-color:var(--hero-cta-secondary-safe)] !bg-transparent [color:var(--hero-cta-secondary-safe)] hover:[background:var(--hero-cta-secondary-hover-safe)]"
+      : "";
   const ctaRegulationClassName =
     ctaRegulation === "primary-focus"
       ? {
@@ -2588,6 +2861,8 @@ export default function PublishedHeroLabPage({
           secondary: "opacity-80",
         }
       : { primary: "", secondary: "" };
+  const overlayTintKindLabel = isOverlayGenericTint(overlayTint) ? "Generico" : "Paleta";
+  const overlayTintLabel = OVERLAY_TINT_LABEL_MAP[overlayTint];
   const effectiveOverlayStyleMode: OverlayStyleMode = pieceVisibility["overlay-atmosphere"]
     ? overlayStyleMode
     : "none";
@@ -2634,13 +2909,13 @@ export default function PublishedHeroLabPage({
     .filter(Boolean)
     .join(" ");
   const assetKindLabel =
-    visualSourceKind === "hero-image" ? "Imagen" : visualSourceKind === "logo" ? "Logo" : "Video";
+    visualSourceKind === "hero-image" ? "Imagen" : visualSourceKind === "logo" ? "Logo" : "Vídeo";
   const isAssetPickerOpen = assetPickerView === "open";
   const mediaLibraryCount = visualSourceKind === "video" ? 0 : contextualAssets.length;
   const selectedAssetSummary = selectedContextAsset
     ? `${selectedContextAsset.label} - ${selectedContextAsset.variantKey} - ${selectedContextAsset.reviewStatus}`
     : visualSourceKind === "video"
-      ? "Video sin soporte en esta fase"
+      ? "Vídeo sin soporte en esta fase"
       : "Sin asset seleccionado";
   const sourceSnapshotId = candidateSnapshot.id;
   const sourcePresetId = candidateSnapshot.meta?.sourcePresetVaultItemId ?? "sin preset";
@@ -3144,28 +3419,23 @@ export default function PublishedHeroLabPage({
 
   function handleVisualSourceKindChange(nextKind: VisualSourceKind) {
     setVisualSourceKind(nextKind);
+    setVariantFilter("all");
+    setOrientationFilter("all");
+    setReviewFilter("all");
+    setAssetSectorFilter("all");
 
     if (nextKind === "hero-image") {
-      setVariantFilter("optimized");
-      setOrientationFilter("landscape");
-      setReviewFilter("approved");
-      setAssetComponentFilter("hero");
-      setAssetContextFilter("hero");
+      setAssetComponentFilter("all");
       setSourceMode("hero-safe-media");
       return;
     }
 
     if (nextKind === "logo") {
-      setVariantFilter("vectorized-svg");
-      setOrientationFilter("all");
-      setReviewFilter("approved");
       setAssetComponentFilter("logo");
-      setAssetContextFilter("all");
       return;
     }
 
     setAssetComponentFilter("all");
-    setAssetContextFilter("all");
     setAssetPickerView("closed");
   }
 
@@ -3631,7 +3901,7 @@ export default function PublishedHeroLabPage({
                           : "text-muted-foreground hover:[background:var(--surface-2,var(--muted))]",
                       ].join(" ")}
                     >
-                      {mode === "preview" ? "Vista" : "Layout"}
+                      {mode === "preview" ? "Vista previa" : "Estructura"}
                     </button>
                   ))}
                 </div>
@@ -3697,7 +3967,7 @@ export default function PublishedHeroLabPage({
                         {([
                           { id: "hero-image", label: "Imagen" },
                           { id: "logo", label: "Logo" },
-                          { id: "video", label: "Video" },
+                          { id: "video", label: "Vídeo" },
                         ] as const).map((option) => (
                           <button
                             key={option.id}
@@ -3741,7 +4011,7 @@ export default function PublishedHeroLabPage({
                             >
                               {VARIANT_FILTERS.map((filter) => (
                                 <option key={filter} value={filter}>
-                                  {filter}
+                                  {toFilterOptionLabel(filter)}
                                 </option>
                               ))}
                             </select>
@@ -3757,7 +4027,7 @@ export default function PublishedHeroLabPage({
                             >
                               {ORIENTATION_FILTERS.map((filter) => (
                                 <option key={filter} value={filter}>
-                                  {filter}
+                                  {toFilterOptionLabel(filter)}
                                 </option>
                               ))}
                             </select>
@@ -3773,7 +4043,7 @@ export default function PublishedHeroLabPage({
                             >
                               {REVIEW_FILTERS.map((filter) => (
                                 <option key={filter} value={filter}>
-                                  {filter}
+                                  {toFilterOptionLabel(filter)}
                                 </option>
                               ))}
                             </select>
@@ -3787,25 +4057,26 @@ export default function PublishedHeroLabPage({
                               }
                               className="h-8 rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-ring"
                             >
-                              <option value="all">all</option>
-                              <option value="hero">hero</option>
-                              <option value="logo">logo</option>
-                              <option value="icon">icon</option>
+                              <option value="all">Todos</option>
+                              <option value="hero">Hero</option>
+                              <option value="logo">Logo</option>
+                              <option value="icon">Icono</option>
                             </select>
                           </label>
                           <label className="grid gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            Sector / contexto
+                            Sector
                             <select
-                              value={assetContextFilter}
+                              value={assetSectorFilter}
                               onChange={(event) =>
-                                setAssetContextFilter(event.target.value as AssetContextFilter)
+                                setAssetSectorFilter(event.target.value)
                               }
                               className="h-8 rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-2 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-ring"
                             >
-                              <option value="all">all</option>
-                              <option value="hero">hero</option>
-                              <option value="navbar">navbar</option>
-                              <option value="footer">footer</option>
+                              {availableAssetSectorOptions.map((sectorValue) => (
+                                <option key={sectorValue} value={sectorValue}>
+                                  {toSectorFilterLabel(sectorValue)}
+                                </option>
+                              ))}
                             </select>
                           </label>
                         </div>
@@ -3865,7 +4136,7 @@ export default function PublishedHeroLabPage({
                         <div className="mt-1.5 max-h-56 overflow-y-auto rounded-md border border-border/75 [background:var(--surface-1,var(--background))] p-1.5 bcc-scrollbar">
                           {visualSourceKind === "video" ? (
                             <p className="px-2 py-3 text-center text-xs text-muted-foreground">
-                              Video sin soporte en esta fase.
+                              Vídeo sin soporte en esta fase.
                             </p>
                           ) : assetState === "loading" ? (
                             <p className="px-2 py-3 text-center text-xs text-muted-foreground">
@@ -3980,156 +4251,6 @@ export default function PublishedHeroLabPage({
                           </div>
                         );
                       })}
-                    </div>
-                  </PanelCard>
-
-                  <PanelCard variant="task" className="p-3">
-                    <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80">
-                      Emphasis / Atmosphere
-                    </h2>
-
-                    <div className="mt-2 space-y-2 text-xs">
-                      <label className="block">
-                        <span className="mb-1 block text-muted-foreground">overlay density</span>
-                        <select
-                          value={overlayDensity}
-                          onChange={(event) => setOverlayDensity(event.target.value as HeroAppearanceVariant)}
-                          className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
-                        >
-                          <option value="transparent">transparent</option>
-                          <option value="soft">soft</option>
-                          <option value="solid">solid</option>
-                        </select>
-                      </label>
-
-                      <label className="block">
-                        <span className="mb-1 block text-muted-foreground">overlay style</span>
-                        <select
-                          value={overlayStyleMode}
-                          onChange={(event) => setOverlayStyleMode(event.target.value as OverlayStyleMode)}
-                          className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
-                        >
-                          <option value="gradient">gradient</option>
-                          <option value="solid">solid</option>
-                          <option value="none">none</option>
-                        </select>
-                      </label>
-
-                      <div className="rounded-md border border-border/75 [background:var(--surface-2,var(--card))] p-2">
-                        <span className="mb-1 block text-muted-foreground">overlay tint</span>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {(["blue", "green", "amber", "purple", "smoke"] as const).map((tone) => (
-                            <button
-                              key={tone}
-                              type="button"
-                              disabled={effectiveOverlayStyleMode === "none"}
-                              onClick={() => setOverlayTint(tone)}
-                              className={[
-                                "flex items-center justify-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold capitalize transition",
-                                overlayTint === tone
-                                  ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
-                                  : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
-                                effectiveOverlayStyleMode === "none" ? "cursor-not-allowed opacity-45" : "",
-                              ].join(" ")}
-                            >
-                              <span
-                                className={`h-2.5 w-4 rounded-full ${OVERLAY_TINT_PREVIEW_CLASS[tone]}`}
-                                aria-hidden="true"
-                              />
-                              {tone}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <label className="block">
-                        <span className="mb-1 block text-muted-foreground">headline tone (modo auto)</span>
-                        <select
-                          value={labHeadlineTone}
-                          onChange={(event) => setLabHeadlineTone(event.target.value as LabHeadlineTone)}
-                          className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
-                        >
-                          <option value="white">white</option>
-                          <option value="black">black</option>
-                          <option value="inverse">inverse</option>
-                          <option value="muted-light">muted-light</option>
-                          <option value="warm-light">warm-light</option>
-                          <option value="cool-light">cool-light</option>
-                        </select>
-                      </label>
-
-                      <div>
-                        <span className="mb-1 block text-muted-foreground">background emphasis</span>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          {(["low", "medium", "high"] as const).map((emphasis) => (
-                            <button
-                              key={emphasis}
-                              type="button"
-                              onClick={() => setBackgroundEmphasis(emphasis)}
-                              className={[
-                                "flex items-center justify-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold capitalize transition",
-                                backgroundEmphasis === emphasis
-                                  ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
-                                  : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
-                              ].join(" ")}
-                            >
-                              {emphasis}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="mb-1 block text-muted-foreground">background fit</span>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          {(["cover", "contain", "fill"] as const).map((fit) => (
-                            <button
-                              key={fit}
-                              type="button"
-                              onClick={() => setBackgroundFit(fit)}
-                              className={[
-                                "flex items-center justify-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold capitalize transition",
-                                backgroundFit === fit
-                                  ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
-                                  : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
-                              ].join(" ")}
-                            >
-                              {fit}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="mb-1 block text-muted-foreground">background focus</span>
-                        <div className="grid grid-cols-5 gap-1.5">
-                          {(["center", "top", "bottom", "left", "right"] as const).map((focus) => (
-                            <button
-                              key={focus}
-                              type="button"
-                              onClick={() => setBackgroundFocus(focus)}
-                              className={[
-                                "flex items-center justify-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold capitalize transition",
-                                backgroundFocus === focus
-                                  ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
-                                  : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
-                              ].join(" ")}
-                            >
-                              {focus}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <label className="block">
-                        <span className="mb-1 block text-muted-foreground">cta regulation</span>
-                        <select
-                          value={ctaRegulation}
-                          onChange={(event) => setCtaRegulation(event.target.value as CtaRegulation)}
-                          className="w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
-                        >
-                          <option value="balanced">balanced</option>
-                          <option value="primary-focus">primary-focus</option>
-                        </select>
-                      </label>
                     </div>
                   </PanelCard>
 
@@ -4627,7 +4748,7 @@ export default function PublishedHeroLabPage({
                           labSubheadlineClassName={subheadlineClassName}
                           labCtaGroupClassName={ctaGroupClassName}
                           labPrimaryCtaClassName={`${ctaTextClassName} ${ctaButtonStructureClassName} ${ctaStyleClassName.primary} ${ctaRegulationClassName.primary}`}
-                          labSecondaryCtaClassName={`${ctaTextClassName} ${ctaButtonStructureClassName} ${ctaStyleClassName.secondary} ${ctaRegulationClassName.secondary}`}
+                          labSecondaryCtaClassName={`${ctaTextClassName} ${ctaButtonStructureClassName} ${ctaStyleClassName.secondary} ${ctaSecondaryModeClassName} ${ctaRegulationClassName.secondary}`}
                         />
 
                         {canvasMode === "layout" ? (
@@ -5212,13 +5333,9 @@ export default function PublishedHeroLabPage({
                               </div>
                               <div className={inspectorControlGroupClassName}>
                                 <p className={inspectorControlGroupTitleClassName}>B. Fondo y altura</p>
-                                <p className={inspectorMiniGroupTitleClassName}>B1. Fondo</p>
+                                <p className={inspectorMiniGroupTitleClassName}>B1. Superficie</p>
                                 <div className="mt-1 flex flex-wrap gap-1">
-                                  {([
-                                    { value: "minimal", label: "Neutro", title: "Superficie neutra del sistema" },
-                                    { value: "solid", label: "Acento", title: "Color de acento del preset activo" },
-                                    { value: "glass", label: "Oscuro", title: "Token foreground / modo oscuro" },
-                                  ] as const).map((style) => (
+                                  {SURFACE_STYLE_OPTIONS.map((style) => (
                                     <button
                                       key={style.value}
                                       type="button"
@@ -5235,34 +5352,11 @@ export default function PublishedHeroLabPage({
                                     </button>
                                   ))}
                                 </div>
+                                <p className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                                  B2. Tonos de paleta
+                                </p>
                                 <div className="mt-1 grid grid-cols-3 gap-1">
-                                  {([
-                                    {
-                                      value: "neutral",
-                                      label: "Neutro",
-                                      title: "Superficie neutra del sistema",
-                                    },
-                                    {
-                                      value: "primary",
-                                      label: "Primary",
-                                      title: "Color principal del preset activo",
-                                    },
-                                    {
-                                      value: "secondary",
-                                      label: "Secondary",
-                                      title: "Color secundario del preset activo",
-                                    },
-                                    {
-                                      value: "accent",
-                                      label: "Accent",
-                                      title: "Color de acento del preset activo",
-                                    },
-                                    {
-                                      value: "dark",
-                                      label: "Oscuro",
-                                      title: "Token foreground / modo oscuro",
-                                    },
-                                  ] as const).map((tone) => (
+                                  {PALETTE_TONE_OPTIONS.map((tone) => (
                                     <button
                                       key={tone.value}
                                       type="button"
@@ -5283,7 +5377,7 @@ export default function PublishedHeroLabPage({
                                   Usa tokens del Brand Lab activo.
                                 </p>
                                 <p className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                                  B2. Altura
+                                  B3. Altura
                                 </p>
                                 <div className="mt-1 grid grid-cols-3 gap-1">
                                   {([
@@ -5308,7 +5402,7 @@ export default function PublishedHeroLabPage({
                                   ))}
                                 </div>
                                 <p className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                                  B3. Densidad
+                                  B4. Densidad
                                 </p>
                                 <div className="mt-1 flex flex-wrap gap-1">
                                   {(["compact", "normal", "spacious"] as const).map((height) => (
@@ -5672,16 +5766,10 @@ export default function PublishedHeroLabPage({
                                   ))}
                                 </div>
                                 <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                  D2. Tono
+                                  D2. Tonos de paleta
                                 </p>
                                 <div className="mt-1 grid grid-cols-3 gap-1">
-                                  {([
-                                    { value: "neutral", label: "Neutro" },
-                                    { value: "primary", label: "Primary" },
-                                    { value: "secondary", label: "Secondary" },
-                                    { value: "accent", label: "Accent" },
-                                    { value: "dark", label: "Oscuro" },
-                                  ] as const).map((toneValue) => (
+                                  {PALETTE_TONE_OPTIONS.map((toneValue) => (
                                     <button
                                       key={toneValue.value}
                                       type="button"
@@ -6045,13 +6133,9 @@ export default function PublishedHeroLabPage({
                               </div>
                               <div className={inspectorControlGroupClassName}>
                                 <p className={inspectorControlGroupTitleClassName}>B. Fondo y altura</p>
-                                <p className={inspectorMiniGroupTitleClassName}>B1. Fondo</p>
+                                <p className={inspectorMiniGroupTitleClassName}>B1. Superficie</p>
                                 <div className="mt-1 flex flex-wrap gap-1">
-                                  {([
-                                    { value: "minimal", label: "Neutro", title: "Superficie neutra del sistema" },
-                                    { value: "solid", label: "Acento", title: "Color de acento del preset activo" },
-                                    { value: "glass", label: "Oscuro", title: "Token foreground / modo oscuro" },
-                                  ] as const).map((style) => (
+                                  {SURFACE_STYLE_OPTIONS.map((style) => (
                                     <button
                                       key={style.value}
                                       type="button"
@@ -6068,34 +6152,11 @@ export default function PublishedHeroLabPage({
                                     </button>
                                   ))}
                                 </div>
+                                <p className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                                  B2. Tonos de paleta
+                                </p>
                                 <div className="mt-1 grid grid-cols-3 gap-1">
-                                  {([
-                                    {
-                                      value: "neutral",
-                                      label: "Neutro",
-                                      title: "Superficie neutra del sistema",
-                                    },
-                                    {
-                                      value: "primary",
-                                      label: "Primary",
-                                      title: "Color principal del preset activo",
-                                    },
-                                    {
-                                      value: "secondary",
-                                      label: "Secondary",
-                                      title: "Color secundario del preset activo",
-                                    },
-                                    {
-                                      value: "accent",
-                                      label: "Accent",
-                                      title: "Color de acento del preset activo",
-                                    },
-                                    {
-                                      value: "dark",
-                                      label: "Oscuro",
-                                      title: "Token foreground / modo oscuro",
-                                    },
-                                  ] as const).map((tone) => (
+                                  {PALETTE_TONE_OPTIONS.map((tone) => (
                                     <button
                                       key={tone.value}
                                       type="button"
@@ -6116,7 +6177,7 @@ export default function PublishedHeroLabPage({
                                   Usa tokens del Brand Lab activo.
                                 </p>
                                 <p className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                                  B2. Altura
+                                  B3. Altura
                                 </p>
                                 <div className="mt-1 grid grid-cols-3 gap-1">
                                   {([
@@ -6141,7 +6202,7 @@ export default function PublishedHeroLabPage({
                                   ))}
                                 </div>
                                 <p className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                                  B3. Densidad
+                                  B4. Densidad
                                 </p>
                                 <div className="mt-1 flex flex-wrap gap-1">
                                   {(["compact", "normal", "spacious"] as const).map((value) => (
@@ -6660,122 +6721,112 @@ export default function PublishedHeroLabPage({
                           ) : null}
 
                           {selectedPiece === "overlay-atmosphere" ? (
-                            <div className="mt-2 space-y-1.5">
-                              <select
-                                value={overlayDensity}
-                                onChange={(event) => setOverlayDensity(event.target.value as HeroAppearanceVariant)}
-                                className="h-8 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
-                              >
-                                <option value="transparent">transparent</option>
-                                <option value="soft">soft</option>
-                                <option value="solid">solid</option>
-                              </select>
-                              <select
-                                value={overlayStyleMode}
-                                onChange={(event) => setOverlayStyleMode(event.target.value as OverlayStyleMode)}
-                                className="h-8 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
-                              >
-                                <option value="gradient">gradient</option>
-                                <option value="solid">solid</option>
-                                <option value="none">none</option>
-                              </select>
-                              <div className="flex flex-wrap gap-1">
+                            <section className={inspectorControlGroupClassName}>
+                              <p className={inspectorControlGroupTitleClassName}>A. Overlay / atmosfera</p>
+
+                              <div className="mt-1.5 grid grid-cols-3 gap-1">
                                 {([
-                                  {
-                                    tone: "blue",
-                                    label: "Azul",
-                                    swatch:
-                                      "[background:color-mix(in_oklab,var(--processing,var(--primary))_62%,var(--surface-1,var(--background))_38%)]",
-                                  },
-                                  {
-                                    tone: "green",
-                                    label: "Verde",
-                                    swatch:
-                                      "[background:color-mix(in_oklab,var(--success,var(--primary))_62%,var(--surface-1,var(--background))_38%)]",
-                                  },
-                                  {
-                                    tone: "amber",
-                                    label: "Ambar",
-                                    swatch:
-                                      "[background:color-mix(in_oklab,var(--warning,var(--primary))_62%,var(--surface-1,var(--background))_38%)]",
-                                  },
-                                  {
-                                    tone: "purple",
-                                    label: "Accent",
-                                    swatch:
-                                      "[background:color-mix(in_oklab,var(--accent,var(--primary))_62%,var(--surface-1,var(--background))_38%)]",
-                                  },
-                                  {
-                                    tone: "smoke",
-                                    label: "Neutro",
-                                    swatch:
-                                      "[background:color-mix(in_oklab,var(--foreground)_58%,var(--surface-1,var(--background))_42%)]",
-                                  },
-                                ] as const).map((item) => (
+                                  { value: "transparent", label: "Transp." },
+                                  { value: "soft", label: "Suave" },
+                                  { value: "solid", label: "Solido" },
+                                ] as const).map((density) => (
                                   <button
-                                    key={item.tone}
+                                    key={density.value}
                                     type="button"
-                                    onClick={() => setOverlayTint(item.tone)}
-                                    title={item.label}
-                                    className={[
-                                      "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
-                                      overlayTint === item.tone
-                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
-                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
-                                    ].join(" ")}
-                                  >
-                                    <span className={`h-2 w-2 rounded-full ${item.swatch}`} />
-                                    {item.label}
-                                  </button>
-                                ))}
-                              </div>
-                              <select
-                                value={labHeadlineTone}
-                                onChange={(event) => setLabHeadlineTone(event.target.value as LabHeadlineTone)}
-                                className="h-8 w-full rounded-md border border-border/75 [background:var(--surface-1,var(--background))] px-2 text-xs outline-none focus:ring-2 focus:ring-ring"
-                              >
-                                <option value="white">white</option>
-                                <option value="black">black</option>
-                                <option value="inverse">inverse</option>
-                                <option value="muted-light">muted-light</option>
-                                <option value="warm-light">warm-light</option>
-                                <option value="cool-light">cool-light</option>
-                              </select>
-                              <div className="grid grid-cols-3 gap-1">
-                                {(["low", "medium", "high"] as const).map((value) => (
-                                  <button
-                                    key={value}
-                                    type="button"
-                                    onClick={() => setBackgroundEmphasis(value)}
+                                    onClick={() => setOverlayDensity(density.value)}
                                     className={[
                                       "rounded-md border px-2 py-1 text-[10px] font-semibold uppercase",
-                                      backgroundEmphasis === value
+                                      overlayDensity === density.value
                                         ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
                                         : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
-                                    {value}
+                                    {density.label}
                                   </button>
                                 ))}
                               </div>
-                              <div className="flex flex-wrap gap-1">
-                                {(["balanced", "primary-focus"] as const).map((value) => (
+
+                              <div className="mt-1.5 grid grid-cols-3 gap-1">
+                                {([
+                                  { value: "gradient", label: "Grad." },
+                                  { value: "solid", label: "Solido" },
+                                  { value: "none", label: "Sin capa" },
+                                ] as const).map((styleValue) => (
                                   <button
-                                    key={value}
+                                    key={styleValue.value}
                                     type="button"
-                                    onClick={() => setCtaRegulation(value)}
+                                    onClick={() => setOverlayStyleMode(styleValue.value)}
                                     className={[
-                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
-                                      ctaRegulation === value
+                                      "rounded-md border px-2 py-1 text-[10px] font-semibold uppercase",
+                                      overlayStyleMode === styleValue.value
                                         ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
                                         : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                     ].join(" ")}
                                   >
-                                    {value}
+                                    {styleValue.label}
                                   </button>
                                 ))}
                               </div>
-                            </div>
+
+                              <p className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                                B. Tintes genericos
+                              </p>
+                              <div className="grid grid-cols-2 gap-1">
+                                {OVERLAY_GENERIC_TINT_OPTIONS.map((tone) => (
+                                  <button
+                                    key={tone.value}
+                                    type="button"
+                                    disabled={effectiveOverlayStyleMode === "none"}
+                                    onClick={() => setOverlayTint(tone.value)}
+                                    className={[
+                                      "flex items-center justify-center gap-1 rounded-md border px-2 py-1 text-[10px] font-semibold transition",
+                                      overlayTint === tone.value
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      effectiveOverlayStyleMode === "none" ? "cursor-not-allowed opacity-45" : "",
+                                    ].join(" ")}
+                                  >
+                                    <span
+                                      className={`h-2.5 w-4 rounded-full ${OVERLAY_TINT_PREVIEW_CLASS[tone.value]}`}
+                                      aria-hidden="true"
+                                    />
+                                    {tone.label}
+                                  </button>
+                                ))}
+                              </div>
+
+                              <p className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                                C. Tonos de paleta
+                              </p>
+                              <div className="grid grid-cols-2 gap-1">
+                                {OVERLAY_PALETTE_TINT_OPTIONS.map((tone) => (
+                                  <button
+                                    key={tone.value}
+                                    type="button"
+                                    title={tone.title}
+                                    disabled={effectiveOverlayStyleMode === "none"}
+                                    onClick={() => setOverlayTint(tone.value)}
+                                    className={[
+                                      "flex items-center justify-center gap-1 rounded-md border px-2 py-1 text-[10px] font-semibold transition",
+                                      overlayTint === tone.value
+                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground"
+                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      effectiveOverlayStyleMode === "none" ? "cursor-not-allowed opacity-45" : "",
+                                    ].join(" ")}
+                                  >
+                                    <span
+                                      className={`h-2.5 w-4 rounded-full ${OVERLAY_TINT_PREVIEW_CLASS[tone.value]}`}
+                                      aria-hidden="true"
+                                    />
+                                    {tone.label}
+                                  </button>
+                                ))}
+                              </div>
+
+                              <p className="mt-1 text-[10px] text-muted-foreground">
+                                Modo activo: {overlayTintKindLabel} ({overlayTintLabel})
+                              </p>
+                            </section>
                           ) : null}
                         </section>
 
@@ -7079,9 +7130,9 @@ export default function PublishedHeroLabPage({
                             <p className={inspectorControlGroupTitleClassName}>B. Posicion</p>
                             <div className="mt-1.5 flex flex-wrap gap-1">
                               {([
-                                { key: "left", label: "start" },
-                                { key: "center", label: "center" },
-                                { key: "right", label: "end" },
+                                { key: "left", label: "Inicio" },
+                                { key: "center", label: "Centro" },
+                                { key: "right", label: "Final" },
                               ] as const).map((item) => (
                                 <button
                                   key={item.key}
@@ -7109,21 +7160,25 @@ export default function PublishedHeroLabPage({
 
                         {isCtaGroupPiece ? (
                           <section className={inspectorControlGroupClassName}>
-                            <p className={inspectorControlGroupTitleClassName}>C. Estilo</p>
+                            <p className={inspectorControlGroupTitleClassName}>C. Estilo base</p>
                             <div className="mt-1.5 flex flex-wrap gap-1">
-                              {(["filled", "outline", "soft"] as const).map((style) => (
+                              {([
+                                { value: "filled", label: "Relleno" },
+                                { value: "outline", label: "Outline" },
+                                { value: "soft", label: "Soft" },
+                              ] as const).map((style) => (
                                 <button
-                                  key={style}
+                                  key={style.value}
                                   type="button"
-                                  onClick={() => setCtaStyle(style)}
+                                  onClick={() => setCtaStyle(style.value)}
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
-                                    ctaStyle === style
+                                    ctaStyle === style.value
                                       ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
                                       : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
-                                  {style}
+                                  {style.label}
                                 </button>
                               ))}
                             </div>
@@ -7132,21 +7187,72 @@ export default function PublishedHeroLabPage({
 
                         {isCtaGroupPiece ? (
                           <section className={inspectorControlGroupClassName}>
-                            <p className={inspectorControlGroupTitleClassName}>D. Regulacion</p>
-                            <div className="mt-1.5 flex flex-wrap gap-1">
-                              {(["balanced", "primary-focus"] as const).map((value) => (
+                            <p className={inspectorControlGroupTitleClassName}>D. Color CTA primario</p>
+                            <div className="mt-1.5 grid grid-cols-3 gap-1">
+                              {CTA_PRIMARY_TONE_OPTIONS.map((tone) => (
                                 <button
-                                  key={value}
+                                  key={tone.value}
                                   type="button"
-                                  onClick={() => setCtaRegulation(value)}
+                                  title={tone.title}
+                                  onClick={() => setCtaPrimaryTone(tone.value)}
                                   className={[
                                     "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
-                                    ctaRegulation === value
+                                    ctaPrimaryTone === tone.value
                                       ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
                                       : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
                                   ].join(" ")}
                                 >
-                                  {value}
+                                  {tone.label}
+                                </button>
+                              ))}
+                            </div>
+                          </section>
+                        ) : null}
+
+                        {isCtaGroupPiece ? (
+                          <section className={inspectorControlGroupClassName}>
+                            <p className={inspectorControlGroupTitleClassName}>E. CTA secundario</p>
+                            <div className="mt-1.5 grid grid-cols-2 gap-1">
+                              {CTA_SECONDARY_MODE_OPTIONS.map((mode) => (
+                                <button
+                                  key={mode.value}
+                                  type="button"
+                                  title={mode.title}
+                                  onClick={() => setCtaSecondaryMode(mode.value)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    ctaSecondaryMode === mode.value
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                  ].join(" ")}
+                                >
+                                  {mode.label}
+                                </button>
+                              ))}
+                            </div>
+                          </section>
+                        ) : null}
+
+                        {isCtaGroupPiece ? (
+                          <section className={inspectorControlGroupClassName}>
+                            <p className={inspectorControlGroupTitleClassName}>F. Regulacion</p>
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                              {([
+                                { value: "balanced", label: "Equilibrada" },
+                                { value: "primary-focus", label: "Foco primario" },
+                              ] as const).map((value) => (
+                                <button
+                                  key={value.value}
+                                  type="button"
+                                  onClick={() => setCtaRegulation(value.value)}
+                                  className={[
+                                    "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                    ctaRegulation === value.value
+                                      ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                      : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                  ].join(" ")}
+                                >
+                                  {value.label}
                                 </button>
                               ))}
                             </div>
