@@ -54,7 +54,10 @@ type ViewMode = "day" | "week";
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function toISODate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function addDays(d: Date, n: number): Date {
@@ -67,11 +70,29 @@ function addDays(d: Date, n: number): Date {
 function formatDateLabel(iso: string): string {
   const [year, month, day] = iso.split("-").map(Number);
   const d = new Date(year, month - 1, day);
-  return d.toLocaleDateString("es-ES", {
+  const s = d.toLocaleDateString("es-ES", {
     weekday: "long",
     day: "numeric",
     month: "long",
+    year: "numeric",
   });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function formatWeekLabel(ws: string): string {
+  const start = new Date(ws + "T00:00:00");
+  const end = addDays(start, 6);
+  if (start.getMonth() === end.getMonth()) {
+    const endStr = end.toLocaleDateString("es-ES", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    return `${start.getDate()} – ${endStr}`;
+  }
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("es-ES", { day: "numeric", month: "short" }).replace(/\./g, "");
+  return `${fmt(start)} – ${fmt(end)} ${end.getFullYear()}`;
 }
 
 function formatShortDate(d: string | Date): string {
@@ -303,7 +324,7 @@ function DayView({
   return (
     <div className="flex flex-col gap-2">
       <p
-        className="text-sm font-medium capitalize"
+        className="text-sm font-medium"
         style={{ color: "var(--muted-foreground)" }}
       >
         {formatDateLabel(date)}
@@ -495,7 +516,7 @@ export default function AppointmentsPage() {
   const navLabel =
     view === "day"
       ? formatDateLabel(currentDate)
-      : `${formatShortDate(new Date(weekStart))} – ${formatShortDate(addDays(new Date(weekStart), 6))}`;
+      : formatWeekLabel(weekStart);
 
   return (
     <>
@@ -577,7 +598,7 @@ export default function AppointmentsPage() {
 
         {/* Date label */}
         <span
-          className="text-sm font-medium capitalize"
+          className="text-sm font-medium"
           style={{ color: "var(--muted-foreground)" }}
         >
           {navLabel}
