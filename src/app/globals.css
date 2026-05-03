@@ -74,6 +74,22 @@
   --panel-badge-destructive-bg: var(--danger-soft);
   --panel-badge-destructive-fg: var(--danger-foreground);
 
+  /* ── Kanban resource palette ─────────────────────────────
+     Paleta fija para recursos/operarios.
+     Compartida por Appointments y CRM.
+     El cliente elige el índice, el sistema
+     aplica el color del contrato.
+     ─────────────────────────────────────────────────────── */
+  --kanban-resource-1: oklch(0.65 0.15 250);
+  --kanban-resource-2: oklch(0.62 0.15 160);
+  --kanban-resource-3: oklch(0.63 0.15 30);
+  --kanban-resource-4: oklch(0.60 0.15 300);
+  --kanban-resource-5: oklch(0.64 0.15 60);
+  --kanban-resource-6: oklch(0.61 0.15 200);
+  --kanban-resource-7: oklch(0.63 0.15 0);
+  --kanban-resource-8: oklch(0.60 0.12 280);
+  --kanban-resource-soft-opacity: 0.15;
+
   /* Pair tokens (light/dark) */
   --bg-light: #ffffff;
   --fg-light: #171717;
@@ -594,6 +610,15 @@ html[data-brand-mode="system"] {
   --color-processing-soft: var(--processing-soft);
   --color-task-surface: var(--task-surface);
   --color-task-surface-foreground: var(--task-surface-foreground);
+
+  --color-kanban-resource-1: var(--kanban-resource-1);
+  --color-kanban-resource-2: var(--kanban-resource-2);
+  --color-kanban-resource-3: var(--kanban-resource-3);
+  --color-kanban-resource-4: var(--kanban-resource-4);
+  --color-kanban-resource-5: var(--kanban-resource-5);
+  --color-kanban-resource-6: var(--kanban-resource-6);
+  --color-kanban-resource-7: var(--kanban-resource-7);
+  --color-kanban-resource-8: var(--kanban-resource-8);
 
   --shadow-elevation-base: var(--elevation-base);
   --shadow-elevation-interactive: var(--elevation-interactive);
