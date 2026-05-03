@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import PageHeader from "@/components/panel/PageHeader";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -63,13 +63,6 @@ function addDays(d: Date, n: number): Date {
   return r;
 }
 
-function getWeekStart(d: Date): Date {
-  const r = new Date(d);
-  const day = r.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  r.setDate(r.getDate() + diff);
-  return r;
-}
 
 function formatDateLabel(iso: string): string {
   const [year, month, day] = iso.split("-").map(Number);
@@ -81,8 +74,9 @@ function formatDateLabel(iso: string): string {
   });
 }
 
-function formatShortDate(d: Date): string {
-  return d.toLocaleDateString("es-ES", { weekday: "short", day: "numeric" });
+function formatShortDate(d: string | Date): string {
+  const date = typeof d === "string" ? new Date(d + "T00:00:00") : d;
+  return date.toLocaleDateString("es-ES", { weekday: "short", day: "numeric" });
 }
 
 // ── Status badge ───────────────────────────────────────────────────────────────
@@ -348,12 +342,12 @@ function WeekView({
   selectedId,
   onSelect,
 }: {
-  weekStart: Date;
+  weekStart: string;
   appointments: Appointment[];
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const days = Array.from({ length: 7 }, (_, i) => addDays(new Date(weekStart), i));
 
   return (
     <div className="grid grid-cols-7 gap-2">
@@ -432,7 +426,13 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const weekStart = getWeekStart(new Date(currentDate + "T00:00:00"));
+  const weekStart = useMemo(() => {
+    const d = new Date(currentDate);
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().split("T")[0];
+  }, [currentDate]);
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
@@ -447,16 +447,16 @@ export default function AppointmentsPage() {
       let list: Appointment[] = data.appointments ?? [];
 
       if (view === "week") {
-        const end = toISODate(addDays(weekStart, 6));
-        const ws = toISODate(weekStart);
-        list = list.filter((a) => a.date >= ws && a.date <= end);
+        const end = toISODate(addDays(new Date(weekStart), 6));
+        list = list.filter((a) => a.date >= weekStart && a.date <= end);
       }
 
       setAppointments(list);
     } finally {
       setLoading(false);
     }
-  }, [view, currentDate, weekStart]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, currentDate]);
 
   useEffect(() => {
     fetchAppointments();
@@ -468,7 +468,7 @@ export default function AppointmentsPage() {
     if (view === "day") {
       setCurrentDate(toISODate(addDays(new Date(currentDate + "T00:00:00"), -1)));
     } else {
-      setCurrentDate(toISODate(addDays(weekStart, -7)));
+      setCurrentDate(toISODate(addDays(new Date(weekStart), -7)));
     }
     setSelectedId(null);
   }
@@ -477,7 +477,7 @@ export default function AppointmentsPage() {
     if (view === "day") {
       setCurrentDate(toISODate(addDays(new Date(currentDate + "T00:00:00"), 1)));
     } else {
-      setCurrentDate(toISODate(addDays(weekStart, 7)));
+      setCurrentDate(toISODate(addDays(new Date(weekStart), 7)));
     }
     setSelectedId(null);
   }
@@ -495,7 +495,7 @@ export default function AppointmentsPage() {
   const navLabel =
     view === "day"
       ? formatDateLabel(currentDate)
-      : `${formatShortDate(weekStart)} – ${formatShortDate(addDays(weekStart, 6))}`;
+      : `${formatShortDate(new Date(weekStart))} – ${formatShortDate(addDays(new Date(weekStart), 6))}`;
 
   return (
     <>
