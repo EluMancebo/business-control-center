@@ -26,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
-      <body className={`${satisfy.variable} min-h-screen bg-background text-foreground antialiased`}>
+    <html lang="es" className={satisfy.variable}>
+      <body className="min-h-screen bg-background text-foreground antialiased">
         <HeroHydrator /> 
         {children}
       </body>

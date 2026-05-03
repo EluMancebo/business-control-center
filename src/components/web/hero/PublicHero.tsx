@@ -278,6 +278,17 @@ function splitTitleForAccent(raw: string): { lead: string; accent?: string } {
   return { lead, accent: rest };
 }
 
+function renderTitleWithBreaks(text: string, max = 2): ReactNode {
+  const segs = text.split("\n").slice(0, max + 1);
+  if (segs.length === 1) return text;
+  const nodes: ReactNode[] = [];
+  segs.forEach((seg, i) => {
+    if (i > 0) nodes.push(<br key={i} />);
+    nodes.push(seg);
+  });
+  return nodes;
+}
+
 function pickFirstString(...values: unknown[]): string | undefined {
   for (const value of values) {
     if (typeof value !== "string") continue;
@@ -956,7 +967,7 @@ export default function PublicHero({
     : `mt-0.5 max-w-lg rounded-xl px-3 py-2 text-[13px] leading-snug md:hidden ${frameSurfaceClass} [color:var(--hero-text-90)]`;
   const desktopSubtitleClass = useLabMobileComposition
     ? "hidden"
-    : "mt-3 hidden max-w-lg text-sm sm:text-base md:block md:text-lg [color:var(--hero-text-82)]";
+    : "mt-3 hidden max-w-lg text-pretty text-sm sm:text-base md:block md:text-lg [color:var(--hero-text-82)]";
   const desktopCtaClass = useLabMobileComposition
     ? "hidden"
     : `mt-5 hidden flex-wrap items-center gap-3 md:flex ${ctaDesktopAlignClass}`;
@@ -1602,11 +1613,11 @@ export default function PublicHero({
                   data-lab-piece="headline"
                   onClick={(event) => handleLabPieceClick(event, "headline")}
                 >
-                  <span>{titleLead || titleRaw}</span>
+                  <span>{renderTitleWithBreaks(titleLead || titleRaw)}</span>
                   {titleAccent ? (
                     <>
                       <br />
-                      <span className="[color:var(--accent-strong,var(--primary))]">
+                      <span className="[color:var(--hero-lab-accent-span,var(--accent-strong,var(--primary)))]">
                         {titleAccent}
                       </span>
                     </>

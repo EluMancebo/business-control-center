@@ -77,7 +77,8 @@ type TextStyleColor =
   | "accent"
   | "subtle"
   | "inverse"
-  | "highlight";
+  | "highlight"
+  | "primary";
 type TextStyleShadow = "off" | "soft" | "medium";
 type TextStyleEmphasis = "soft" | "balanced" | "dominant";
 type TextStyleFont = "sans" | "display";
@@ -105,6 +106,7 @@ type LabHeadlineTone =
   | "muted-light"
   | "warm-light"
   | "cool-light";
+type LabAccentSpanTone = "accent" | "primary" | "warm";
 type CtaRegulation = "balanced" | "primary-focus";
 type AssetPickerView = "closed" | "open";
 type AssetComponentFilter = "all" | "hero" | "logo" | "icon";
@@ -621,6 +623,29 @@ const FILTER_OPTION_LABEL_MAP: Record<string, string> = {
 const toFilterOptionLabel = (value: string): string =>
   FILTER_OPTION_LABEL_MAP[value] ?? toDisplayCapitalized(value);
 
+function formatVariantLabel(name: string): string {
+  if (name === "base") return "Base";
+  if (name.startsWith("variant-")) {
+    const suffix = Number(name.slice("variant-".length));
+    if (Number.isFinite(suffix) && suffix > 0) return `Variante ${suffix}`;
+  }
+  return name;
+}
+
+function sortVariantNames(left: string, right: string): number {
+  if (left === right) return 0;
+  if (left === "base") return -1;
+  if (right === "base") return 1;
+  const leftMatch = /^variant-(\d+)$/u.exec(left);
+  const rightMatch = /^variant-(\d+)$/u.exec(right);
+  if (leftMatch && rightMatch) {
+    return Number(leftMatch[1]) - Number(rightMatch[1]);
+  }
+  if (leftMatch) return -1;
+  if (rightMatch) return 1;
+  return left.localeCompare(right, "es");
+}
+
 const LAYOUT_PIECES: readonly LayoutPiece[] = ["logo", "headline", "subheadline", "cta-group"];
 const LAYOUT_ZONES: readonly LayoutZone[] = [
   "top-left",
@@ -1069,34 +1094,28 @@ function textStyleToClass(piece: "headline" | "subheadline" | "cta-group", style
     style.color === "auto"
       ? ""
       : style.color === "accent"
-        ? piece === "headline"
-          ? "![color:var(--accent-strong,var(--primary))]"
-          : "[color:var(--accent-strong,var(--primary))]"
+        ? "![color:var(--accent-strong,var(--primary))]"
         : style.color === "subtle"
-          ? "[color:var(--hero-text-82)]"
+          ? "![color:var(--hero-text-82)]"
           : style.color === "inverse"
-            ? piece === "headline"
-              ? "![color:var(--hero-text-inverse)]"
-              : "[color:var(--hero-text-inverse)]"
+            ? "![color:var(--hero-text-inverse)]"
             : style.color === "highlight"
-              ? "[color:var(--warning,var(--accent-strong,var(--primary)))]"
-              : style.color === "white"
-                ? piece === "headline"
-                  ? "![color:var(--hero-text-inverse)]"
-                  : "[color:var(--hero-text-inverse)]"
+              ? "![color:var(--warning,var(--accent-strong,var(--primary)))]"
+              : style.color === "primary"
+                ? "![color:var(--primary)]"
+                : style.color === "white"
+                ? "![color:var(--hero-text-inverse)]"
                 : style.color === "dark"
-                  ? piece === "headline"
-                    ? "![color:var(--foreground)]"
-                    : "[color:var(--foreground)]"
+                  ? "![color:var(--foreground)]"
                   : style.color === "default" && piece === "headline"
                     ? "![color:var(--hero-text-inverse)]"
                     : "";
 
   const shadowClass =
     style.shadow === "soft"
-      ? "[text-shadow:0_8px_20px_color-mix(in_oklab,var(--foreground)_24%,transparent)]"
+      ? "[text-shadow:0_1px_10px_oklch(0%_0_0_/_0.35)]"
       : style.shadow === "medium"
-        ? "[text-shadow:0_10px_24px_color-mix(in_oklab,var(--foreground)_38%,transparent)]"
+        ? "[text-shadow:0_2px_18px_oklch(0%_0_0_/_0.55)]"
         : "";
 
   const emphasisClass =
@@ -1107,16 +1126,16 @@ function textStyleToClass(piece: "headline" | "subheadline" | "cta-group", style
         : "opacity-95";
   const lineHeightClass =
     style.lineHeight === "tight"
-      ? "leading-[1.02]"
+      ? "!leading-[1.02]"
       : style.lineHeight === "relaxed"
-        ? "leading-[1.45]"
-        : "leading-[1.2]";
+        ? "!leading-[1.45]"
+        : "!leading-[1.2]";
   const trackingClass =
     style.tracking === "tight"
-      ? "tracking-tight"
+      ? "!tracking-tight"
       : style.tracking === "wide"
-        ? "tracking-wide"
-        : "tracking-normal";
+        ? "!tracking-wide"
+        : "!tracking-normal";
 
   return [
     scaleClass,
@@ -1515,6 +1534,7 @@ export default function PublishedHeroLabPage({
   const [overlayStyleMode, setOverlayStyleMode] = useState<OverlayStyleMode>("gradient");
   const [overlayTint, setOverlayTint] = useState<OverlayColor>("blue");
   const [labHeadlineTone, setLabHeadlineTone] = useState<LabHeadlineTone>("white");
+  const [labAccentSpanTone, setLabAccentSpanTone] = useState<LabAccentSpanTone>("accent");
   const [backgroundEmphasis, setBackgroundEmphasis] = useState<BackgroundEmphasis>("medium");
   const [backgroundFit, setBackgroundFit] = useState<BackgroundFit>("cover");
   const [backgroundFocus, setBackgroundFocus] = useState<BackgroundFocus>("center");
@@ -1639,6 +1659,11 @@ export default function PublishedHeroLabPage({
   });
 
   const candidateSnapshot = HERO_CANDIDATES[candidateId];
+  const availableVariantNames = useMemo(() => {
+    const names = new Set<string>(["base", variantName]);
+    Object.keys(variantSnapshotsRef.current).forEach((name) => names.add(name));
+    return Array.from(names).sort(sortVariantNames);
+  }, [variantName]);
   const currentSnapshot = candidateSnapshot;
   const candidateHero = useMemo(
     () => mapPublishedSnapshotToContentPayload(candidateSnapshot),
@@ -2077,7 +2102,9 @@ export default function PublishedHeroLabPage({
         breakpointSnapshotsRef.current[targetViewport] = cloneSnapshot(current);
       }
     });
-    setActionNotice(`Ajustes de ${VIEWPORTS[viewport].label} copiados al resto de dispositivos.`);
+    setActionNotice(
+      `Ajustes de ${VIEWPORTS[viewport].label} copiados al resto de dispositivos en la variante actual (temporal).`
+    );
   }
 
   function initializeVariantStorageIfNeeded() {
@@ -2134,6 +2161,61 @@ export default function PublishedHeroLabPage({
     viewportRef.current = nextViewport;
     setViewport(nextViewport);
     setDeviceEditingNotice(`Este ajuste afecta solo a ${VIEWPORTS[nextViewport].label}.`);
+  }
+
+  function handleVariantChange(nextVariantName: string) {
+    if (!nextVariantName || nextVariantName === variantName) return;
+    persistCurrentViewportSnapshot();
+    initializeVariantStorageIfNeeded();
+
+    const targetVariantSet = variantSnapshotsRef.current[nextVariantName];
+    const targetVariantOverrides = variantOverridesRef.current[nextVariantName];
+    const targetVariantContentOverrides = variantContentOverridesRef.current[nextVariantName];
+
+    if (!targetVariantSet || !targetVariantOverrides || !targetVariantContentOverrides) {
+      const currentVariantSet = cloneSnapshot(ensureCurrentVariantSnapshots());
+      const currentVariantOverrides = cloneSnapshot(ensureCurrentVariantOverrides());
+      const currentContentOverrides = cloneSnapshot(ensureCurrentVariantContentOverrides());
+      variantSnapshotsRef.current[nextVariantName] = cloneSnapshot(currentVariantSet);
+      variantOverridesRef.current[nextVariantName] = cloneSnapshot(currentVariantOverrides);
+      variantContentOverridesRef.current[nextVariantName] = cloneSnapshot(currentContentOverrides);
+    }
+
+    const resolvedVariantSet = variantSnapshotsRef.current[nextVariantName];
+    const resolvedVariantOverrides = variantOverridesRef.current[nextVariantName];
+    const resolvedVariantContentOverrides = variantContentOverridesRef.current[nextVariantName];
+    if (!resolvedVariantSet || !resolvedVariantOverrides || !resolvedVariantContentOverrides) return;
+
+    breakpointSnapshotsRef.current = cloneSnapshot(resolvedVariantSet);
+    const incomingSnapshot =
+      resolveViewportSnapshotWithInheritance(
+        resolvedVariantSet,
+        resolvedVariantOverrides,
+        viewport
+      ) ?? resolvedVariantSet.mobile;
+
+    setVariantName(nextVariantName);
+    applySnapshot(cloneSnapshot(incomingSnapshot));
+    const resolveVariantContent = (property: ContentProperty): string => {
+      const sourceViewport = resolveContentInheritanceSource(
+        viewport,
+        property,
+        resolvedVariantContentOverrides
+      );
+      return readContentProperty(
+        resolvedVariantSet[sourceViewport] ?? resolvedVariantSet.mobile,
+        property
+      );
+    };
+    setHeadlineDraft(resolveVariantContent("headlineDraft"));
+    setSubheadlineDraft(resolveVariantContent("subheadlineDraft"));
+    setPrimaryCtaDraft(resolveVariantContent("primaryCtaDraft"));
+    setSecondaryCtaDraft(resolveVariantContent("secondaryCtaDraft"));
+    setPrimaryCtaHrefDraft(resolveVariantContent("primaryCtaHrefDraft"));
+    setSecondaryCtaHrefDraft(resolveVariantContent("secondaryCtaHrefDraft"));
+    setHeadlineProposal(null);
+    setHeadlineProposalMode(null);
+    setActionNotice(`Variante activa: ${formatVariantLabel(nextVariantName)} (temporal).`);
   }
 
   useEffect(() => {
@@ -2334,6 +2416,12 @@ export default function PublishedHeroLabPage({
     return "var(--surface-3,var(--card))";
   };
 
+  const toneToAccentSpanColor = (tone: LabAccentSpanTone): string => {
+    if (tone === "primary") return "var(--primary)";
+    if (tone === "warm") return "var(--warning,var(--accent-strong,var(--primary)))";
+    return "var(--accent-strong,var(--primary))";
+  };
+
   const labVisualCssVars = useMemo(() => {
     const overlayBackdropStrength =
       navOverlayDensity === "high" ? 100 : navOverlayDensity === "medium" ? 74 : 42;
@@ -2415,6 +2503,7 @@ export default function PublishedHeroLabPage({
       "--hero-cta-secondary": ctaSecondaryTokens.bg,
       "--hero-cta-secondary-foreground": ctaSecondaryTokens.fg,
       "--hero-cta-secondary-hover": ctaSecondaryTokens.hover,
+      "--hero-lab-accent-span": toneToAccentSpanColor(labAccentSpanTone),
     } as unknown as CSSProperties;
   }, [
     activeBrandPresetItem,
@@ -2426,6 +2515,7 @@ export default function PublishedHeroLabPage({
     navOverlayDensity,
     navOverlayStyle,
     navOverlayTone,
+    labAccentSpanTone,
   ]);
 
   const heroImageAssets = useMemo(
@@ -3602,7 +3692,7 @@ export default function PublishedHeroLabPage({
     variantSnapshotsRef.current[variantName] = cloneSnapshot(variantSet);
     const stamp = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
     setActionNotice(
-      `Borrador de sesion local (${variantName}) guardado a las ${stamp} (no persistido en servidor).`
+      `Temporal (${formatVariantLabel(variantName)}) guardado a las ${stamp}. No se guarda en servidor.`
     );
   }
 
@@ -3726,7 +3816,9 @@ export default function PublishedHeroLabPage({
     setResolvedContentState(viewport);
     setHeadlineProposal(null);
     setHeadlineProposalMode(null);
-    setActionNotice(`Variante duplicada: ${nextName}. Incluye los 4 breakpoints.`);
+    setActionNotice(
+      `Variante duplicada: ${formatVariantLabel(nextName)}. Incluye los 4 breakpoints (temporal).`
+    );
   }
 
   function applyQualityRecommendation(key: QualityDimensionKey) {
@@ -3905,6 +3997,21 @@ export default function PublishedHeroLabPage({
                     </button>
                   ))}
                 </div>
+                <label className="inline-flex h-7 items-center gap-1 rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] px-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span>Variante</span>
+                  <select
+                    value={variantName}
+                    onChange={(event) => handleVariantChange(event.target.value)}
+                    disabled={pieceFamily !== "hero"}
+                    className="h-6 min-w-[7.25rem] rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-1.5 text-[10px] font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {availableVariantNames.map((name) => (
+                      <option key={name} value={name}>
+                        {formatVariantLabel(name)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
                 <PanelButton
                   type="button"
@@ -3931,14 +4038,17 @@ export default function PublishedHeroLabPage({
                   onClick={handleSaveDraft}
                   disabled={pieceFamily !== "hero"}
                 >
-                  Guardar borrador de sesión
+                  Guardar temporal
                 </PanelButton>
+                <span className="hidden text-[10px] text-muted-foreground xl:inline">
+                  No se guarda en servidor
+                </span>
                 <div
                   className="hidden min-w-0 items-center rounded-md border border-border/70 [background:var(--surface-2,var(--card))] px-2 py-1 text-[10px] text-muted-foreground xl:flex"
                   title={actionNotice || deviceEditingNotice}
                 >
                   <span className="truncate">
-                    {VIEWPORTS[viewport].label} · {variantName}
+                    {VIEWPORTS[viewport].label} - {formatVariantLabel(variantName)}
                   </span>
                 </div>
                 <span className="hidden max-w-[18rem] truncate text-[10px] text-muted-foreground 2xl:inline">
@@ -6981,30 +7091,93 @@ export default function PublishedHeroLabPage({
                           <section className={inspectorControlGroupClassName}>
                             <p className={inspectorControlGroupTitleClassName}>C. Color y enfasis</p>
                             {isHeadlinePiece ? (
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                {([
-                                  { id: "auto", label: "auto" },
-                                  { id: "default", label: "default" },
-                                  { id: "white", label: "white" },
-                                  { id: "dark", label: "dark" },
-                                  { id: "accent", label: "accent" },
-                                  { id: "inverse", label: "inverse" },
-                                ] as const).map((tone) => (
-                                  <button
-                                    key={tone.id}
-                                    type="button"
-                                    onClick={() => updateSelectedTextStyle("color", tone.id)}
-                                    className={[
-                                      "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
-                                      selectedPieceStyle.color === tone.id
-                                        ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
-                                        : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
-                                    ].join(" ")}
-                                  >
-                                    {tone.label}
-                                  </button>
-                                ))}
-                              </div>
+                              <>
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  {([
+                                    { id: "auto",    label: "auto",    swatch: "" },
+                                    { id: "default", label: "default", swatch: "bg-white border border-border/60" },
+                                    { id: "white",   label: "white",   swatch: "bg-white border border-border/60" },
+                                    { id: "dark",    label: "dark",    swatch: "[background:var(--foreground)]" },
+                                    { id: "accent",  label: "acento",  swatch: "[background:var(--accent,var(--primary))]" },
+                                    { id: "primary", label: "primario", swatch: "[background:var(--primary)]" },
+                                    { id: "inverse", label: "inverse", swatch: "bg-white/70 border border-border/50" },
+                                  ] as const).map((tone) => (
+                                    <button
+                                      key={tone.id}
+                                      type="button"
+                                      onClick={() => updateSelectedTextStyle("color", tone.id)}
+                                      className={[
+                                        "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        selectedPieceStyle.color === tone.id
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground font-semibold"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      {tone.swatch ? (
+                                        <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${tone.swatch}`} />
+                                      ) : null}
+                                      {tone.label}
+                                    </button>
+                                  ))}
+                                </div>
+                                <p className="mt-2 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                  Tono base <span className="ml-1 normal-case font-normal opacity-60">(activo cuando color = auto)</span>
+                                </p>
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {([
+                                    { id: "white",       label: "blanco",  swatch: "bg-white border border-border/60" },
+                                    { id: "muted-light", label: "suave",   swatch: "bg-white/55 border border-border/50" },
+                                    { id: "warm-light",  label: "calido",  swatch: "[background:color-mix(in_oklab,var(--warning,var(--accent,var(--primary)))_22%,white_78%)]" },
+                                    { id: "cool-light",  label: "frio",    swatch: "[background:color-mix(in_oklab,var(--processing,var(--accent,var(--primary)))_22%,white_78%)]" },
+                                    { id: "inverse",     label: "inverso", swatch: "bg-white border border-border/60" },
+                                    { id: "black",       label: "oscuro",  swatch: "[background:var(--foreground)]" },
+                                  ] as const).map((tone) => (
+                                    <button
+                                      key={tone.id}
+                                      type="button"
+                                      onClick={() => setLabHeadlineTone(tone.id)}
+                                      className={[
+                                        "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                        labHeadlineTone === tone.id
+                                          ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground"
+                                          : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                      ].join(" ")}
+                                    >
+                                      <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${tone.swatch}`} />
+                                      {tone.label}
+                                    </button>
+                                  ))}
+                                </div>
+                                {currentHeadline.includes(".") ? (
+                                  <>
+                                    <p className="mt-2 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                      Tramo acentuado
+                                    </p>
+                                    <div className="mt-1 flex flex-wrap gap-1">
+                                      {([
+                                        { id: "accent",  label: "acento",   swatch: "[background:var(--accent-strong,var(--primary))]" },
+                                        { id: "primary", label: "primario", swatch: "[background:var(--primary)]" },
+                                        { id: "warm",    label: "cálido",   swatch: "[background:var(--warning,var(--accent,var(--primary)))]" },
+                                      ] as const).map((t) => (
+                                        <button
+                                          key={t.id}
+                                          type="button"
+                                          onClick={() => setLabAccentSpanTone(t.id)}
+                                          className={[
+                                            "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase",
+                                            labAccentSpanTone === t.id
+                                              ? "border-border [background:var(--card)] [box-shadow:var(--elevation-interactive)] text-foreground"
+                                              : "border-border/50 text-muted-foreground hover:[background:var(--surface-2)] hover:border-border/80",
+                                          ].join(" ")}
+                                        >
+                                          <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${t.swatch}`} />
+                                          {t.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </>
+                                ) : null}
+                              </>
                             ) : (
                               <div className="mt-2 flex flex-wrap gap-1">
                                 {([
