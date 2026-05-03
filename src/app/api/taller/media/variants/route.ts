@@ -131,6 +131,7 @@ export async function POST(req: NextRequest) {
       message: `Variante ${variantKey} generada correctamente.`,
       ...(result.svgAnalysis ? { svgAnalysis: result.svgAnalysis } : {}),
       ...(result.svgAnimation ? { svgAnimation: result.svgAnimation } : {}),
+      ...(result.appliedAnimation ? { appliedAnimation: result.appliedAnimation } : {}),
     },
     { status: 200 }
   );

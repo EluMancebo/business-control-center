@@ -35,6 +35,7 @@ type MediaVariantRequestResponse = {
   error?: string;
   svgAnalysis?: ProcessedAssetResult["svgAnalysis"];
   svgAnimation?: ProcessedAssetResult["svgAnimation"];
+  appliedAnimation?: string;
 };
 
 export type MediaVariantRequestResult = {
@@ -43,6 +44,7 @@ export type MediaVariantRequestResult = {
   reason?: string;
   svgAnalysis?: ProcessedAssetResult["svgAnalysis"];
   svgAnimation?: ProcessedAssetResult["svgAnimation"];
+  appliedAnimation?: string;
 };
 
 const ASSET_VARIANT_KEYS: AssetVariantKey[] = [
@@ -781,6 +783,7 @@ export async function requestSystemAssetVariantClient(args: {
       ),
       svgAnalysis: json?.svgAnalysis,
       svgAnimation: json?.svgAnimation,
+      appliedAnimation: json?.appliedAnimation,
     };
   }
 
@@ -794,5 +797,6 @@ export async function requestSystemAssetVariantClient(args: {
     reason: json.reason,
     svgAnalysis: json.svgAnalysis,
     svgAnimation: json.svgAnimation,
+    appliedAnimation: json.appliedAnimation,
   };
 }

@@ -144,6 +144,7 @@ type VariantFeedback = {
   title: string;
   detail: string;
   technicalDetail?: string;
+  variantKey?: string;
 };
 
 const MIN_UPLOAD_FEEDBACK_MS = 450;
@@ -393,9 +394,8 @@ function buildSvgTechnicalDetail(
   if (typeof svgAnalysis?.colorsCount === "number") {
     parts.push(`${svgAnalysis.colorsCount} colores`);
   }
-  if (svgAnimation?.suitability?.recommendedAnimation) {
-    parts.push(`animacion ${svgAnimation.suitability.recommendedAnimation}`);
-  }
+  const animType = response.appliedAnimation ?? svgAnimation?.suitability?.recommendedAnimation;
+  if (animType) parts.push(`animacion ${animType}`);
 
   if (parts.length === 0) return undefined;
   return parts.join(" - ");
@@ -954,7 +954,8 @@ export default function TallerMediaPage() {
         ...prev,
         [original._id]: {
           tone: "success",
-          title: "Variante generada.",
+          variantKey,
+          title: variantKey === "animated-svg" ? "Animacion generada." : "Variante generada.",
           detail: response.message,
           technicalDetail,
         },
@@ -1759,7 +1760,7 @@ export default function TallerMediaPage() {
                 const feedbackTitle = feedbackTone === "processing"
                   ? processingPhase
                   : semanticFeedbackTone === "success"
-                    ? "Variante creada"
+                    ? variantFeedbackState?.title ?? "Variante creada"
                     : semanticFeedbackTone === "warning"
                       ? variantFeedbackState?.title ?? "No vectorizable"
                       : semanticFeedbackTone === "danger"
