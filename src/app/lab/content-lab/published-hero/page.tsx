@@ -3937,16 +3937,16 @@ export default function PublishedHeroLabPage({
 
       <div className="mx-auto h-full min-h-0 w-full max-w-[1680px] px-2 sm:px-3">
         <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border/85 [background:var(--panel-surface-1,var(--background))] [box-shadow:var(--elevation-task,var(--panel-shadow-2))]">
-          <header className="sticky top-0 z-30 border-b border-border/85 [background:color-mix(in_oklab,var(--panel-topbar,var(--panel-surface-1,var(--background)))_96%,transparent)] px-2 py-1.5 backdrop-blur-sm sm:px-3">
-            <div className="grid items-center gap-1.5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-              <div className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-0.5 bcc-scrollbar">
+          <header className="sticky top-0 z-30 border-b border-border/85 [background:color-mix(in_oklab,var(--panel-topbar,var(--panel-surface-1,var(--background)))_96%,transparent)] px-2 py-1 backdrop-blur-sm sm:px-2.5">
+            <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto whitespace-nowrap bcc-scrollbar">
+              <div className="mr-2 flex shrink-0 items-center gap-0.5 overflow-x-auto rounded-md border border-border/75 [background:var(--surface-2,var(--card))] p-0.5 bcc-scrollbar sm:mr-3">
                 {PIECE_FAMILY_TABS.map((tab) => (
                   <button
                     key={tab.id}
                     type="button"
                     onClick={() => setPieceFamily(tab.id)}
                     className={[
-                      "inline-flex h-7 shrink-0 items-center justify-center rounded-md px-2 text-[10px] font-semibold uppercase tracking-wide transition",
+                      "inline-flex h-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-1.5 text-[9px] font-semibold uppercase tracking-wide transition",
                       pieceFamily === tab.id
                         ? "border border-border [background:var(--surface-1,var(--background))] text-foreground ring-1 ring-border/90 shadow-[0_2px_8px_color-mix(in_oklab,var(--foreground)_12%,transparent)]"
                         : "text-muted-foreground hover:[background:var(--surface-2,var(--muted))]",
@@ -3957,53 +3957,56 @@ export default function PublishedHeroLabPage({
                 ))}
               </div>
 
-              <div className="mx-auto inline-flex items-center gap-1 rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-0.5">
-                {(["mobile", "tablet", "desktop", "wide"] as const).map((id) => {
-                  const Icon = VIEWPORT_ICON[id];
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => handleViewportChange(id)}
-                      aria-label={VIEWPORTS[id].label}
-                      className={[
-                        "inline-flex h-7 w-7 items-center justify-center rounded-md transition",
-                        viewport === id
-                          ? "border border-border [background:var(--surface-1,var(--background))] text-foreground ring-1 ring-border/90 shadow-[0_2px_8px_color-mix(in_oklab,var(--foreground)_12%,transparent)]"
-                          : "text-muted-foreground hover:[background:var(--surface-2,var(--muted))]",
-                      ].join(" ")}
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="flex min-w-0 flex-wrap items-center justify-start gap-1 lg:justify-end">
-                <div className="inline-flex rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] p-0.5">
+              <div className="mx-auto flex shrink-0 items-center gap-3">
+                <div className="inline-flex shrink-0 items-center gap-0.5 rounded-md border border-border/75 [background:var(--surface-2,var(--card))] p-0.5">
+                  {(["mobile", "tablet", "desktop", "wide"] as const).map((id) => {
+                    const Icon = VIEWPORT_ICON[id];
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => handleViewportChange(id)}
+                        aria-label={VIEWPORTS[id].label}
+                        className={[
+                          "inline-flex h-6 w-6 items-center justify-center rounded-md transition",
+                          viewport === id
+                            ? "border border-border [background:var(--surface-1,var(--background))] text-foreground ring-1 ring-border/90 shadow-[0_2px_8px_color-mix(in_oklab,var(--foreground)_12%,transparent)]"
+                            : "text-muted-foreground hover:[background:var(--surface-2,var(--muted))]",
+                        ].join(" ")}
+                      >
+                        <Icon className="h-3 w-3" />
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="inline-flex shrink-0 rounded-lg border border-border/90 [background:var(--panel-surface-1,var(--background))] p-0.5 [box-shadow:0_0_0_1px_color-mix(in_oklab,var(--foreground)_12%,transparent),0_3px_12px_color-mix(in_oklab,var(--foreground)_10%,transparent)]">
                   {(["preview", "layout"] as const).map((mode) => (
                     <button
                       key={mode}
                       type="button"
+                      title={mode === "preview" ? "Vista previa" : "Estructura"}
                       onClick={() => setCanvasMode(mode)}
                       className={[
-                        "inline-flex h-7 items-center rounded-md px-2.5 text-[10px] font-semibold uppercase tracking-wide transition",
+                        "inline-flex h-7 items-center rounded-md px-3 text-[10px] font-semibold uppercase tracking-wide transition",
                         canvasMode === mode
                           ? "border border-border [background:var(--surface-1,var(--background))] text-foreground ring-1 ring-border/90 shadow-[0_2px_8px_color-mix(in_oklab,var(--foreground)_12%,transparent)]"
                           : "text-muted-foreground hover:[background:var(--surface-2,var(--muted))]",
                       ].join(" ")}
                     >
-                      {mode === "preview" ? "Vista previa" : "Estructura"}
+                      {mode === "preview" ? "Vista" : "Estructura"}
                     </button>
                   ))}
                 </div>
-                <label className="inline-flex h-7 items-center gap-1 rounded-lg border border-border/75 [background:var(--surface-2,var(--card))] px-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              </div>
+
+              <div className="ml-auto flex shrink-0 min-w-0 items-center gap-1 whitespace-nowrap">
+                <label className="inline-flex h-6 shrink-0 items-center gap-0.5 whitespace-nowrap rounded-md border border-border/75 [background:var(--surface-2,var(--card))] px-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
                   <span>Variante</span>
                   <select
                     value={variantName}
                     onChange={(event) => handleVariantChange(event.target.value)}
                     disabled={pieceFamily !== "hero"}
-                    className="h-6 min-w-[7.25rem] rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-1.5 text-[10px] font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                    className="h-5 min-w-[6.5rem] rounded-md border border-border/70 [background:var(--surface-1,var(--background))] px-1 text-[9px] font-semibold text-foreground outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {availableVariantNames.map((name) => (
                       <option key={name} value={name}>
@@ -4015,8 +4018,18 @@ export default function PublishedHeroLabPage({
 
                 <PanelButton
                   type="button"
+                  variant="primary"
+                  className="h-6 px-2.5 text-[9px] uppercase"
+                  title="Guardar temporal"
+                  onClick={handleSaveDraft}
+                  disabled={pieceFamily !== "hero"}
+                >
+                  Guardar
+                </PanelButton>
+                <PanelButton
+                  type="button"
                   variant="secondary"
-                  className="h-7 px-2.5 text-[10px] uppercase"
+                  className="h-6 px-2 text-[9px] uppercase"
                   onClick={copyCurrentSnapshotToOtherDevices}
                   disabled={pieceFamily !== "hero"}
                 >
@@ -4025,41 +4038,34 @@ export default function PublishedHeroLabPage({
                 <PanelButton
                   type="button"
                   variant="secondary"
-                  className="h-7 px-2.5 text-[10px] uppercase"
+                  className="h-6 px-2 text-[9px] uppercase"
+                  title="Duplicar variante"
                   onClick={handleDuplicateVariant}
                   disabled={pieceFamily !== "hero"}
                 >
-                  Duplicar
+                  Dup.
                 </PanelButton>
-                <PanelButton
-                  type="button"
-                  variant="primary"
-                  className="h-7 px-3 text-[10px] uppercase"
-                  onClick={handleSaveDraft}
-                  disabled={pieceFamily !== "hero"}
-                >
-                  Guardar temporal
-                </PanelButton>
-                <span className="hidden text-[10px] text-muted-foreground xl:inline">
-                  No se guarda en servidor
-                </span>
                 <div
-                  className="hidden min-w-0 items-center rounded-md border border-border/70 [background:var(--surface-2,var(--card))] px-2 py-1 text-[10px] text-muted-foreground xl:flex"
+                  className="flex min-w-0 max-w-[12rem] items-center rounded-md border border-border/70 [background:var(--surface-2,var(--card))] px-1.5 py-0.5 text-[9px] text-muted-foreground"
                   title={actionNotice || deviceEditingNotice}
                 >
                   <span className="truncate">
                     {VIEWPORTS[viewport].label} - {formatVariantLabel(variantName)}
                   </span>
                 </div>
-                <span className="hidden max-w-[18rem] truncate text-[10px] text-muted-foreground 2xl:inline">
-                  {actionNotice || deviceEditingNotice}
-                </span>
               </div>
             </div>
           </header>
 
-          <div className="grid min-h-0 flex-1 gap-2 p-2 xl:grid-cols-[17.25rem_minmax(0,1fr)_19rem] xl:p-2.5">
-            <aside className="min-h-0 space-y-3 overflow-y-auto rounded-xl border border-border/70 [background:var(--surface-2,var(--card))] p-1.5 bcc-scrollbar">
+          <div
+            className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden gap-2 p-2 xl:grid-cols-[17.25rem_minmax(0,1fr)_19rem] xl:p-2.5"
+            style={
+              workspaceViewportHeight
+                ? ({ "--lab-workspace-viewport-height": `${workspaceViewportHeight}px` } as CSSProperties)
+                : undefined
+            }
+          >
+            <aside className="h-full min-h-0 max-h-[var(--lab-workspace-viewport-height)] space-y-3 overflow-y-auto rounded-xl border border-border/70 [background:var(--surface-2,var(--card))] p-1.5 bcc-scrollbar">
               {canvasMode === "preview" ? (
                 <>
                   <PanelCard variant="task" className="p-3">
@@ -4716,9 +4722,9 @@ export default function PublishedHeroLabPage({
 
                 <div
                   ref={previewStageRef}
-                  className="relative min-h-0 flex-1 overflow-hidden [background:color-mix(in_oklab,var(--surface-2,var(--card))_88%,var(--panel-background,var(--background))_12%)] [background-image:linear-gradient(to_bottom,color-mix(in_oklab,var(--surface-1,var(--background))_48%,transparent),transparent),radial-gradient(circle_at_1px_1px,color-mix(in_oklab,var(--border)_28%,transparent)_1px,transparent_0),radial-gradient(circle_at_23%_27%,color-mix(in_oklab,var(--foreground)_5%,transparent)_0.7px,transparent_1.2px),radial-gradient(circle_at_77%_61%,color-mix(in_oklab,var(--foreground)_4%,transparent)_0.75px,transparent_1.3px)] [background-size:100%_100%,18px_18px,24px_24px,28px_28px]"
+                  className="relative min-h-0 flex-1 overflow-hidden [background:var(--surface-2,var(--card))]"
                 >
-                  <div className="absolute inset-0 flex items-center justify-center px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6">
+                  <div className="absolute inset-0 flex items-center justify-center px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6 [background:color-mix(in_oklab,var(--background)_96%,var(--foreground)_4%)] [background-image:radial-gradient(circle_at_1px_1px,color-mix(in_oklab,var(--foreground)_18%,transparent)_1px,transparent_1.4px)] [background-size:12px_12px]">
                     <div
                       className={`relative overflow-hidden rounded-xl border border-border/80 [background:var(--panel-surface-1,var(--background))] transition-[box-shadow,background] duration-300 [box-shadow:0_6px_18px_color-mix(in_oklab,var(--foreground)_12%,transparent)] ${themePreviewFrameClassName} ${themePreviewIntensityClassName}`}
                       style={{
@@ -4911,7 +4917,7 @@ export default function PublishedHeroLabPage({
               </section>
             </section>
 
-            <aside className="min-h-0 space-y-3 overflow-y-auto rounded-xl border border-border/70 [background:var(--surface-2,var(--card))] p-1.5 bcc-scrollbar">
+            <aside className="h-full min-h-0 max-h-[var(--lab-workspace-viewport-height)] space-y-3 overflow-y-auto rounded-xl border border-border/70 [background:var(--surface-2,var(--card))] p-1.5 bcc-scrollbar">
               {canvasMode === "preview" ? (
                 <>
                   <PanelCard variant="task" className="p-3">
