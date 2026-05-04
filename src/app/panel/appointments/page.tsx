@@ -619,7 +619,7 @@ function DayView({
   return (
     <div className="flex flex-col gap-2">
       <p
-        className="text-sm font-medium"
+        className="hidden lg:block text-sm font-medium"
         style={{ color: "var(--muted-foreground)" }}
       >
         {formatDateLabel(date)}
