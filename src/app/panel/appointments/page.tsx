@@ -51,6 +51,17 @@ interface Appointment {
 
 type ViewMode = "day" | "week";
 
+interface ServiceOption {
+  _id: string;
+  name: string;
+  durationMinutes: number;
+}
+
+interface ResourceOption {
+  _id: string;
+  name: string;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function toISODate(d: Date): string {
@@ -203,25 +214,36 @@ function AppointmentCard({
 // ── Appointment detail ─────────────────────────────────────────────────────────
 
 function AppointmentDetail({
-  appt,
+  id,
   onClose,
   onDeleted,
+  onStatusChanged,
 }: {
-  appt: Appointment;
+  id: string;
   onClose: () => void;
-  onDeleted: (id: string) => void;
+  onDeleted: () => void;
+  onStatusChanged: () => void;
 }) {
+  const [appt, setAppt] = useState<Appointment | null>(null);
+  const [loadingAppt, setLoadingAppt] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [changingStatus, setChangingStatus] = useState(false);
+
+  useEffect(() => {
+    setLoadingAppt(true);
+    fetch(`/api/appointments/${id}`)
+      .then((r) => r.json())
+      .then((data) => setAppt(data.appointment ?? null))
+      .finally(() => setLoadingAppt(false));
+  }, [id]);
 
   async function handleDelete() {
     if (!confirm("¿Eliminar esta cita?")) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/appointments/${appt._id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/appointments/${id}`, { method: "DELETE" });
       if (res.ok) {
-        onDeleted(appt._id);
+        onDeleted();
         onClose();
       }
     } finally {
@@ -229,7 +251,35 @@ function AppointmentDetail({
     }
   }
 
-  const rows: { label: string; value: string | undefined }[] = [
+  async function handleStatusChange(newStatus: AppointmentStatus) {
+    setChangingStatus(true);
+    try {
+      const res = await fetch(`/api/appointments/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAppt(data.appointment ?? null);
+        onStatusChanged();
+      }
+    } finally {
+      setChangingStatus(false);
+    }
+  }
+
+  if (loadingAppt || !appt) {
+    return (
+      <aside className="w-72 shrink-0 rounded-xl border border-border p-4 shadow-elevation-interactive [background:var(--panel-card)]">
+        <p className="text-sm text-muted-foreground">
+          {loadingAppt ? "Cargando…" : "No encontrada."}
+        </p>
+      </aside>
+    );
+  }
+
+  const rows: { label: string; value: string }[] = [
     { label: "Servicio", value: appt.serviceId?.name ?? "—" },
     { label: "Recurso", value: appt.resourceId?.name ?? "—" },
     { label: "Fecha", value: formatDateLabel(appt.date) },
@@ -240,18 +290,13 @@ function AppointmentDetail({
     { label: "Notas", value: appt.notes || "—" },
   ];
 
+  const canChange = !["completed", "cancelled", "no-show"].includes(appt.status);
+
   return (
-    <aside
-      className="flex flex-col gap-4 rounded-xl border p-4"
-      style={{
-        background: "var(--panel-surface-2)",
-        borderColor: "var(--panel-border)",
-        boxShadow: "var(--elevation-interactive)",
-      }}
-    >
+    <aside className="w-72 shrink-0 flex flex-col gap-4 rounded-xl border border-border p-4 shadow-elevation-interactive [background:var(--panel-card)]">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="font-semibold text-base">{appt.customerName}</p>
+          <p className="font-semibold text-base text-foreground">{appt.customerName}</p>
           <div className="mt-1">
             <StatusBadge status={appt.status} />
           </div>
@@ -259,47 +304,297 @@ function AppointmentDetail({
         <button
           type="button"
           onClick={onClose}
-          className="rounded p-1 text-xs"
-          style={{ color: "var(--muted-foreground)" }}
+          className="rounded p-1 text-xs text-muted-foreground"
           aria-label="Cerrar"
         >
           ✕
         </button>
       </div>
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+      <div className="flex flex-col gap-1.5">
         {rows.map(({ label, value }) => (
-          <>
-            <dt
-              key={`dt-${label}`}
-              style={{ color: "var(--muted-foreground)" }}
-            >
-              {label}
-            </dt>
-            <dd
-              key={`dd-${label}`}
-              style={{ color: "var(--foreground)" }}
-              className="truncate"
-            >
-              {value}
-            </dd>
-          </>
+          <div key={label} className="flex gap-2 text-sm">
+            <span className="w-20 shrink-0 text-muted-foreground">{label}</span>
+            <span className="text-foreground truncate">{value}</span>
+          </div>
         ))}
-      </dl>
+      </div>
+
+      {canChange && (
+        <div className="flex flex-wrap gap-2">
+          {appt.status === "requested" && (
+            <button
+              type="button"
+              onClick={() => handleStatusChange("confirmed")}
+              disabled={changingStatus}
+              className="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 bg-processing-soft text-processing-foreground"
+            >
+              Confirmar
+            </button>
+          )}
+          {appt.status === "confirmed" && (
+            <button
+              type="button"
+              onClick={() => handleStatusChange("completed")}
+              disabled={changingStatus}
+              className="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 bg-success-soft text-success-foreground"
+            >
+              Completar
+            </button>
+          )}
+          {(appt.status === "requested" || appt.status === "confirmed") && (
+            <button
+              type="button"
+              onClick={() => handleStatusChange("cancelled")}
+              disabled={changingStatus}
+              className="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 bg-danger-soft text-danger-foreground"
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
+      )}
 
       <button
         type="button"
         onClick={handleDelete}
         disabled={deleting}
-        className="mt-auto rounded-lg border px-3 py-1.5 text-sm font-medium transition-opacity disabled:opacity-50"
-        style={{
-          borderColor: "var(--danger)",
-          color: "var(--danger)",
-          background: "transparent",
-        }}
+        className="mt-auto rounded-lg border border-danger px-3 py-1.5 text-sm font-medium text-danger transition-opacity disabled:opacity-50"
       >
         {deleting ? "Eliminando…" : "Eliminar cita"}
       </button>
+    </aside>
+  );
+}
+
+// ── New appointment form ───────────────────────────────────────────────────────
+
+function NewAppointmentForm({
+  defaultDate,
+  onClose,
+  onCreated,
+}: {
+  defaultDate: string;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [services, setServices] = useState<ServiceOption[]>([]);
+  const [resources, setResources] = useState<ResourceOption[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    serviceId: "",
+    resourceId: "",
+    customerName: "",
+    customerPhone: "",
+    customerEmail: "",
+    date: defaultDate,
+    startTime: "09:00",
+    notes: "",
+    source: "manual",
+    isPrivate: false,
+  });
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/appointments/services").then((r) => r.json()),
+      fetch("/api/appointments/resources").then((r) => r.json()),
+    ]).then(([sData, rData]) => {
+      setServices(sData.services ?? []);
+      setResources(rData.resources ?? []);
+    });
+  }, []);
+
+  function patchForm(patch: Partial<typeof form>) {
+    setForm((prev) => ({ ...prev, ...patch }));
+  }
+
+  async function handleSave() {
+    if (!form.serviceId || !form.customerName || !form.date || !form.startTime) {
+      setError("Completa los campos obligatorios (*).");
+      return;
+    }
+    const service = services.find((s) => s._id === form.serviceId);
+    if (!service) {
+      setError("Servicio no encontrado.");
+      return;
+    }
+    const [h, m] = form.startTime.split(":").map(Number);
+    const total = h * 60 + m + service.durationMinutes;
+    const endTime = `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+
+    setSaving(true);
+    setError(null);
+    try {
+      const body: Record<string, unknown> = {
+        serviceId: form.serviceId,
+        customerName: form.customerName,
+        date: form.date,
+        startTime: form.startTime,
+        endTime,
+        source: form.source,
+        isPrivate: form.isPrivate,
+      };
+      if (form.resourceId) body.resourceId = form.resourceId;
+      if (form.customerPhone) body.customerPhone = form.customerPhone;
+      if (form.customerEmail) body.customerEmail = form.customerEmail;
+      if (form.notes) body.notes = form.notes;
+
+      const res = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        onCreated();
+      } else {
+        const data = await res.json();
+        setError(data.error ?? "Error al guardar.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <aside className="w-full md:w-80 lg:w-96 shrink-0 flex flex-col gap-3 rounded-xl border border-border p-4 [background:var(--panel-card)] max-h-[calc(100vh-12rem)] overflow-hidden">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-semibold text-base text-foreground">Nueva cita</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded p-1 text-xs text-muted-foreground"
+          aria-label="Cerrar"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-3 overflow-y-auto">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Servicio *</label>
+          <select
+            value={form.serviceId}
+            onChange={(e) => patchForm({ serviceId: e.target.value })}
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-card text-foreground"
+          >
+            <option value="">Selecciona un servicio</option>
+            {services.map((s) => (
+              <option key={s._id} value={s._id}>
+                {s.name} ({s.durationMinutes} min)
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Recurso / Operario</label>
+          <select
+            value={form.resourceId}
+            onChange={(e) => patchForm({ resourceId: e.target.value })}
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-card text-foreground"
+          >
+            <option value="">Sin asignar</option>
+            {resources.map((r) => (
+              <option key={r._id} value={r._id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Fecha *</label>
+          <input
+            type="date"
+            value={form.date}
+            onChange={(e) => patchForm({ date: e.target.value })}
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-card text-foreground"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Hora de inicio *</label>
+          <input
+            type="time"
+            value={form.startTime}
+            onChange={(e) => patchForm({ startTime: e.target.value })}
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-card text-foreground"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Nombre cliente *</label>
+          <input
+            type="text"
+            value={form.customerName}
+            onChange={(e) => patchForm({ customerName: e.target.value })}
+            placeholder="Nombre y apellido"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-card text-foreground"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Teléfono</label>
+          <input
+            type="tel"
+            value={form.customerPhone}
+            onChange={(e) => patchForm({ customerPhone: e.target.value })}
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-card text-foreground"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Email</label>
+          <input
+            type="email"
+            value={form.customerEmail}
+            onChange={(e) => patchForm({ customerEmail: e.target.value })}
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-card text-foreground"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Notas</label>
+          <textarea
+            value={form.notes}
+            onChange={(e) => patchForm({ notes: e.target.value })}
+            rows={2}
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-card text-foreground resize-none"
+          />
+        </div>
+
+        <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.isPrivate}
+            onChange={(e) => patchForm({ isPrivate: e.target.checked })}
+            className="rounded"
+          />
+          Cita privada (comodín)
+        </label>
+      </div>
+
+      {error && <p className="text-xs text-danger">{error}</p>}
+
+      <div className="flex gap-2 pt-1">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50 [background:var(--primary)] [color:var(--primary-foreground)]"
+        >
+          {saving ? "Guardando…" : "Guardar"}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors text-foreground bg-card"
+        >
+          Cancelar
+        </button>
+      </div>
     </aside>
   );
 }
@@ -446,6 +741,7 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   const weekStart = useMemo(() => {
     const d = new Date(currentDate);
@@ -483,8 +779,6 @@ export default function AppointmentsPage() {
     fetchAppointments();
   }, [fetchAppointments]);
 
-  const selectedAppt = appointments.find((a) => a._id === selectedId) ?? null;
-
   function handlePrev() {
     if (view === "day") {
       setCurrentDate(toISODate(addDays(new Date(currentDate + "T00:00:00"), -1)));
@@ -508,11 +802,6 @@ export default function AppointmentsPage() {
     setSelectedId(null);
   }
 
-  function handleDeleted(id: string) {
-    setAppointments((prev) => prev.filter((a) => a._id !== id));
-    if (selectedId === id) setSelectedId(null);
-  }
-
   const navLabel =
     view === "day"
       ? formatDateLabel(currentDate)
@@ -523,6 +812,18 @@ export default function AppointmentsPage() {
       <PageHeader
         title="Citas"
         description="Vista operativa: gestión de citas del negocio."
+        actions={
+          <button
+            type="button"
+            onClick={() => {
+              setShowForm(true);
+              setSelectedId(null);
+            }}
+            className="rounded-lg px-4 py-2 text-sm font-medium transition-colors [background:var(--primary)] [color:var(--primary-foreground)]"
+          >
+            + Nueva cita
+          </button>
+        }
       />
 
       {/* Toolbar */}
@@ -616,7 +917,7 @@ export default function AppointmentsPage() {
       </div>
 
       {/* Content */}
-      <div className="flex gap-4">
+      <div className="flex gap-4 items-start">
         {/* Main calendar area */}
         <div className="min-w-0 flex-1">
           {view === "day" ? (
@@ -636,15 +937,27 @@ export default function AppointmentsPage() {
           )}
         </div>
 
-        {/* Detail panel */}
-        {selectedAppt && (
-          <div className="w-72 shrink-0">
-            <AppointmentDetail
-              appt={selectedAppt}
-              onClose={() => setSelectedId(null)}
-              onDeleted={handleDeleted}
-            />
-          </div>
+        {/* Detail / Form panel */}
+        {showForm && (
+          <NewAppointmentForm
+            defaultDate={currentDate}
+            onClose={() => setShowForm(false)}
+            onCreated={() => {
+              setShowForm(false);
+              fetchAppointments();
+            }}
+          />
+        )}
+        {!showForm && selectedId && (
+          <AppointmentDetail
+            id={selectedId}
+            onClose={() => setSelectedId(null)}
+            onDeleted={() => {
+              setSelectedId(null);
+              fetchAppointments();
+            }}
+            onStatusChanged={() => fetchAppointments()}
+          />
         )}
       </div>
     </>
