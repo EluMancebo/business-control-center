@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "seed:services": "npx tsx --env-file .env.local src/scripts/seed-appointment-services.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

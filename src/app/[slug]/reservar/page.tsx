@@ -31,7 +31,7 @@ async function getBusinessBySlug(slug: string) {
 
 async function getServices(businessId: string) {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/appointments/services`,
+    `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"}/api/appointments/services?businessId=${businessId}`,
     { cache: "no-store" }
   );
   if (!res.ok) return [];
