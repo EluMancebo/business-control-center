@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import ReservaForm from "./ReservaForm";
 
 // ── Types ────────────────────────────────
 type Business = {
@@ -100,7 +101,6 @@ export default async function ReservarPage({
           </p>
         </header>
 
-        {/* Services list (placeholder para Fase 2) */}
         {services.length === 0 ? (
           <div
             className="rounded-xl border p-8 text-center"
@@ -110,11 +110,11 @@ export default async function ReservarPage({
             }}
           >
             <p style={{ color: "var(--muted-foreground)" }}>
-              No hay servicios disponibles para reserva en este momento.
+              No hay servicios disponibles para reserva.
             </p>
             <Link
               href={`/${slug}`}
-              className="mt-4 inline-block rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+              className="mt-4 inline-block rounded-lg px-4 py-2 text-sm font-medium"
               style={{
                 background: "var(--primary)",
                 color: "var(--primary-foreground)",
@@ -124,52 +124,11 @@ export default async function ReservarPage({
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
-            {services.map((service) => (
-              <div
-                key={service._id}
-                className="rounded-xl border p-4 transition-shadow hover:shadow-md sm:p-6"
-                style={{
-                  borderColor: "var(--border)",
-                  background: "var(--card)",
-                }}
-              >
-                <h3
-                  className="text-lg font-semibold"
-                  style={{ color: "var(--foreground)" }}
-                >
-                  {service.name}
-                </h3>
-                {service.description && (
-                  <p
-                    className="mt-1 text-sm"
-                    style={{ color: "var(--muted-foreground)" }}
-                  >
-                    {service.description}
-                  </p>
-                )}
-                <div
-                  className="mt-3 flex flex-wrap items-center gap-4 text-sm"
-                  style={{ color: "var(--muted-foreground)" }}
-                >
-                  <span>⏱️ {service.durationMinutes} min</span>
-                  {service.priceText && <span>💰 {service.priceText}</span>}
-                </div>
-                {/* Botón de selección (Fase 2) */}
-                <button
-                  type="button"
-                  disabled
-                  className="mt-4 w-full rounded-lg px-4 py-2 text-sm font-medium opacity-50 sm:w-auto"
-                  style={{
-                    background: "var(--primary)",
-                    color: "var(--primary-foreground)",
-                  }}
-                >
-                  Seleccionar (próximamente)
-                </button>
-              </div>
-            ))}
-          </div>
+          <ReservaForm
+            businessId={business._id}
+            businessSlug={slug}
+            services={services}
+          />
         )}
       </div>
     </div>

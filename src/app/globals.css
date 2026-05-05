@@ -20,6 +20,7 @@
 
   --primary: #0f172a;
   --primary-foreground: #ffffff;
+  --primary-soft: #e0e7ff;
 
   --border: rgba(15, 23, 42, 0.14);
   --ring: rgba(15, 23, 42, 0.35);
@@ -318,6 +319,7 @@ html[data-brand-mode="light"] {
 
   --processing: color-mix(in oklab, #2563eb 76%, var(--primary) 24%);
   --processing-soft: color-mix(in oklab, var(--processing) 18%, var(--panel-surface-2));
+  --primary-soft: color-mix(in oklab, var(--primary) 18%, var(--panel-surface-2));
   --processing-foreground: #1e3a8a;
 
   --task-surface: color-mix(
@@ -398,6 +400,7 @@ html[data-brand-mode="dark"] {
 
   --processing: color-mix(in oklab, #60a5fa 74%, var(--primary) 26%);
   --processing-soft: color-mix(in oklab, var(--processing) 28%, var(--panel-surface-2));
+  --primary-soft: color-mix(in oklab, var(--primary) 28%, var(--panel-surface-2));
   --processing-foreground: #dbeafe;
 
   --task-surface: color-mix(
@@ -562,6 +565,7 @@ html[data-brand-mode="system"] {
 
     --processing: color-mix(in oklab, #60a5fa 74%, var(--primary) 26%);
     --processing-soft: color-mix(in oklab, var(--processing) 28%, var(--panel-surface-2));
+    --primary-soft: color-mix(in oklab, var(--primary) 28%, var(--panel-surface-2));
     --processing-foreground: #dbeafe;
 
     --task-surface: color-mix(
@@ -608,6 +612,7 @@ html[data-brand-mode="system"] {
   --color-processing: var(--processing);
   --color-processing-foreground: var(--processing-foreground);
   --color-processing-soft: var(--processing-soft);
+  --color-primary-soft: var(--primary-soft);
   --color-task-surface: var(--task-surface);
   --color-task-surface-foreground: var(--task-surface-foreground);
 
