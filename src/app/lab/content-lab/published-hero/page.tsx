@@ -694,6 +694,8 @@ const REVIEW_FILTERS: readonly (MediaReviewStatus | "all")[] = [
 
 const HERO_SOURCE_ALLOWED_CONTEXT = "home.hero.background";
 const HERO_SOURCE_ALLOWED_CONTEXT_LEGACY = "hero.background";
+const BCC_FALLBACK_HERO_BACKGROUND_URL = "/hero/dark-abstract.jpg";
+const BCC_FALLBACK_LOGO_URL = "/brand/logo-mark.svg";
 const PREVIEW_STAGE_PADDING: Record<PreviewViewport, { x: number; y: number }> = {
   mobile: { x: 24, y: 34 },
   tablet: { x: 36, y: 48 },
@@ -1247,6 +1249,26 @@ function getVariantScore(item: AssetItem): number {
 function includesHeroAllowedContext(allowedIn: string[]): boolean {
   return allowedIn.some(
     (item) => item === HERO_SOURCE_ALLOWED_CONTEXT || item === HERO_SOURCE_ALLOWED_CONTEXT_LEGACY
+  );
+}
+
+function isHeroBackgroundAsset(asset: AssetItem): boolean {
+  if (asset.kind === "video" || asset.formatKind === "pdf") return false;
+  return (
+    asset.allowedComponents.includes("hero") ||
+    includesHeroAllowedContext(asset.allowedIn) ||
+    asset.preferredUsage === "hero-background"
+  );
+}
+
+function isLogoAsset(asset: AssetItem): boolean {
+  if (asset.kind === "video" || asset.formatKind === "pdf") return false;
+  return (
+    asset.assetRole === "logo" ||
+    asset.assetRole === "icon" ||
+    asset.preferredUsage === "hero-logo" ||
+    asset.preferredUsage === "navbar-logo" ||
+    asset.preferredUsage === "footer-mark"
   );
 }
 
@@ -2274,21 +2296,46 @@ export default function PublishedHeroLabPage({
         setAllAssets(next);
         setAssetState("ready");
 
+        const heroCandidates = next.filter(isHeroBackgroundAsset);
+        const logoCandidates = next.filter(isLogoAsset);
+        const defaultHeroAsset =
+          heroCandidates.find((item) => !isLogoAsset(item)) ?? heroCandidates[0] ?? null;
+        const defaultHeroAssetId = defaultHeroAsset?._id ?? "";
+        const defaultLogoAsset =
+          logoCandidates.find((item) => item._id !== defaultHeroAssetId && !isHeroBackgroundAsset(item)) ??
+          logoCandidates.find((item) => item._id !== defaultHeroAssetId) ??
+          logoCandidates[0] ??
+          null;
+        const defaultLogoAssetId = defaultLogoAsset?._id ?? "";
+
         setSelectedHeroAssetId((previous) => {
-          if (previous && next.some((item) => item._id === previous)) return previous;
-          return next.find((item) => item.allowedComponents.includes("hero"))?._id || "";
+          if (previous && next.some((item) => item._id === previous && isHeroBackgroundAsset(item))) {
+            return previous;
+          }
+          return defaultHeroAssetId;
         });
 
         setSelectedLogoAssetId((previous) => {
-          if (previous && next.some((item) => item._id === previous)) return previous;
-          return (
-            next.find(
-              (item) =>
-                item.assetRole === "logo" ||
-                item.assetRole === "icon" ||
-                item.preferredUsage === "hero-logo"
-            )?._id || ""
-          );
+          if (previous) {
+            const previousAsset = next.find((item) => item._id === previous) ?? null;
+            if (
+              previousAsset &&
+              isLogoAsset(previousAsset) &&
+              (previous !== defaultHeroAssetId ||
+                (isHeroBackgroundAsset(previousAsset) && isLogoAsset(previousAsset)))
+            ) {
+              return previous;
+            }
+          }
+
+          if (defaultLogoAssetId === defaultHeroAssetId) {
+            const sharedAsset = next.find((item) => item._id === defaultLogoAssetId) ?? null;
+            if (!sharedAsset || !(isHeroBackgroundAsset(sharedAsset) && isLogoAsset(sharedAsset))) {
+              return "";
+            }
+          }
+
+          return defaultLogoAssetId;
         });
       } catch (error: unknown) {
         if (!active) return;
@@ -2615,9 +2662,9 @@ export default function PublishedHeroLabPage({
   const currentPrimaryCta = primaryCtaDraft.trim() || candidateHero.primaryCtaLabel;
   const currentSecondaryCta = secondaryCtaDraft.trim() || candidateHero.secondaryCtaLabel;
 
-  const heroBackgroundUrl = selectedHeroAsset?.url || candidateHero.backgroundImageUrl;
+  const heroBackgroundUrl = selectedHeroAsset?.url || BCC_FALLBACK_HERO_BACKGROUND_URL;
 
-  const heroLogoUrl = selectedLogoAsset?.url || candidateHero.logoUrl;
+  const heroLogoUrl = selectedLogoAsset?.url || BCC_FALLBACK_LOGO_URL;
 
   const structuralWarnings = useMemo(() => {
     const warnings: string[] = [];
@@ -4724,7 +4771,7 @@ export default function PublishedHeroLabPage({
                   ref={previewStageRef}
                   className="relative min-h-0 flex-1 overflow-hidden [background:var(--surface-2,var(--card))]"
                 >
-                  <div className="absolute inset-0 flex items-center justify-center px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6 [background:color-mix(in_oklab,var(--background)_96%,var(--foreground)_4%)] [background-image:radial-gradient(circle_at_1px_1px,color-mix(in_oklab,var(--foreground)_18%,transparent)_1px,transparent_1.4px)] [background-size:12px_12px]">
+                  <div className="absolute inset-0 flex items-center justify-center px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6 [background:color-mix(in_oklab,var(--background)_96%,var(--foreground)_4%)] [background-image:radial-gradient(circle,color-mix(in_oklab,var(--foreground)_20%,transparent)_0.95px,transparent_1.3px),radial-gradient(circle,color-mix(in_oklab,var(--foreground)_12%,transparent)_0.65px,transparent_1px)] [background-position:0_0,7px_7px] [background-size:14px_14px,14px_14px]">
                     <div
                       className={`relative overflow-hidden rounded-xl border border-border/80 [background:var(--panel-surface-1,var(--background))] transition-[box-shadow,background] duration-300 [box-shadow:0_6px_18px_color-mix(in_oklab,var(--foreground)_12%,transparent)] ${themePreviewFrameClassName} ${themePreviewIntensityClassName}`}
                       style={{
