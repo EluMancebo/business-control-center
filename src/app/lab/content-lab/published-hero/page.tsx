@@ -258,6 +258,20 @@ type AppliedSuggestionBackup = {
   selectedHeroAssetId: string;
   selectedLogoAssetId: string;
 };
+type PersistedHeroLabSnapshotV1 = {
+  version: 1;
+  savedAt: string;
+  variantName: string;
+  variantCounter: number;
+  viewport: PreviewViewport;
+  selectedHeroAssetId: string;
+  selectedLogoAssetId: string;
+  variantSnapshots: Record<string, VariantSnapshotSet>;
+  variantOverrides: Record<string, Record<PreviewViewport, boolean>>;
+  variantContentOverrides: Record<string, VariantContentOverrides>;
+};
+
+const HERO_LAB_SNAPSHOT_STORAGE_KEY = "bcc:content-lab:published-hero:snapshot.v1";
 
 const HERO_CANDIDATES: Record<CandidateId, PublishedPieceSnapshot> = {
   "barber-pro": {
@@ -1493,6 +1507,62 @@ function resolveActiveSlugFromRuntime(): string {
   return fromEnv || "lab";
 }
 
+function isPreviewViewport(value: unknown): value is PreviewViewport {
+  return value === "mobile" || value === "tablet" || value === "desktop" || value === "wide";
+}
+
+function readHeroLabSnapshotFromStorage(): PersistedHeroLabSnapshotV1 | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(HERO_LAB_SNAPSHOT_STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Partial<PersistedHeroLabSnapshotV1>;
+    if (parsed.version !== 1) return null;
+    if (typeof parsed.variantSnapshots !== "object" || !parsed.variantSnapshots) return null;
+    if (typeof parsed.variantOverrides !== "object" || !parsed.variantOverrides) return null;
+    if (typeof parsed.variantContentOverrides !== "object" || !parsed.variantContentOverrides) return null;
+
+    const variantName =
+      typeof parsed.variantName === "string" && parsed.variantName.trim() ? parsed.variantName.trim() : "base";
+    const variantCounter =
+      typeof parsed.variantCounter === "number" && Number.isFinite(parsed.variantCounter)
+        ? Math.max(1, Math.floor(parsed.variantCounter))
+        : 1;
+    const viewport = isPreviewViewport(parsed.viewport) ? parsed.viewport : "mobile";
+    const selectedHeroAssetId =
+      typeof parsed.selectedHeroAssetId === "string" ? parsed.selectedHeroAssetId : "";
+    const selectedLogoAssetId =
+      typeof parsed.selectedLogoAssetId === "string" ? parsed.selectedLogoAssetId : "";
+
+    return {
+      version: 1,
+      savedAt: typeof parsed.savedAt === "string" ? parsed.savedAt : "",
+      variantName,
+      variantCounter,
+      viewport,
+      selectedHeroAssetId,
+      selectedLogoAssetId,
+      variantSnapshots: parsed.variantSnapshots as Record<string, VariantSnapshotSet>,
+      variantOverrides: parsed.variantOverrides as Record<string, Record<PreviewViewport, boolean>>,
+      variantContentOverrides: parsed.variantContentOverrides as Record<string, VariantContentOverrides>,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeHeroLabSnapshotToStorage(snapshot: PersistedHeroLabSnapshotV1): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(HERO_LAB_SNAPSHOT_STORAGE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // Persistencia local opcional: no rompemos UX si falla localStorage.
+  }
+}
+
 export default function PublishedHeroLabPage({
   disableInternalBrandHydrator = false,
 }: {
@@ -2239,6 +2309,78 @@ export default function PublishedHeroLabPage({
     setHeadlineProposalMode(null);
     setActionNotice(`Variante activa: ${formatVariantLabel(nextVariantName)} (temporal).`);
   }
+
+  useEffect(() => {
+    const saved = readHeroLabSnapshotFromStorage();
+    if (!saved) return;
+
+    const restoredSnapshots = cloneSnapshot(saved.variantSnapshots);
+    const restoredOverrides = cloneSnapshot(saved.variantOverrides);
+    const restoredContentOverrides = cloneSnapshot(saved.variantContentOverrides);
+    const availableVariants = Object.keys(restoredSnapshots);
+    if (availableVariants.length === 0) return;
+
+    const resolvedVariantName = restoredSnapshots[saved.variantName]
+      ? saved.variantName
+      : availableVariants.includes("base")
+        ? "base"
+        : availableVariants[0];
+    const resolvedVariantSet = restoredSnapshots[resolvedVariantName];
+    const resolvedVariantOverrides = restoredOverrides[resolvedVariantName];
+    const resolvedVariantContentOverrides = restoredContentOverrides[resolvedVariantName];
+    if (!resolvedVariantSet || !resolvedVariantOverrides || !resolvedVariantContentOverrides) return;
+
+    const inferredVariantCounter = availableVariants.reduce((max, name) => {
+      const match = /^variant-(\d+)$/u.exec(name);
+      if (!match) return max;
+      const next = Number(match[1]) + 1;
+      return Number.isFinite(next) && next > max ? next : max;
+    }, 1);
+
+    variantSnapshotsRef.current = restoredSnapshots;
+    variantOverridesRef.current = restoredOverrides;
+    variantContentOverridesRef.current = restoredContentOverrides;
+    breakpointSnapshotsRef.current = cloneSnapshot(resolvedVariantSet);
+
+    const restoredViewport = saved.viewport;
+    const incomingSnapshot = resolveViewportSnapshotWithInheritance(
+      resolvedVariantSet,
+      resolvedVariantOverrides,
+      restoredViewport
+    );
+    if (!incomingSnapshot) return;
+
+    setVariantName(resolvedVariantName);
+    setVariantCounter(Math.max(saved.variantCounter, inferredVariantCounter));
+    setSelectedHeroAssetId(saved.selectedHeroAssetId);
+    setSelectedLogoAssetId(saved.selectedLogoAssetId);
+    viewportRef.current = restoredViewport;
+    setViewport(restoredViewport);
+    applySnapshot(cloneSnapshot(incomingSnapshot));
+
+    const resolveVariantContent = (property: ContentProperty): string => {
+      const sourceViewport = resolveContentInheritanceSource(
+        restoredViewport,
+        property,
+        resolvedVariantContentOverrides
+      );
+      return readContentProperty(
+        resolvedVariantSet[sourceViewport] ?? resolvedVariantSet.mobile,
+        property
+      );
+    };
+    setHeadlineDraft(resolveVariantContent("headlineDraft"));
+    setSubheadlineDraft(resolveVariantContent("subheadlineDraft"));
+    setPrimaryCtaDraft(resolveVariantContent("primaryCtaDraft"));
+    setSecondaryCtaDraft(resolveVariantContent("secondaryCtaDraft"));
+    setPrimaryCtaHrefDraft(resolveVariantContent("primaryCtaHrefDraft"));
+    setSecondaryCtaHrefDraft(resolveVariantContent("secondaryCtaHrefDraft"));
+    setHeadlineProposal(null);
+    setHeadlineProposalMode(null);
+    setActionNotice(
+      `Snapshot local recuperado (${formatVariantLabel(resolvedVariantName)}). No se guarda en servidor.`
+    );
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -3736,10 +3878,28 @@ export default function PublishedHeroLabPage({
   function handleSaveDraft() {
     persistCurrentViewportSnapshot();
     const variantSet = ensureCurrentVariantSnapshots();
+    const variantOverrides = ensureCurrentVariantOverrides();
+    const variantContentOverrides = ensureCurrentVariantContentOverrides();
     variantSnapshotsRef.current[variantName] = cloneSnapshot(variantSet);
+    variantOverridesRef.current[variantName] = cloneSnapshot(variantOverrides);
+    variantContentOverridesRef.current[variantName] = cloneSnapshot(variantContentOverrides);
+
+    writeHeroLabSnapshotToStorage({
+      version: 1,
+      savedAt: new Date().toISOString(),
+      variantName,
+      variantCounter,
+      viewport,
+      selectedHeroAssetId,
+      selectedLogoAssetId,
+      variantSnapshots: cloneSnapshot(variantSnapshotsRef.current),
+      variantOverrides: cloneSnapshot(variantOverridesRef.current),
+      variantContentOverrides: cloneSnapshot(variantContentOverridesRef.current),
+    });
+
     const stamp = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
     setActionNotice(
-      `Temporal (${formatVariantLabel(variantName)}) guardado a las ${stamp}. No se guarda en servidor.`
+      `Temporal (${formatVariantLabel(variantName)}) guardado a las ${stamp} en este navegador. No se guarda en servidor.`
     );
   }
 
@@ -4103,7 +4263,6 @@ export default function PublishedHeroLabPage({
               </div>
             </div>
           </header>
-
           <div
             className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden gap-2 p-2 xl:grid-cols-[17.25rem_minmax(0,1fr)_19rem] xl:p-2.5"
             style={
